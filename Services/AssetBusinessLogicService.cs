@@ -39,9 +39,125 @@ namespace HospitalAssetTracker.Services
 
         #region Dashboard and Analytics Methods
 
-        public async Task<AssetDashboardViewModel> GetAssetDashboardAsync(string userId)
+        public async Task<AssetDashboardModel> GetAssetDashboardAsync(string userId)
         {
             _logger.LogInformation("Getting asset dashboard data for user: {UserId}", userId);
+
+            try
+            {
+                var totalAssets = await _context.Assets.CountAsync();
+                var activeAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.Active);
+                var inMaintenanceAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.InRepair);
+                var retiredAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.Retired);
+                var totalValue = await _context.Assets.SumAsync(a => a.PurchasePrice ?? 0);
+
+                var overview = new AssetOverviewMetrics
+                {
+                    TotalAssets = totalAssets,
+                    ActiveAssets = activeAssets,
+                    InMaintenanceAssets = inMaintenanceAssets,
+                    RetiredAssets = retiredAssets,
+                    TotalValue = totalValue,
+                    NewAssetsThisMonth = await _context.Assets.CountAsync(a => a.CreatedDate >= DateTime.UtcNow.AddDays(-30))
+                };
+
+                var statusSummary = new List<AssetStatusSummary>
+                {
+                    new AssetStatusSummary { Status = "Active", Count = activeAssets, Percentage = totalAssets > 0 ? (double)activeAssets / totalAssets * 100 : 0 },
+                    new AssetStatusSummary { Status = "In Maintenance", Count = inMaintenanceAssets, Percentage = totalAssets > 0 ? (double)inMaintenanceAssets / totalAssets * 100 : 0 },
+                    new AssetStatusSummary { Status = "Retired", Count = retiredAssets, Percentage = totalAssets > 0 ? (double)retiredAssets / totalAssets * 100 : 0 }
+                };
+
+                var categoryBreakdown = await _context.Assets
+                    .GroupBy(a => a.Category)
+                    .Select(g => new AssetCategoryBreakdown
+                    {
+                        Category = g.Key.ToString(),
+                        Count = g.Count(),
+                        Value = g.Sum(a => a.PurchasePrice ?? 0),
+                        Percentage = totalAssets > 0 ? (double)g.Count() / totalAssets * 100 : 0
+                    })
+                    .ToListAsync();
+
+                var assetsWithLocations = await _context.Assets
+                    .Include(a => a.Location)
+                    .ToListAsync();
+
+                var locationSummary = assetsWithLocations
+                    .GroupBy(a => a.Location?.Name ?? "Unassigned")
+                    .Select(g => new AssetLocationSummary
+                    {
+                        LocationName = g.Key,
+                        AssetCount = g.Count(),
+                        ActiveAssets = g.Count(a => a.Status == AssetStatus.Active),
+                        MaintenanceAssets = g.Count(a => a.Status == AssetStatus.InRepair),
+                        TotalValue = g.Sum(a => a.PurchasePrice ?? 0)
+                    })
+                    .ToList();
+
+                var alerts = await GetAssetAlertsAsync(userId);
+
+                var upcomingMaintenance = new List<UpcomingMaintenance>();
+                // Get maintenance records scheduled for the next 30 days
+                var maintenanceRecords = await _context.MaintenanceRecords
+                    .Where(m => m.ScheduledDate >= DateTime.UtcNow && m.ScheduledDate <= DateTime.UtcNow.AddDays(30))
+                    .Include(m => m.Asset)
+                    .OrderBy(m => m.ScheduledDate)
+                    .Take(10)
+                    .ToListAsync();
+
+                foreach (var record in maintenanceRecords)
+                {
+                    upcomingMaintenance.Add(new UpcomingMaintenance
+                    {
+                        AssetId = record.AssetId,
+                        AssetName = record.Asset?.Name ?? "Unknown Asset",
+                        MaintenanceType = record.MaintenanceType.ToString(),
+                        ScheduledDate = record.ScheduledDate,
+                        Priority = "Medium", // Could be calculated based on criticality
+                        EstimatedCost = record.Cost ?? 0,
+                        AssignedTechnician = record.PerformedBy ?? "Unassigned"
+                    });
+                }
+
+                var trends = new List<AssetTrend>
+                {
+                    new AssetTrend
+                    {
+                        Metric = "Monthly Asset Additions",
+                        DataPoints = Enumerable.Range(0, 12).Select(i => new TrendDataPoint
+                        {
+                            Date = DateTime.UtcNow.AddMonths(-11 + i),
+                            Value = new Random().Next(1, 10), // Mock data - replace with real calculation
+                            Label = DateTime.UtcNow.AddMonths(-11 + i).ToString("MMM yyyy")
+                        }).ToList(),
+                        TrendDirection = "Up",
+                        TrendPercentage = 15.5,
+                        Unit = "Assets"
+                    }
+                };
+
+                return new AssetDashboardModel
+                {
+                    Overview = overview,
+                    StatusSummary = statusSummary,
+                    CategoryBreakdown = categoryBreakdown,
+                    LocationSummary = locationSummary,
+                    Alerts = alerts,
+                    Trends = trends,
+                    UpcomingMaintenance = upcomingMaintenance
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting asset dashboard data for user: {UserId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<AssetDashboardViewModel> GetAssetDashboardViewModelAsync(string userId)
+        {
+            _logger.LogInformation("Getting asset dashboard view model for user: {UserId}", userId);
 
             try
             {
@@ -227,7 +343,7 @@ namespace HospitalAssetTracker.Services
                 // Check for assets needing maintenance
                 var maintenanceDue = await _context.Assets
                     .Where(a => a.LastMaintenanceDate.HasValue && 
-                               a.LastMaintenanceDate.Value.AddDays(90) <= DateTime.Today)
+                               a.LastMaintenanceDate.Value.AddDays(90) <= DateTime.UtcNow)
                     .Take(10)
                     .ToListAsync();
 
@@ -539,37 +655,29 @@ namespace HospitalAssetTracker.Services
 
                 // Identify underutilized assets
                 var underutilizedAssets = await IdentifyUnderutilizedAssetsAsync();
-                result.UnderutilizedAssets = underutilizedAssets.Select(r => new AssetOptimizationOpportunity
-                {
-                    AssetId = r.AssetId,
-                    AssetName = r.AssetName,
-                    OpportunityType = r.OpportunityType,
-                    Description = r.Description,
-                    PotentialSavings = r.PotentialSavings,
-                    ImplementationEffort = r.ImplementationEffort,
-                    Priority = r.Priority
-                }).ToList();
+                result.UnderutilizedAssets = underutilizedAssets;
 
                 // Identify over-demand scenarios
                 var overDemandAnalysis = await IdentifyOverDemandScenariosAsync();
-                result.OverDemandScenarios = overDemandAnalysis.Select(r => new AssetOptimizationOpportunity
+                result.OverDemandScenarios = overDemandAnalysis;
+
+                // Generate optimization recommendations
+                var utilizationRecommendations = GenerateUtilizationOptimizationRecommendations(
+                    result.UnderutilizedAssets, result.OverDemandScenarios);
+
+                // Convert to AssetOptimizationOpportunity
+                result.OptimizationRecommendations = utilizationRecommendations.Select(r => new AssetOptimizationOpportunity
                 {
-                    AssetId = r.AssetId,
-                    AssetName = r.AssetName,
-                    OpportunityType = r.OpportunityType,
+                    OpportunityType = r.Type,
                     Description = r.Description,
-                    PotentialSavings = r.PotentialSavings,
-                    ImplementationEffort = r.ImplementationEffort,
+                    PotentialSavings = r.EstimatedSavings,
+                    ImplementationEffort = "Medium", // Default value since original doesn't have this
                     Priority = r.Priority
                 }).ToList();
 
-                // Generate optimization recommendations
-                result.OptimizationRecommendations = GenerateUtilizationOptimizationRecommendations(
-                    result.UnderutilizedAssets, result.OverDemandScenarios);
-
                 // Calculate potential cost savings
-                result.PotentialCostSavings = CalculatePotentialUtilizationSavings(result.OptimizationRecommendations);
-                result.ImplementationPriority = DetermineImplementationPriority(result.OptimizationRecommendations);
+                result.PotentialCostSavings = CalculatePotentialUtilizationSavings(utilizationRecommendations);
+                result.ImplementationPriority = DetermineImplementationPriority(utilizationRecommendations);
 
                 // Performance improvement projections
                 result.ProjectedImprovements = CalculateProjectedUtilizationImprovements(result)
@@ -683,7 +791,8 @@ namespace HospitalAssetTracker.Services
                 await CreateAssetInventoryMappingAsync(newAsset.Id, inventoryItemId, deployedByUserId);
 
                 // Step 5: Generate deployment documentation
-                result.DeploymentDocumentation = await GenerateDeploymentDocumentationAsync(newAsset, inventoryItem);
+                var documentation = await GenerateDeploymentDocumentationAsync(newAsset, inventoryItem);
+                result.DeploymentDocumentation = new List<string> { documentation };
 
                 // Step 6: Create audit trail
                 await _auditService.LogAsync(AuditAction.Create, "Asset Deployment", newAsset.Id, deployedByUserId,
@@ -744,7 +853,8 @@ namespace HospitalAssetTracker.Services
                 result.DisposalCoordinationResult = await CoordinateAssetDisposalAsync(asset, processedByUserId);
 
                 // Step 6: Generate retirement documentation
-                result.RetirementDocumentation = await GenerateRetirementDocumentationAsync(asset, retirementReason);
+                var retirementDoc = await GenerateRetirementDocumentationAsync(asset, retirementReason);
+                result.RetirementDocumentation = new List<string> { retirementDoc };
 
                 result.Success = true;
                 result.RetirementMetrics = CalculateRetirementMetrics(asset);

@@ -48,6 +48,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWJvdXQvSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[/home/gadmin/it_system_new_gen/Views/AssetDashboard/Error.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQXNzZXREYXNoYm9hcmQvRXJyb3IuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [/home/gadmin/it_system_new_gen/Views/AssetDashboard/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQXNzZXREYXNoYm9hcmQvSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
@@ -218,10 +222,6 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/home/gadmin/it_system_new_gen/Views/Users/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVXNlcnMvSW5kZXguY3NodG1s
-build_metadata.AdditionalFiles.CssScope = 
-
-[/home/gadmin/it_system_new_gen/Views/WarehouseDashboard/Index.cshtml]
-build_metadata.AdditionalFiles.TargetPath = Vmlld3MvV2FyZWhvdXNlRGFzaGJvYXJkL0luZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
 [/home/gadmin/it_system_new_gen/Views/WriteOff/Create.cshtml]

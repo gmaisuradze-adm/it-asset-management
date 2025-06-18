@@ -440,18 +440,42 @@ namespace HospitalAssetTracker.Services
                 if (request.AssetId.HasValue)
                 {
                     var assetIntegration = await IntegrateWithAssetModuleAsync(request);
-                    result.IntegrationResults.Add("Asset", assetIntegration);
+                    result.IntegrationResults.Add("Asset", new ModuleIntegrationResult
+                    {
+                        ModuleName = "Asset",
+                        Success = assetIntegration.Success,
+                        IntegrationTime = DateTime.UtcNow,
+                        Status = assetIntegration.Success ? "Completed" : "Failed",
+                        ActionsPerformed = assetIntegration.IntegratedModules.ToList(),
+                        RequiresProcurement = assetIntegration.RequiresProcurement
+                    });
                 }
 
                 // Inventory Module Integration
                 var inventoryIntegration = await IntegrateWithInventoryModuleAsync(request);
-                result.IntegrationResults.Add("Inventory", inventoryIntegration);
+                result.IntegrationResults.Add("Inventory", new ModuleIntegrationResult
+                {
+                    ModuleName = "Inventory",
+                    Success = inventoryIntegration.Success,
+                    IntegrationTime = DateTime.UtcNow,
+                    Status = inventoryIntegration.Success ? "Completed" : "Failed",
+                    ActionsPerformed = inventoryIntegration.IntegratedModules.ToList(),
+                    RequiresProcurement = inventoryIntegration.RequiresProcurement
+                });
 
                 // Procurement Module Integration (if needed)
                 if (inventoryIntegration.RequiresProcurement)
                 {
                     var procurementIntegration = await IntegrateWithProcurementModuleAsync(request);
-                    result.IntegrationResults.Add("Procurement", procurementIntegration);
+                    result.IntegrationResults.Add("Procurement", new ModuleIntegrationResult
+                    {
+                        ModuleName = "Procurement",
+                        Success = procurementIntegration.Success,
+                        IntegrationTime = DateTime.UtcNow,
+                        Status = procurementIntegration.Success ? "Completed" : "Failed",
+                        ActionsPerformed = procurementIntegration.IntegratedModules.ToList(),
+                        RequiresProcurement = false
+                    });
                 }
 
                 result.Success = true;
@@ -769,7 +793,7 @@ namespace HospitalAssetTracker.Services
                 recommendations.Add("Implement automated priority escalation system");
             }
 
-            if (result.AverageResolutionTime > TimeSpan.FromDays(3))
+            if (result.AverageResolutionTime > 3.0) // 3 days
             {
                 recommendations.Add("Average resolution time exceeds 3 days - review process efficiency");
                 recommendations.Add("Consider additional training or staff augmentation");
@@ -986,9 +1010,9 @@ namespace HospitalAssetTracker.Services
                 {
                     OpportunityType = "Workload Rebalancing",
                     Description = "Uneven workload distribution detected - consider reassigning requests",
-                    PotentialImpact = "Improved team efficiency and reduced burnout",
-                    EstimatedEffort = "Low",
-                    Priority = "High"
+                    Impact = "High",
+                    Effort = "Low",
+                    Priority = 1
                 });
             }
 
@@ -998,9 +1022,9 @@ namespace HospitalAssetTracker.Services
                 {
                     OpportunityType = "Bottleneck Resolution",
                     Description = $"Critical bottlenecks identified: {string.Join(", ", workloadAnalysis.CriticalBottlenecks)}",
-                    PotentialImpact = "Faster request resolution times",
-                    EstimatedEffort = "Medium",
-                    Priority = "High"
+                    Impact = "High",
+                    Effort = "Medium",
+                    Priority = 1
                 });
             }
 
@@ -1014,7 +1038,7 @@ namespace HospitalAssetTracker.Services
                 PlanName = "Intelligent Workload Rebalancing",
                 CreatedDate = DateTime.UtcNow,
                 EstimatedImplementationTime = TimeSpan.FromDays(1),
-                ExpectedImprovements = opportunities.Select(o => o.PotentialImpact).ToList(),
+                ExpectedImprovements = opportunities.Select(o => $"{o.Impact} impact: {o.OpportunityType}").ToList(),
                 RecommendedActions = opportunities.Select(o => o.Description).ToList()
             };
         }
@@ -1194,7 +1218,7 @@ namespace HospitalAssetTracker.Services
                 recommendations.Add("Implement customer feedback collection at multiple touchpoints");
             }
 
-            if (result.AverageResolutionTime > TimeSpan.FromDays(3))
+            if (result.AverageResolutionTime > 3.0) // 3 days
             {
                 recommendations.Add("Resolution times are too long - analyze workflow bottlenecks");
                 recommendations.Add("Consider automation for common request types");

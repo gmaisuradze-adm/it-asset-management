@@ -48,7 +48,7 @@
                                         <option value="">All Categories</option>
                                         @foreach (var item in ViewBag.Categories)
                                         {
-                                            <option value="@item.Value" selected="@(criteria.Category == item.Value)">@item.Text</option>
+                                            <option value="@item.Value" selected="@(criteria.Category.HasValue && criteria.Category.Value.ToString() == item.Value)">@item.Text</option>
                                         }
                                     </select>
                                 </div>
@@ -60,7 +60,7 @@
                                         <option value="">All Status</option>
                                         @foreach (var item in ViewBag.Statuses)
                                         {
-                                            <option value="@item.Value" selected="@(criteria.Status == item.Value)">@item.Text</option>
+                                            <option value="@item.Value" selected="@(criteria.Status.HasValue && criteria.Status.Value.ToString() == item.Value)">@item.Text</option>
                                         }
                                     </select>
                                 </div>
@@ -72,7 +72,7 @@
                                         <option value="">All Locations</option>
                                         @foreach (var item in ViewBag.Locations)
                                         {
-                                            <option value="@item.Value" selected="@(criteria.LocationId == int.Parse(item.Value))">@item.Text</option>
+                                            <option value="@item.Value" selected="@(criteria.LocationId?.ToString() == item.Value)">@item.Text</option>
                                         }
                                     </select>
                                 </div>
@@ -110,7 +110,7 @@
                                             <option value="">All Conditions</option>
                                             @foreach (var item in ViewBag.Conditions)
                                             {
-                                                <option value="@item.Value" selected="@(criteria.Condition == item.Value)">@item.Text</option>
+                                                <option value="@item.Value" selected="@(criteria.Condition.HasValue && criteria.Condition.Value.ToString() == item.Value)">@item.Text</option>
                                             }
                                         </select>
                                     </div>

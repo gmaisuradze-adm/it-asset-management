@@ -83,7 +83,7 @@ namespace HospitalAssetTracker.Middleware
                     "Assets" or "AssetDashboard" => "Asset Management",
                     "Requests" or "RequestDashboard" => "Request Management",
                     "Procurement" or "ProcurementDashboard" => "Procurement Management",
-                    "Warehouse" or "WarehouseDashboard" => "Warehouse Management",
+                    "Warehouse" or "Inventory" => "Inventory Management",
                     "BugTracking" => "Bug Tracking",
                     "Home" => "Main Dashboard",
                     _ => segments[0]

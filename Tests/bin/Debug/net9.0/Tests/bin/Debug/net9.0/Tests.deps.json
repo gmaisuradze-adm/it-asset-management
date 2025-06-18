@@ -315,7 +315,7 @@
           "System.Text.Encoding": "9.0.0.0",
           "System.Text.Encoding.Extensions": "9.0.0.0",
           "System.Text.Encodings.Web": "9.0.0.0",
-          "System.Text.Json": "9.0.0.0",
+          "System.Text.Json.Reference": "9.0.0.0",
           "System.Text.RegularExpressions": "9.0.0.0",
           "System.Threading.Channels": "9.0.0.0",
           "System.Threading": "9.0.0.0",
@@ -1195,30 +1195,31 @@
           "lib/net6.0/Newtonsoft.Json.dll": {}
         }
       },
-      "Npgsql/9.0.2": {
+      "Npgsql/9.0.0": {
         "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "9.0.0"
+          "Microsoft.Extensions.Logging.Abstractions": "9.0.0",
+          "System.Text.Json": "9.0.0"
         },
         "runtime": {
           "lib/net8.0/Npgsql.dll": {
-            "assemblyVersion": "9.0.2.0",
-            "fileVersion": "9.0.2.0"
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.0.0"
           }
         },
         "compile": {
           "lib/net8.0/Npgsql.dll": {}
         }
       },
-      "Npgsql.EntityFrameworkCore.PostgreSQL/9.0.2": {
+      "Npgsql.EntityFrameworkCore.PostgreSQL/9.0.0": {
         "dependencies": {
           "Microsoft.EntityFrameworkCore": "9.0.0",
           "Microsoft.EntityFrameworkCore.Relational": "9.0.0",
-          "Npgsql": "9.0.2"
+          "Npgsql": "9.0.0"
         },
         "runtime": {
           "lib/net8.0/Npgsql.EntityFrameworkCore.PostgreSQL.dll": {
-            "assemblyVersion": "9.0.2.0",
-            "fileVersion": "9.0.2.0"
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.0.0"
           }
         },
         "compile": {
@@ -1329,6 +1330,7 @@
         }
       },
       "System.Text.Encoding.CodePages/9.0.3": {},
+      "System.Text.Json/9.0.0": {},
       "System.Threading.Tasks.Extensions/4.5.4": {},
       "xunit/2.9.3": {
         "dependencies": {
@@ -1401,7 +1403,7 @@
           "EPPlus": "8.0.5",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.0",
           "Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation": "9.0.0",
-          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.2",
+          "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.0",
           "QRCoder": "1.6.0",
           "System.Drawing.Common": "9.0.0"
         },
@@ -3053,7 +3055,7 @@
         },
         "compileOnly": true
       },
-      "System.Text.Json/9.0.0.0": {
+      "System.Text.Json.Reference/9.0.0.0": {
         "compile": {
           "System.Text.Json.dll": {}
         },
@@ -3571,19 +3573,19 @@
       "path": "newtonsoft.json/13.0.3",
       "hashPath": "newtonsoft.json.13.0.3.nupkg.sha512"
     },
-    "Npgsql/9.0.2": {
+    "Npgsql/9.0.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-hCbO8box7i/XXiTFqCJ3GoowyLqx3JXxyrbOJ6om7dr+eAknvBNhhUHeJVGAQo44sySZTfdVffp4BrtPeLZOAA==",
-      "path": "npgsql/9.0.2",
-      "hashPath": "npgsql.9.0.2.nupkg.sha512"
+      "sha512": "sha512-zu1nCRt0gWP/GR0reYgg0Bl5o8qyNV7mVAgzAbVLRiAd1CYXcf/9nrubPH0mt93u8iGTKmYqWaLVECEAcE6IfQ==",
+      "path": "npgsql/9.0.0",
+      "hashPath": "npgsql.9.0.0.nupkg.sha512"
     },
-    "Npgsql.EntityFrameworkCore.PostgreSQL/9.0.2": {
+    "Npgsql.EntityFrameworkCore.PostgreSQL/9.0.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-cYdOGplIvr9KgsG8nJ8xnzBTImeircbgetlzS1OmepS5dAQW6PuGpVrLOKBNEwEvGYZPsV8037X5vZ/Dmpwz7Q==",
-      "path": "npgsql.entityframeworkcore.postgresql/9.0.2",
-      "hashPath": "npgsql.entityframeworkcore.postgresql.9.0.2.nupkg.sha512"
+      "sha512": "sha512-ObngKFRLMBAeMqQzK7SC0Q6WZtWw0imPmEkVPo12yLVF3fioz2TN+w0mhNMJ5cVd/sLB2u+jei0bmA9sDMtkMw==",
+      "path": "npgsql.entityframeworkcore.postgresql/9.0.0",
+      "hashPath": "npgsql.entityframeworkcore.postgresql.9.0.0.nupkg.sha512"
     },
     "QRCoder/1.6.0": {
       "type": "package",
@@ -3682,6 +3684,13 @@
       "sha512": "sha512-80ABiml18jG+6PB6GmrOyMlWla66f4Tp6RgUCJXZLki1Zu+yqbflXvweT86j2xImKHXoVgivto25Z8P5+FO85w==",
       "path": "system.text.encoding.codepages/9.0.3",
       "hashPath": "system.text.encoding.codepages.9.0.3.nupkg.sha512"
+    },
+    "System.Text.Json/9.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-js7+qAu/9mQvnhA4EfGMZNEzXtJCDxgkgj8ohuxq/Qxv+R56G+ljefhiJHOxTNiw54q8vmABCWUwkMulNdlZ4A==",
+      "path": "system.text.json/9.0.0",
+      "hashPath": "system.text.json.9.0.0.nupkg.sha512"
     },
     "System.Threading.Tasks.Extensions/4.5.4": {
       "type": "package",
@@ -5116,7 +5125,7 @@
       "serviceable": false,
       "sha512": ""
     },
-    "System.Text.Json/9.0.0.0": {
+    "System.Text.Json.Reference/9.0.0.0": {
       "type": "referenceassembly",
       "serviceable": false,
       "sha512": ""

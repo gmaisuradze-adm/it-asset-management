@@ -1,6 +1,12 @@
 @model HospitalAssetTracker.Models.InventoryDashboardData
 @{
-    ViewData["Title"] = "Inventory Dashboard";
+    ViewData["Title"] = "Advanced Inventory Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
 }
 
 <div class="container-fluid">
@@ -8,9 +14,64 @@
         <div class="col-12">
             <div class="page-header">
                 <h1 class="page-title">
-                    <i class="fas fa-warehouse text-primary"></i> Inventory Dashboard
+                    <i class="fas fa-warehouse text-primary me-2"></i>
+                    Warehouse Management Dashboard
                 </h1>
-                <p class="text-muted">Monitor stock levels, movements, and key metrics</p>
+                <p class="text-muted">Monitor inventory levels, movements, and analytics with intelligent insights</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-tools text-primary me-2"></i>
+                        Warehouse Management Tools
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-3 col-sm-6">
+                            <button type="button" class="btn btn-outline-primary w-100" onclick="performAbcAnalysis()">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                <div>
+                                    <strong>ABC Analysis</strong>
+                                    <small class="d-block text-muted">Value-based classification</small>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="col-lg-3 col-sm-6">
+                            <button type="button" class="btn btn-outline-success w-100" onclick="executeSmartReplenishment()">
+                                <i class="fas fa-refresh me-2"></i>
+                                <div>
+                                    <strong>Smart Replenishment</strong>
+                                    <small class="d-block text-muted">Intelligent restocking</small>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="col-lg-3 col-sm-6">
+                            <button type="button" class="btn btn-outline-info w-100" onclick="optimizeWarehouseLayout()">
+                                <i class="fas fa-cube me-2"></i>
+                                <div>
+                                    <strong>Space Optimization</strong>
+                                    <small class="d-block text-muted">Layout improvement</small>
+                                </div>
+                            </button>
+                        </div>
+                        <div class="col-lg-3 col-sm-6">
+                            <a href="@Url.Action("Alerts", "Inventory")" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-bell me-2"></i>
+                                <div>
+                                    <strong>View All Alerts</strong>
+                                    <small class="d-block text-muted">Inventory status</small>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -238,5 +299,167 @@
                 }
             }
         });
+
+        // Quick Action Functions
+        function performAbcAnalysis() {
+            if (confirm('This will perform ABC analysis on all inventory items. Continue?')) {
+                showLoadingToast('Performing ABC Analysis...');
+                
+                fetch('@Url.Action("PerformAbcAnalysis", "Inventory")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ analysisMonths: 12 })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccessToast(data.message || 'ABC Analysis completed successfully');
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        showErrorToast(data.message || 'Error performing ABC analysis');
+                    }
+                })
+                .catch(error => {
+                    showErrorToast('Error performing ABC analysis');
+                    console.error('Error:', error);
+                });
+            }
+        }
+
+        function executeSmartReplenishment() {
+            if (confirm('This will analyze inventory levels and create procurement requests where needed. Continue?')) {
+                showLoadingToast('Executing Smart Replenishment...');
+                
+                fetch('@Url.Action("ExecuteSmartReplenishment", "Inventory")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccessToast(data.message || 'Smart replenishment completed successfully');
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        showErrorToast(data.message || 'Error executing smart replenishment');
+                    }
+                })
+                .catch(error => {
+                    showErrorToast('Error executing smart replenishment');
+                    console.error('Error:', error);
+                });
+            }
+        }
+
+        function optimizeWarehouseLayout() {
+            // Get available locations for optimization
+            const locationId = prompt('Enter Location ID for optimization (or leave blank for all locations):');
+            const locId = locationId ? parseInt(locationId) : 1; // Default to location 1
+            
+            if (confirm('This will analyze and optimize warehouse space utilization. Continue?')) {
+                showLoadingToast('Optimizing Warehouse Layout...');
+                
+                fetch('@Url.Action("OptimizeWarehouseLayout", "Inventory")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getAntiForgeryToken()
+                    },
+                    body: JSON.stringify({ locationId: locId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccessToast(data.message || 'Warehouse optimization completed successfully');
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        showErrorToast(data.message || 'Error optimizing warehouse layout');
+                    }
+                })
+                .catch(error => {
+                    showErrorToast('Error optimizing warehouse layout');
+                    console.error('Error:', error);
+                });
+            }
+        }
+
+        // Helper function to get anti-forgery token
+        function getAntiForgeryToken() {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            return token ? token.value : '';
+        }
+
+        // Toast notification functions
+        function showLoadingToast(message) {
+            const toast = `
+                <div class="toast align-items-center text-white bg-info border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas fa-spinner fa-spin me-2"></i>${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            showToast(toast);
+        }
+
+        function showSuccessToast(message) {
+            const toast = `
+                <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas fa-check-circle me-2"></i>${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            showToast(toast);
+        }
+
+        function showErrorToast(message) {
+            const toast = `
+                <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas fa-exclamation-circle me-2"></i>${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            showToast(toast);
+        }
+
+        function showToast(toastHtml) {
+            // Create toast container if it doesn't exist
+            let toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '9999';
+                document.body.appendChild(toastContainer);
+            }
+            
+            // Add toast to container
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            // Show the toast
+            const toastElement = toastContainer.lastElementChild;
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+            
+            // Remove toast element after it's hidden
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+        }
     </script>
 }

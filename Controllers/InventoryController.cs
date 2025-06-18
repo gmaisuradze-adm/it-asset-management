@@ -5,6 +5,7 @@ using HospitalAssetTracker.Models;
 using HospitalAssetTracker.Services;
 using System.Security.Claims;
 using static HospitalAssetTracker.Models.InventorySearchModels;
+using Microsoft.AspNetCore.Identity;
 
 namespace HospitalAssetTracker.Controllers
 {
@@ -14,15 +15,24 @@ namespace HospitalAssetTracker.Controllers
         private readonly IInventoryService _inventoryService;
         private readonly ILocationService _locationService;
         private readonly IAssetService _assetService;
+        private readonly IWarehouseBusinessLogicService _warehouseService;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<InventoryController> _logger;
 
         public InventoryController(
             IInventoryService inventoryService,
             ILocationService locationService,
-            IAssetService assetService)
+            IAssetService assetService,
+            IWarehouseBusinessLogicService warehouseService,
+            UserManager<ApplicationUser> userManager,
+            ILogger<InventoryController> logger)
         {
             _inventoryService = inventoryService;
             _locationService = locationService;
             _assetService = assetService;
+            _warehouseService = warehouseService;
+            _userManager = userManager;
+            _logger = logger;
         }
 
         // GET: Inventory
@@ -314,24 +324,156 @@ namespace HospitalAssetTracker.Controllers
         }
 
         // GET: Inventory/Alerts
-        [Authorize(Roles = "Admin,IT Support,Asset Manager,Department Head")]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager,Department Head,Warehouse Manager")]
         public async Task<IActionResult> Alerts()
         {
-            var stockAlerts = await _inventoryService.GetStockLevelAlertsAsync();
-            var expiryAlerts = await _inventoryService.GetExpiryAlertsAsync(30);
-            
-            ViewBag.StockAlerts = stockAlerts;
-            ViewBag.ExpiryAlerts = expiryAlerts;
-            
-            return View();
+            try
+            {
+                var stockAlerts = await _inventoryService.GetStockLevelAlertsAsync();
+                var expiryAlerts = await _inventoryService.GetExpiryAlertsAsync(30);
+                
+                ViewBag.StockAlerts = stockAlerts;
+                ViewBag.ExpiryAlerts = expiryAlerts;
+                
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading alerts");
+                TempData["ErrorMessage"] = "Error loading alerts.";
+                return RedirectToAction(nameof(Dashboard));
+            }
         }
 
-        // GET: Inventory/Dashboard
-        [Authorize(Roles = "Admin,IT Support,Asset Manager,Department Head")]
+        // GET: Inventory/Dashboard - Enhanced with warehouse management features
+        [Authorize(Roles = "Admin,IT Support,Asset Manager,Department Head,Warehouse Manager")]
         public async Task<IActionResult> Dashboard()
         {
-            var dashboardData = await _inventoryService.GetInventoryDashboardDataAsync();
-            return View(dashboardData);
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                
+                // Get basic dashboard data
+                var dashboardData = await _inventoryService.GetInventoryDashboardDataAsync();
+                
+                // Get recent movements with enhanced data
+                var recentMovements = (await _inventoryService.GetRecentMovementsAsync(7))
+                    .Select(m => new InventoryMovementViewModel
+                    {
+                        Id = m.Id,
+                        ItemName = m.InventoryItem?.Name ?? "Unknown",
+                        MovementType = m.MovementType,
+                        QuantityChanged = m.Quantity,
+                        MovementDate = m.MovementDate,
+                        MovedBy = m.PerformedByUser?.UserName,
+                        Reason = m.Reason,
+                        ToLocationName = m.ToLocation?.FullLocation,
+                        FromLocationName = m.FromLocation?.FullLocation,
+                        PerformedByUserName = m.PerformedByUser?.UserName
+                    }).ToList();
+                
+                // Update dashboard data with enhanced information
+                dashboardData.RecentMovements = recentMovements;
+                
+                // Add warehouse-specific alerts
+                var stockAlerts = await _inventoryService.GetStockLevelAlertsAsync();
+                dashboardData.LowStockAlerts = stockAlerts.Select(alert => new InventoryAlertViewModel
+                {
+                    ItemId = alert.InventoryItemId,
+                    ItemName = alert.ItemName,
+                    AlertType = alert.AlertType,
+                    Message = $"{alert.ItemName} is running low (Current: {alert.CurrentStock}, Minimum: {alert.MinimumLevel})",
+                    Severity = alert.AlertType == "CriticalStock" ? "Critical" : "Warning",
+                    CreatedDate = alert.CreatedDate,
+                    CurrentQuantity = alert.CurrentStock,
+                    MinimumStock = alert.MinimumLevel
+                }).ToList();
+                
+                return View(dashboardData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading inventory dashboard");
+                TempData["ErrorMessage"] = "Error loading dashboard data.";
+                return View(new InventoryDashboardData());
+            }
+        }
+
+        // POST: Inventory/PerformAbcAnalysis - ABC Analysis functionality
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager,Warehouse Manager")]
+        public async Task<IActionResult> PerformAbcAnalysis([FromBody] AbcAnalysisRequest request)
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                var analysisResult = await _warehouseService.PerformAbcAnalysisAsync(request.AnalysisMonths);
+                
+                TempData["SuccessMessage"] = $"ABC Analysis completed successfully. Analyzed {analysisResult.TotalItems} items.";
+                return Json(new { success = true, message = $"ABC Analysis completed successfully. Analyzed {analysisResult.TotalItems} items." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error performing ABC analysis");
+                return Json(new { success = false, message = "Error performing ABC analysis" });
+            }
+        }
+
+        public class AbcAnalysisRequest
+        {
+            public int AnalysisMonths { get; set; } = 12;
+        }
+
+        // POST: Inventory/ExecuteSmartReplenishment - Smart replenishment functionality
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager,Warehouse Manager")]
+        public async Task<IActionResult> ExecuteSmartReplenishment()
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new { success = false, message = "User authentication failed" });
+                }
+                
+                var replenishmentResult = await _warehouseService.ExecuteSmartReplenishmentAsync(userId);
+                
+                TempData["SuccessMessage"] = $"Smart replenishment completed. {replenishmentResult.AutoProcurementsCreated} procurement requests created.";
+                return Json(new { success = true, message = $"Smart replenishment completed successfully. {replenishmentResult.AutoProcurementsCreated} procurement requests created." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error executing smart replenishment");
+                return Json(new { success = false, message = "Error executing smart replenishment" });
+            }
+        }
+
+        // POST: Inventory/OptimizeWarehouseLayout - Space optimization functionality
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager,Warehouse Manager")]
+        public async Task<IActionResult> OptimizeWarehouseLayout([FromBody] SpaceOptimizationRequest request)
+        {
+            try
+            {
+                var optimizationResult = await _warehouseService.OptimizeWarehouseLayoutAsync(request.LocationId);
+                
+                TempData["SuccessMessage"] = $"Space optimization completed. {optimizationResult.TotalRecommendations} recommendations generated.";
+                return Json(new { success = true, message = $"Space optimization completed successfully. {optimizationResult.TotalRecommendations} recommendations generated." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error optimizing warehouse layout");
+                return Json(new { success = false, message = "Error optimizing warehouse layout" });
+            }
+        }
+
+        public class SpaceOptimizationRequest
+        {
+            public int LocationId { get; set; } = 1;
         }
 
         #region Helper Methods

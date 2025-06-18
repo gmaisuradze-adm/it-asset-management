@@ -12,7 +12,8 @@ namespace HospitalAssetTracker.Services
         /// <summary>
         /// Gets comprehensive asset dashboard data
         /// </summary>
-        Task<AssetDashboardViewModel> GetAssetDashboardAsync(string userId);
+        Task<AssetDashboardModel> GetAssetDashboardAsync(string userId);
+        Task<AssetDashboardViewModel> GetAssetDashboardViewModelAsync(string userId);
         
         /// <summary>
         /// Gets asset analytics data

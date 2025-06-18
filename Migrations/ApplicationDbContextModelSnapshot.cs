@@ -121,6 +121,9 @@ namespace HospitalAssetTracker.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("AcquisitionDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("AssetTag")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -168,6 +171,9 @@ namespace HospitalAssetTracker.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("LastMaintenanceDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("LastUpdated")
                         .ValueGeneratedOnAdd()
@@ -238,6 +244,10 @@ namespace HospitalAssetTracker.Migrations
                     b.Property<int>("AssetId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -258,11 +268,17 @@ namespace HospitalAssetTracker.Migrations
                     b.Property<int>("InventoryItemId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("InventoryItemId1")
+                        .HasColumnType("integer");
+
                     b.Property<string>("LastUpdatedByUserId")
                         .HasMaxLength(450)
                         .HasColumnType("character varying(450)");
 
                     b.Property<DateTime?>("LastUpdatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("MappingDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Notes")
@@ -283,6 +299,10 @@ namespace HospitalAssetTracker.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("character varying(450)");
 
+                    b.Property<string>("SerialNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -293,6 +313,8 @@ namespace HospitalAssetTracker.Migrations
                     b.HasIndex("DeploymentDate");
 
                     b.HasIndex("InventoryItemId");
+
+                    b.HasIndex("InventoryItemId1");
 
                     b.HasIndex("LastUpdatedByUserId");
 
@@ -430,6 +452,467 @@ namespace HospitalAssetTracker.Migrations
                     b.ToTable("AuditLogs");
                 });
 
+            modelBuilder.Entity("HospitalAssetTracker.Models.AutomationLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("AutomationRuleId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExecutedByUserId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ExecutionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExecutionDetailsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("RuleId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("Timestamp")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutomationRuleId");
+
+                    b.HasIndex("ExecutedByUserId");
+
+                    b.HasIndex("Timestamp");
+
+                    b.HasIndex("RuleId", "Action");
+
+                    b.ToTable("AutomationLogs");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.AutomationRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActionsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ConditionsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastTriggered")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RuleName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Trigger")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TriggerCount")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("RuleName")
+                        .IsUnique();
+
+                    b.ToTable("AutomationRules");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.BudgetCategoryAnalysis", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("ActualSpend")
+                        .HasColumnType("numeric")
+                        .HasColumnName("actual_spend");
+
+                    b.Property<decimal>("AllocatedBudget")
+                        .HasColumnType("numeric")
+                        .HasColumnName("allocated_budget");
+
+                    b.Property<DateTime>("AnalysisDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("analysis_date");
+
+                    b.Property<double>("BudgetUtilizationRate")
+                        .HasColumnType("double precision")
+                        .HasColumnName("budget_utilization_rate");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("category");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("RemainingBudget")
+                        .HasColumnType("numeric")
+                        .HasColumnName("remaining_budget");
+
+                    b.Property<decimal>("SpendRate")
+                        .HasColumnType("numeric")
+                        .HasColumnName("spend_rate");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<decimal>("VarianceAmount")
+                        .HasColumnType("numeric")
+                        .HasColumnName("variance_amount");
+
+                    b.Property<double>("VariancePercentage")
+                        .HasColumnType("double precision")
+                        .HasColumnName("variance_percentage");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("budget_category_analysis");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.BudgetDepartmentAnalysis", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("ActualSpend")
+                        .HasColumnType("numeric")
+                        .HasColumnName("actual_spend");
+
+                    b.Property<decimal>("AllocatedBudget")
+                        .HasColumnType("numeric")
+                        .HasColumnName("allocated_budget");
+
+                    b.Property<DateTime>("AnalysisDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("analysis_date");
+
+                    b.Property<double>("BudgetUtilizationRate")
+                        .HasColumnType("double precision")
+                        .HasColumnName("budget_utilization_rate");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("department");
+
+                    b.Property<decimal>("RemainingBudget")
+                        .HasColumnType("numeric")
+                        .HasColumnName("remaining_budget");
+
+                    b.Property<decimal>("SpendRate")
+                        .HasColumnType("numeric")
+                        .HasColumnName("spend_rate");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<decimal>("VarianceAmount")
+                        .HasColumnType("numeric")
+                        .HasColumnName("variance_amount");
+
+                    b.Property<double>("VariancePercentage")
+                        .HasColumnType("double precision")
+                        .HasColumnName("variance_percentage");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("budget_department_analysis");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.BugFixHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BugId")
+                        .HasColumnType("integer")
+                        .HasColumnName("bug_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FilesChanged")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("files_changed");
+
+                    b.Property<string>("FixDetails")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("fix_details");
+
+                    b.Property<string>("FixedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("fixed_by");
+
+                    b.Property<DateTime>("FixedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fixed_date");
+
+                    b.Property<string>("RollbackReason")
+                        .HasColumnType("text")
+                        .HasColumnName("rollback_reason");
+
+                    b.Property<string>("TestStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("test_status");
+
+                    b.Property<DateTime?>("VerificationDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("verification_date");
+
+                    b.Property<string>("VerifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("verified_by");
+
+                    b.Property<int>("VersionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("version_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BugId");
+
+                    b.HasIndex("VersionId");
+
+                    b.ToTable("bug_fix_histories");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.BugTracking", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AssignedTo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("assigned_to");
+
+                    b.Property<string>("BugDescription")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("bug_description");
+
+                    b.Property<string>("BugTitle")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("bug_title");
+
+                    b.Property<DateTime?>("ClosedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_date");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("ErrorMessage")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("error_message");
+
+                    b.Property<string>("FixDescription")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("fix_description");
+
+                    b.Property<DateTime?>("FixedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fixed_date");
+
+                    b.Property<string>("ModuleName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("module_name");
+
+                    b.Property<string>("ReportedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reported_by");
+
+                    b.Property<DateTime>("ReportedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reported_date");
+
+                    b.Property<string>("ReproductionSteps")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reproduction_steps");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("severity");
+
+                    b.Property<string>("StackTrace")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("stack_trace");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("VersionFixed")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("version_fixed");
+
+                    b.Property<string>("VersionFound")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("version_found");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("bug_tracking");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.CategoryForecast", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AnalysisDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("analysis_date");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("category");
+
+                    b.Property<double>("Confidence")
+                        .HasColumnType("double precision")
+                        .HasColumnName("confidence");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("ForecastedValue")
+                        .HasColumnType("numeric")
+                        .HasColumnName("forecasted_value");
+
+                    b.Property<double>("GrowthRate")
+                        .HasColumnType("double precision")
+                        .HasColumnName("growth_rate");
+
+                    b.Property<decimal>("HistoricalAverage")
+                        .HasColumnType("numeric")
+                        .HasColumnName("historical_average");
+
+                    b.Property<decimal>("PredictedSpend")
+                        .HasColumnType("numeric")
+                        .HasColumnName("predicted_spend");
+
+                    b.Property<string>("TrendDirection")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("trend_direction");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("category_forecasts");
+                });
+
             modelBuilder.Entity("HospitalAssetTracker.Models.ITRequest", b =>
                 {
                     b.Property<int>("Id")
@@ -451,6 +934,10 @@ namespace HospitalAssetTracker.Migrations
                     b.Property<string>("AssignedToUserId")
                         .HasMaxLength(450)
                         .HasColumnType("character varying(450)");
+
+                    b.Property<string>("AssignmentNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
 
                     b.Property<string>("AttachmentPath")
                         .HasMaxLength(500)
@@ -486,6 +973,9 @@ namespace HospitalAssetTracker.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<decimal?>("EstimatedCost")
                         .HasColumnType("decimal(10,2)");
 
@@ -493,15 +983,24 @@ namespace HospitalAssetTracker.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
-                    b.Property<string>("LastUpdatedByUserId")
-                        .HasMaxLength(450)
-                        .HasColumnType("character varying(450)");
+                    b.Property<string>("LastModifiedByUserId")
+                        .HasColumnType("text");
 
-                    b.Property<DateTime?>("LastUpdatedDate")
+                    b.Property<DateTime?>("LastModifiedDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastUpdatedByUserId")
+                        .HasColumnType("text");
 
                     b.Property<int?>("LocationId")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
 
                     b.Property<int>("Priority")
                         .HasColumnType("integer");
@@ -533,8 +1032,8 @@ namespace HospitalAssetTracker.Migrations
                         .HasColumnType("character varying(450)");
 
                     b.Property<string>("RequestedItemCategory")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("RequestedItemSpecifications")
                         .HasMaxLength(2000)
@@ -545,9 +1044,6 @@ namespace HospitalAssetTracker.Migrations
 
                     b.Property<int?>("RequiredInventoryItemId")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime?>("ResponseDate")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -564,6 +1060,8 @@ namespace HospitalAssetTracker.Migrations
                     b.HasIndex("AssignedToUserId");
 
                     b.HasIndex("CompletedByUserId");
+
+                    b.HasIndex("LastModifiedByUserId");
 
                     b.HasIndex("LastUpdatedByUserId");
 
@@ -596,6 +1094,14 @@ namespace HospitalAssetTracker.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AbcClassification")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("BinLocation")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("Brand")
                         .IsRequired()
@@ -693,6 +1199,10 @@ namespace HospitalAssetTracker.Migrations
                     b.Property<bool>("RequiresCalibration")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("SKU")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("SerialNumber")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -727,6 +1237,10 @@ namespace HospitalAssetTracker.Migrations
                     b.Property<decimal?>("TotalValue")
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<decimal?>("UnitCost")
                         .HasPrecision(10, 2)
@@ -798,6 +1312,9 @@ namespace HospitalAssetTracker.Migrations
                     b.Property<int>("InventoryItemId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("InventoryItemId1")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("MovementDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -848,6 +1365,8 @@ namespace HospitalAssetTracker.Migrations
                     b.HasIndex("ApprovedByUserId");
 
                     b.HasIndex("FromLocationId");
+
+                    b.HasIndex("InventoryItemId1");
 
                     b.HasIndex("MovementDate");
 
@@ -1084,6 +1603,9 @@ namespace HospitalAssetTracker.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<DateTime>("MaintenanceDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("MaintenanceType")
                         .HasColumnType("integer");
 
@@ -1161,6 +1683,9 @@ namespace HospitalAssetTracker.Migrations
                     b.Property<int?>("FromStatus")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("ITRequestId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("ProcurementRequestId")
                         .HasColumnType("integer");
 
@@ -1173,6 +1698,8 @@ namespace HospitalAssetTracker.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ActionByUserId");
+
+                    b.HasIndex("ITRequestId");
 
                     b.HasIndex("ProcurementRequestId1");
 
@@ -1194,6 +1721,9 @@ namespace HospitalAssetTracker.Migrations
 
                     b.Property<decimal?>("ApprovedAmount")
                         .HasColumnType("decimal(12,2)");
+
+                    b.Property<string>("ApprovedByUserId")
+                        .HasColumnType("text");
 
                     b.Property<string>("ApproverId")
                         .IsRequired()
@@ -1222,6 +1752,8 @@ namespace HospitalAssetTracker.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ApprovedByUserId");
 
                     b.HasIndex("ApproverId");
 
@@ -1568,6 +2100,71 @@ namespace HospitalAssetTracker.Migrations
                     b.ToTable("ProcurementRequests");
                 });
 
+            modelBuilder.Entity("HospitalAssetTracker.Models.QualityAssessmentRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActionRequired")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("AssessmentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("AssetId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ChecklistJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("InspectorId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("InspectorUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("InventoryItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("OverallCondition")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PerformedByUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double>("QualityScore")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssessmentDate");
+
+                    b.HasIndex("InspectorId");
+
+                    b.HasIndex("InventoryItemId");
+
+                    b.HasIndex("PerformedByUserId");
+
+                    b.HasIndex("AssetId", "AssessmentDate");
+
+                    b.ToTable("QualityAssessmentRecords");
+                });
+
             modelBuilder.Entity("HospitalAssetTracker.Models.QuoteItem", b =>
                 {
                     b.Property<int>("Id")
@@ -1611,6 +2208,45 @@ namespace HospitalAssetTracker.Migrations
                     b.HasIndex("VendorQuoteId");
 
                     b.ToTable("QuoteItems");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.RequestAction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ActionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ActionType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("RequestId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RequestActions");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.RequestApproval", b =>
@@ -1751,6 +2387,203 @@ namespace HospitalAssetTracker.Migrations
                     b.ToTable("RequestComments");
                 });
 
+            modelBuilder.Entity("HospitalAssetTracker.Models.RequestEscalation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("AutoEscalated")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("EscalatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EscalatedTo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("EscalationLevel")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("RequestId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestId");
+
+                    b.ToTable("RequestEscalations");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.SpendAnomaly", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("AnomalyType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("anomaly_type");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<DateTime>("DetectedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("detected_date");
+
+                    b.Property<int>("RequestId")
+                        .HasColumnType("integer")
+                        .HasColumnName("request_id");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("severity");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("spend_anomalies");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.SpendTrend", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime>("AnalysisDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("analysis_date");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("category");
+
+                    b.Property<double>("ChangePercentage")
+                        .HasColumnType("double precision")
+                        .HasColumnName("change_percentage");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Period")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("period");
+
+                    b.Property<int>("RequestCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("request_count");
+
+                    b.Property<string>("Trend")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("trend");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("spend_trends");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.SystemVersion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BugsFixed")
+                        .HasColumnType("integer")
+                        .HasColumnName("bugs_fixed");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("FeaturesAdded")
+                        .HasColumnType("integer")
+                        .HasColumnName("features_added");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_current");
+
+                    b.Property<DateTime>("ReleaseDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("release_date");
+
+                    b.Property<string>("ReleaseNotes")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("release_notes");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("VersionNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("version_number");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("system_versions");
+                });
+
             modelBuilder.Entity("HospitalAssetTracker.Models.Vendor", b =>
                 {
                     b.Property<int>("Id")
@@ -1763,8 +2596,15 @@ namespace HospitalAssetTracker.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<decimal>("ComplianceRating")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("ContactPerson")
                         .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Country")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -1773,9 +2613,15 @@ namespace HospitalAssetTracker.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<decimal>("DeliveryRating")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("Email")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("FinancialStability")
+                        .HasColumnType("numeric");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -1808,9 +2654,18 @@ namespace HospitalAssetTracker.Migrations
                     b.Property<int>("QualityIssues")
                         .HasColumnType("integer");
 
+                    b.Property<decimal>("QualityRating")
+                        .HasColumnType("numeric");
+
                     b.Property<string>("RegistrationNumber")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<decimal>("ReliabilityRating")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<string>("TaxNumber")
                         .HasMaxLength(50)
@@ -1884,6 +2739,9 @@ namespace HospitalAssetTracker.Migrations
                     b.Property<int>("VendorId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("VendorId1")
+                        .HasColumnType("integer");
+
                     b.Property<string>("WarrantyTerms")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -1893,6 +2751,8 @@ namespace HospitalAssetTracker.Migrations
                     b.HasIndex("QuoteDate");
 
                     b.HasIndex("VendorId");
+
+                    b.HasIndex("VendorId1");
 
                     b.HasIndex("ProcurementRequestId", "VendorId");
 
@@ -2194,6 +3054,10 @@ namespace HospitalAssetTracker.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("HospitalAssetTracker.Models.InventoryItem", null)
+                        .WithMany("AssetInventoryMappings")
+                        .HasForeignKey("InventoryItemId1");
+
                     b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "LastUpdatedByUser")
                         .WithMany()
                         .HasForeignKey("LastUpdatedByUserId")
@@ -2280,6 +3144,62 @@ namespace HospitalAssetTracker.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("HospitalAssetTracker.Models.AutomationLog", b =>
+                {
+                    b.HasOne("HospitalAssetTracker.Models.AutomationRule", "AutomationRule")
+                        .WithMany("AutomationLogs")
+                        .HasForeignKey("AutomationRuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "ExecutedByUser")
+                        .WithMany()
+                        .HasForeignKey("ExecutedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("HospitalAssetTracker.Models.AutomationRule", "Rule")
+                        .WithMany("Logs")
+                        .HasForeignKey("RuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AutomationRule");
+
+                    b.Navigation("ExecutedByUser");
+
+                    b.Navigation("Rule");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.AutomationRule", b =>
+                {
+                    b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.BugFixHistory", b =>
+                {
+                    b.HasOne("HospitalAssetTracker.Models.BugTracking", "Bug")
+                        .WithMany()
+                        .HasForeignKey("BugId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalAssetTracker.Models.SystemVersion", "SystemVersion")
+                        .WithMany("BugFixHistories")
+                        .HasForeignKey("VersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Bug");
+
+                    b.Navigation("SystemVersion");
+                });
+
             modelBuilder.Entity("HospitalAssetTracker.Models.ITRequest", b =>
                 {
                     b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "ApprovedByUser")
@@ -2296,6 +3216,10 @@ namespace HospitalAssetTracker.Migrations
                         .WithMany()
                         .HasForeignKey("CompletedByUserId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "LastModifiedByUser")
+                        .WithMany()
+                        .HasForeignKey("LastModifiedByUserId");
 
                     b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "LastUpdatedByUser")
                         .WithMany()
@@ -2333,6 +3257,8 @@ namespace HospitalAssetTracker.Migrations
                     b.Navigation("AssignedToUser");
 
                     b.Navigation("CompletedByUser");
+
+                    b.Navigation("LastModifiedByUser");
 
                     b.Navigation("LastUpdatedByUser");
 
@@ -2390,6 +3316,10 @@ namespace HospitalAssetTracker.Migrations
                         .HasForeignKey("InventoryItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("HospitalAssetTracker.Models.InventoryItem", null)
+                        .WithMany("Movements")
+                        .HasForeignKey("InventoryItemId1");
 
                     b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "PerformedByUser")
                         .WithMany()
@@ -2494,6 +3424,10 @@ namespace HospitalAssetTracker.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("HospitalAssetTracker.Models.ITRequest", null)
+                        .WithMany("ProcurementActivities")
+                        .HasForeignKey("ITRequestId");
+
                     b.HasOne("HospitalAssetTracker.Models.ProcurementRequest", "ProcurementRequest")
                         .WithMany()
                         .HasForeignKey("ProcurementRequestId")
@@ -2512,6 +3446,10 @@ namespace HospitalAssetTracker.Migrations
 
             modelBuilder.Entity("HospitalAssetTracker.Models.ProcurementApproval", b =>
                 {
+                    b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "ApprovedByUser")
+                        .WithMany()
+                        .HasForeignKey("ApprovedByUserId");
+
                     b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "Approver")
                         .WithMany()
                         .HasForeignKey("ApproverId")
@@ -2523,6 +3461,8 @@ namespace HospitalAssetTracker.Migrations
                         .HasForeignKey("ProcurementRequestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("ApprovedByUser");
 
                     b.Navigation("Approver");
 
@@ -2647,6 +3587,38 @@ namespace HospitalAssetTracker.Migrations
                     b.Navigation("TriggeredByInventoryItem");
                 });
 
+            modelBuilder.Entity("HospitalAssetTracker.Models.QualityAssessmentRecord", b =>
+                {
+                    b.HasOne("HospitalAssetTracker.Models.Asset", "Asset")
+                        .WithMany("QualityAssessments")
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "Inspector")
+                        .WithMany()
+                        .HasForeignKey("InspectorId");
+
+                    b.HasOne("HospitalAssetTracker.Models.InventoryItem", "InventoryItem")
+                        .WithMany()
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "PerformedByUser")
+                        .WithMany()
+                        .HasForeignKey("PerformedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
+
+                    b.Navigation("Inspector");
+
+                    b.Navigation("InventoryItem");
+
+                    b.Navigation("PerformedByUser");
+                });
+
             modelBuilder.Entity("HospitalAssetTracker.Models.QuoteItem", b =>
                 {
                     b.HasOne("HospitalAssetTracker.Models.ProcurementItem", "ProcurementItem")
@@ -2664,6 +3636,25 @@ namespace HospitalAssetTracker.Migrations
                     b.Navigation("ProcurementItem");
 
                     b.Navigation("VendorQuote");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.RequestAction", b =>
+                {
+                    b.HasOne("HospitalAssetTracker.Models.ITRequest", "Request")
+                        .WithMany("RequestActions")
+                        .HasForeignKey("RequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HospitalAssetTracker.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Request");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.RequestApproval", b =>
@@ -2723,6 +3714,17 @@ namespace HospitalAssetTracker.Migrations
                     b.Navigation("ITRequest");
                 });
 
+            modelBuilder.Entity("HospitalAssetTracker.Models.RequestEscalation", b =>
+                {
+                    b.HasOne("HospitalAssetTracker.Models.ITRequest", "Request")
+                        .WithMany()
+                        .HasForeignKey("RequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Request");
+                });
+
             modelBuilder.Entity("HospitalAssetTracker.Models.VendorQuote", b =>
                 {
                     b.HasOne("HospitalAssetTracker.Models.ProcurementRequest", "ProcurementRequest")
@@ -2736,6 +3738,10 @@ namespace HospitalAssetTracker.Migrations
                         .HasForeignKey("VendorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("HospitalAssetTracker.Models.Vendor", null)
+                        .WithMany("VendorQuotes")
+                        .HasForeignKey("VendorId1");
 
                     b.Navigation("ProcurementRequest");
 
@@ -2848,7 +3854,16 @@ namespace HospitalAssetTracker.Migrations
 
                     b.Navigation("Movements");
 
+                    b.Navigation("QualityAssessments");
+
                     b.Navigation("WriteOffRecords");
+                });
+
+            modelBuilder.Entity("HospitalAssetTracker.Models.AutomationRule", b =>
+                {
+                    b.Navigation("AutomationLogs");
+
+                    b.Navigation("Logs");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.ITRequest", b =>
@@ -2859,12 +3874,20 @@ namespace HospitalAssetTracker.Migrations
 
                     b.Navigation("Comments");
 
+                    b.Navigation("ProcurementActivities");
+
                     b.Navigation("ProcurementRequests");
+
+                    b.Navigation("RequestActions");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.InventoryItem", b =>
                 {
+                    b.Navigation("AssetInventoryMappings");
+
                     b.Navigation("AssetMappings");
+
+                    b.Navigation("Movements");
 
                     b.Navigation("MovementsFrom");
 
@@ -2891,11 +3914,18 @@ namespace HospitalAssetTracker.Migrations
                     b.Navigation("Quotes");
                 });
 
+            modelBuilder.Entity("HospitalAssetTracker.Models.SystemVersion", b =>
+                {
+                    b.Navigation("BugFixHistories");
+                });
+
             modelBuilder.Entity("HospitalAssetTracker.Models.Vendor", b =>
                 {
                     b.Navigation("ProcurementRequests");
 
                     b.Navigation("Quotes");
+
+                    b.Navigation("VendorQuotes");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.VendorQuote", b =>

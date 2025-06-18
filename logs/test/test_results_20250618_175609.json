@@ -1,0 +1,13 @@
+{
+    "timestamp": "2025-06-18T17:56:27+00:00",
+    "health_percentage": 33,
+    "health_status": "NEEDS_ATTENTION",
+    "build_success": false,
+    "db_connection": true,
+    "service_running": false,
+    "ports_ok": false,
+    "files_ok": true,
+    "total_score": 2,
+    "max_score": 6,
+    "log_file": "/home/gadmin/it_system_new_gen/logs/test/test_log_20250618_175609.txt"
+}

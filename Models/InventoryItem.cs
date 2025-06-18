@@ -103,6 +103,12 @@ namespace HospitalAssetTracker.Models
         [StringLength(100)]
         public string? StorageBin { get; set; }
 
+        [StringLength(50)]
+        public string? BinLocation { get; set; }
+
+        [StringLength(20)]
+        public string? AbcClassification { get; set; } // A, B, or C
+
         [StringLength(1000)]
         public string? Specifications { get; set; }
 

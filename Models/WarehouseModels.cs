@@ -510,4 +510,29 @@ namespace HospitalAssetTracker.Models
     }
 
     #endregion
+
+    #region Warehouse Metrics and Recommendations
+
+    public class WarehouseMetrics
+    {
+        public decimal TotalSpaceUsed { get; set; }
+        public decimal TotalSpaceAvailable { get; set; }
+        public decimal SpaceUtilizationPercentage { get; set; }
+        public int TotalMovements { get; set; }
+        public int PendingOrders { get; set; }
+        public int CriticalItems { get; set; }
+        public Dictionary<string, decimal> CategoryUtilization { get; set; } = new();
+    }
+
+    public class InventoryRecommendation
+    {
+        public int ItemId { get; set; }
+        public string ItemName { get; set; } = string.Empty;
+        public string RecommendationType { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public DateTime CreatedDate { get; set; }
+    }
+
+    #endregion
 }

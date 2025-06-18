@@ -1,0 +1,21 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+/home/gadmin/it_system_new_gen/Data/ApplicationDbContext.cs(58,22): error CS0246: The type or namespace name 'BudgetDepartmentAnalysis' could not be found (are you missing a using directive or an assembly reference?) [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/IProcurementBusinessLogicService.cs(63,86): warning CS8625: Cannot convert null literal to non-nullable reference type. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/ProcurementBusinessLogicService.cs(954,17): error CS0246: The type or namespace name 'BudgetDepartmentAnalysis' could not be found (are you missing a using directive or an assembly reference?) [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/ProcurementBusinessLogicService.cs(969,112): error CS0246: The type or namespace name 'BudgetDepartmentAnalysis' could not be found (are you missing a using directive or an assembly reference?) [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/ProcurementBusinessLogicService.cs(411,99): warning CS8625: Cannot convert null literal to non-nullable reference type. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Models/ProcurementBusinessModels.cs(506,21): error CS0246: The type or namespace name 'BudgetDepartmentAnalysis' could not be found (are you missing a using directive or an assembly reference?) [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+
+Build FAILED.
+
+/home/gadmin/it_system_new_gen/Services/IProcurementBusinessLogicService.cs(63,86): warning CS8625: Cannot convert null literal to non-nullable reference type. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/ProcurementBusinessLogicService.cs(411,99): warning CS8625: Cannot convert null literal to non-nullable reference type. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Data/ApplicationDbContext.cs(58,22): error CS0246: The type or namespace name 'BudgetDepartmentAnalysis' could not be found (are you missing a using directive or an assembly reference?) [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/ProcurementBusinessLogicService.cs(954,17): error CS0246: The type or namespace name 'BudgetDepartmentAnalysis' could not be found (are you missing a using directive or an assembly reference?) [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/ProcurementBusinessLogicService.cs(969,112): error CS0246: The type or namespace name 'BudgetDepartmentAnalysis' could not be found (are you missing a using directive or an assembly reference?) [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Models/ProcurementBusinessModels.cs(506,21): error CS0246: The type or namespace name 'BudgetDepartmentAnalysis' could not be found (are you missing a using directive or an assembly reference?) [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+    2 Warning(s)
+    4 Error(s)
+
+Time Elapsed 00:00:03.16

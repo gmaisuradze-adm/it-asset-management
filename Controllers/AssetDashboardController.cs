@@ -30,21 +30,26 @@ namespace HospitalAssetTracker.Controllers
         {
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
-                var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "";
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "test-user";
+                var userRole = User.FindFirstValue(ClaimTypes.Role) ?? "Admin";
                 
                 _logger.LogInformation("Loading Asset Dashboard for user {UserId} with role {UserRole}", userId, userRole);
 
                 // Get dashboard data
                 var dashboardModel = await _assetBusinessLogicService.GetAssetDashboardAsync(userId);
                 
+                _logger.LogInformation("Asset Dashboard loaded successfully. Total assets: {TotalAssets}", dashboardModel?.Overview?.TotalAssets ?? 0);
+                
                 return View(dashboardModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading Asset Dashboard");
-                TempData["ErrorMessage"] = "Unable to load Asset Dashboard. Please try again.";
-                return RedirectToAction("Index", "Home");
+                _logger.LogError(ex, "Error loading Asset Dashboard: {Message}", ex.Message);
+                TempData["ErrorMessage"] = $"Unable to load Asset Dashboard: {ex.Message}";
+                
+                // Create a simple error view instead of redirecting
+                ViewBag.ErrorDetails = ex.ToString();
+                return View("Error");
             }
         }
 

@@ -203,11 +203,11 @@ namespace HospitalAssetTracker.Services
             // Calculate budget requirements
             forecast.BudgetRequirements = forecast.CategoryForecasts.Select(c => new BudgetRequirement 
             { 
-                CategoryName = c.CategoryName,
+                CategoryName = c.Category,
                 RequiredBudget = c.ForecastedValue 
             }).ToList();
             forecast.TotalForecastedValue = forecast.CategoryForecasts.Sum(c => c.ForecastedValue);
-            forecast.ConfidenceLevel = forecast.CategoryForecasts.Any() ? forecast.CategoryForecasts.Average(c => c.ConfidenceLevel) : 0.5;
+            forecast.ConfidenceLevel = forecast.CategoryForecasts.Any() ? forecast.CategoryForecasts.Average(c => c.Confidence) : 0.5;
 
             // Generate strategic recommendations
             forecast.StrategicRecommendations = GenerateForecastRecommendations(forecast.CategoryForecasts, forecast.TotalForecastedValue);
@@ -408,7 +408,7 @@ namespace HospitalAssetTracker.Services
         /// <summary>
         /// Comprehensive budget analysis with variance tracking and forecasting
         /// </summary>
-        public async Task<BudgetAnalysisResult> AnalyzeBudgetPerformanceAsync(string fiscalYear = null)
+        public async Task<BudgetAnalysisResult> AnalyzeBudgetPerformanceAsync(string? fiscalYear = null)
         {
             _logger.LogInformation("Analyzing budget performance for fiscal year {FiscalYear}", fiscalYear ?? "current");
 
@@ -447,7 +447,7 @@ namespace HospitalAssetTracker.Services
 
             // Calculate overall metrics
             analysis.TotalBudgetAllocated = analysis.CategoryAnalysis.Sum(c => c.AllocatedBudget);
-            analysis.TotalBudgetUtilized = analysis.CategoryAnalysis.Sum(c => c.BudgetUtilized);
+            analysis.TotalBudgetUtilized = analysis.CategoryAnalysis.Sum(c => c.ActualSpend);
             analysis.OverallUtilizationRate = analysis.TotalBudgetAllocated > 0 ? 
                 (double)analysis.TotalBudgetUtilized / (double)analysis.TotalBudgetAllocated * 100 : 0;
 
@@ -523,28 +523,28 @@ namespace HospitalAssetTracker.Services
             try
             {
                 // 1. Analyze request requirements
-                var requirementAnalysis = await AnalyzeRequestRequirements(request);
+                var requirementAnalysis = AnalyzeRequestRequirements(request);
                 
                 // 2. Find optimal procurement strategy
-                var procurementStrategy = await DetermineProcurementStrategy(requirementAnalysis);
+                var procurementStrategy = DetermineProcurementStrategy(requirementAnalysis);
                 
                 // 3. Select vendors based on requirements and strategy
-                var vendorSelection = await SelectVendorsForRequest(requirementAnalysis, procurementStrategy);
+                var vendorSelection = SelectVendorsForRequest(requirementAnalysis);
                 
                 // 4. Create procurement request
-                var procurementRequest = await CreateProcurementFromRequest(request, vendorSelection, processorUserId);
+                var procurementRequest = CreateProcurementFromRequest(request, procurementStrategy, vendorSelection);
                 
                 // 5. Auto-route for approvals if applicable
                 if (procurementRequest.EstimatedBudget <= 1000) // Auto-approve small purchases
                 {
-                    await AutoApproveProcurement(procurementRequest, processorUserId);
+                    AutoApproveProcurement(procurementRequest);
                     result.AutoApproved = true;
                 }
 
                 result.ProcurementRequestId = procurementRequest.Id;
                 result.EstimatedCost = procurementRequest.EstimatedBudget;
-                result.RecommendedVendors = vendorSelection.RecommendedVendors.Select(v => v.Name).ToList();
-                result.ProcessingStrategy = procurementStrategy.StrategyName;
+                result.RecommendedVendors = vendorSelection.Select(v => v.Name).ToList();
+                result.ProcessingStrategy = procurementStrategy.Strategy;
                 result.Success = true;
 
                 await transaction.CommitAsync();
@@ -578,7 +578,7 @@ namespace HospitalAssetTracker.Services
                 VendorName = vendor.Name,
                 TotalOrders = completedOrders.Count,
                 TotalValue = completedOrders.Sum(p => p.ActualCost ?? p.EstimatedBudget),
-                AverageOrderValue = completedOrders.Any() ? completedOrders.Average(p => p.ActualCost ?? p.EstimatedBudget) : 0,
+                AverageOrderValue = completedOrders.Any() ? (double)completedOrders.Average(p => p.ActualCost ?? p.EstimatedBudget) : 0,
                 OnTimeDeliveryRate = CalculateOnTimeDeliveryRate(completedOrders),
                 QualityScore = CalculateQualityScore(vendor),
                 PriceCompetitiveness = (double)await CalculatePriceCompetitiveness(vendor),
@@ -711,13 +711,13 @@ namespace HospitalAssetTracker.Services
         private double CalculateReliabilityScore(Vendor vendor)
         {
             // Reliability score based on delivery performance
-            return vendor.ReliabilityRating > 0 ? vendor.ReliabilityRating * 20 : 70.0;
+            return vendor.ReliabilityRating > 0 ? (double)(vendor.ReliabilityRating * 20) : 70.0;
         }
         
         private double CalculateDeliveryScore(Vendor vendor)
         {
             // Delivery performance score
-            return vendor.DeliveryRating > 0 ? vendor.DeliveryRating * 20 : 70.0;
+            return vendor.DeliveryRating > 0 ? (double)(vendor.DeliveryRating * 20) : 70.0;
         }
         
         private string GenerateSelectionReasoning(Vendor vendor, double score)
@@ -1011,7 +1011,7 @@ namespace HospitalAssetTracker.Services
                       .Select(g => new SpendTrend
                       {
                           Period = $"{g.Key.Year}-{g.Key.Month:D2}",
-                          Amount = g.Sum(r => r.TotalAmount),
+                          Amount = g.Sum(r => r.TotalAmount ?? 0m),
                           RequestCount = g.Count()
                       })
                       .OrderBy(t => t.Period)
@@ -1033,7 +1033,7 @@ namespace HospitalAssetTracker.Services
                 anomalies.Add(new SpendAnomaly
                 {
                     RequestId = request.Id,
-                    Amount = request.TotalAmount,
+                    Amount = request.TotalAmount ?? 0m,
                     AnomalyType = "High Value",
                     Description = $"Request amount ({request.TotalAmount:C}) significantly above average ({averageAmount:C})",
                     Severity = "Medium"

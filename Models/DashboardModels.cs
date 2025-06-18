@@ -95,6 +95,12 @@ namespace HospitalAssetTracker.Models
         public string? Location { get; set; }
         public string? Unit { get; set; }
         
+        // Alert specific properties
+        public string AlertType { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string Severity { get; set; } = string.Empty;
+        public DateTime CreatedDate { get; set; }
+        
         // Additional properties expected by views
         [System.ComponentModel.DataAnnotations.Schema.NotMapped]
         public string Name => ItemName;

@@ -158,30 +158,6 @@ namespace HospitalAssetTracker.Models
     }
 
     /// <summary>
-    /// Category-specific procurement forecast
-    /// </summary>
-    public class CategoryForecast
-    {
-        public ProcurementCategory Category { get; set; }
-        public string CategoryName { get; set; } = string.Empty;
-        public decimal ForecastedValue { get; set; }
-        public int ForecastedQuantity { get; set; }
-        public decimal HistoricalAverage { get; set; }
-        public double GrowthRate { get; set; }
-        public double SeasonalityFactor { get; set; }
-        public double TrendFactor { get; set; }
-        public double ConfidenceLevel { get; set; }
-        public List<MonthlyForecast> MonthlyBreakdown { get; set; } = new List<MonthlyForecast>();
-        public List<string> KeyDrivers { get; set; } = new List<string>();
-        public List<string> RiskFactors { get; set; } = new List<string>();
-
-        // Additional properties for service compatibility
-        public decimal PredictedSpend { get; set; }
-        public double Confidence { get; set; }
-        public string TrendDirection { get; set; } = string.Empty;
-    }
-
-    /// <summary>
     /// Monthly forecast breakdown
     /// </summary>
     public class MonthlyForecast
@@ -385,19 +361,6 @@ namespace HospitalAssetTracker.Models
     /// <summary>
     /// Spend trend analysis
     /// </summary>
-    public class SpendTrend
-    {
-        public DateTime Period { get; set; }
-        public decimal Amount { get; set; }
-        public string Category { get; set; } = string.Empty;
-        public string Trend { get; set; } = string.Empty;
-        public double ChangePercentage { get; set; }
-        public List<string> Drivers { get; set; } = new List<string>();
-
-        // Service compatibility properties
-        public int RequestCount { get; set; }
-    }
-
     // === ENUMS ===
 
     public enum RiskLevel
@@ -656,59 +619,9 @@ namespace HospitalAssetTracker.Models
     /// <summary>
     /// Budget category analysis model
     /// </summary>
-    public class BudgetCategoryAnalysis
-    {
-        public string Category { get; set; } = string.Empty;
-        public decimal BudgetAllocated { get; set; }
-        public decimal BudgetUtilized { get; set; }
-        public decimal BudgetRemaining { get; set; }
-        public double UtilizationRate { get; set; }
-        public List<string> Recommendations { get; set; } = new List<string>();
-
-        // Service compatibility properties
-        public decimal AllocatedBudget { get; set; }
-        public decimal ActualSpend { get; set; }
-        public decimal RemainingBudget { get; set; }
-        public decimal SpendRate { get; set; }
-    }
-    
     /// <summary>
-    /// Budget department analysis model
-    /// </summary>
-    public class BudgetDepartmentAnalysis
-    {
-        public string Department { get; set; } = string.Empty;
-        public decimal BudgetAllocated { get; set; }
-        public decimal BudgetUtilized { get; set; }
-        public decimal BudgetRemaining { get; set; }
-        public double UtilizationRate { get; set; }
-        public List<string> Recommendations { get; set; } = new List<string>();
-
-        // Service compatibility properties
-        public decimal AllocatedBudget { get; set; }
-        public decimal ActualSpend { get; set; }
-        public decimal RemainingBudget { get; set; }
-        public decimal SpendRate { get; set; }
-    }
-
     /// <summary>
     /// Spend anomaly detection model
-    /// </summary>
-    public class SpendAnomaly
-    {
-        public string AnomalyType { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public decimal Amount { get; set; }
-        public DateTime DetectedDate { get; set; }
-        public string Category { get; set; } = string.Empty;
-        public string Vendor { get; set; } = string.Empty;
-        public double Severity { get; set; }
-        public List<string> RecommendedActions { get; set; } = new List<string>();
-
-        // Service compatibility properties
-        public int RequestId { get; set; }
-    }
-
     /// <summary>
     /// Vendor contract performance analysis
     /// </summary>

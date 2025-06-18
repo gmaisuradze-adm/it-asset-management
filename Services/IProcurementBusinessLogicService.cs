@@ -60,7 +60,7 @@ namespace HospitalAssetTracker.Services
         /// <summary>
         /// Analyze budget performance with variance analysis and forecasting
         /// </summary>
-        Task<BudgetAnalysisResult> AnalyzeBudgetPerformanceAsync(string fiscalYear = null);
+        Task<BudgetAnalysisResult> AnalyzeBudgetPerformanceAsync(string? fiscalYear = null);
 
         /// <summary>
         /// Comprehensive spend analysis with trend identification and optimization opportunities

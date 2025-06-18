@@ -1059,6 +1059,103 @@ namespace HospitalAssetTracker.Services
         }
 
         #endregion
+
+        #region Warehouse Metrics and Recommendations
+        
+        public async Task<WarehouseMetrics> GetWarehouseMetricsAsync()
+        {
+            try
+            {
+                var metrics = new WarehouseMetrics();
+
+                // Mock space calculations (in a real system, this would be based on actual space data)
+                var totalItems = await _context.InventoryItems.CountAsync();
+                metrics.TotalSpaceUsed = totalItems * 0.5m; // Assuming 0.5 sq meters per item average
+                metrics.TotalSpaceAvailable = 1000m; // Mock total space
+                metrics.SpaceUtilizationPercentage = (metrics.TotalSpaceUsed / metrics.TotalSpaceAvailable) * 100;
+
+                metrics.TotalMovements = await _context.InventoryMovements
+                    .CountAsync(m => m.MovementDate >= DateTime.UtcNow.AddDays(-30));
+
+                metrics.PendingOrders = await _context.ProcurementRequests
+                    .CountAsync(p => p.Status == ProcurementStatus.Pending || p.Status == ProcurementStatus.Approved);
+
+                metrics.CriticalItems = await _context.InventoryItems
+                    .CountAsync(i => i.Quantity == 0 || i.Quantity <= i.MinimumStock);
+
+                // Category utilization
+                var categoryData = await _context.InventoryItems
+                    .GroupBy(i => i.Category)
+                    .Select(g => new { Category = g.Key.ToString(), Count = g.Count() })
+                    .ToListAsync();
+
+                metrics.CategoryUtilization = categoryData.ToDictionary(
+                    x => x.Category, 
+                    x => totalItems > 0 ? (decimal)x.Count / totalItems * 100 : 0);
+
+                return metrics;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting warehouse metrics");
+                throw;
+            }
+        }
+
+        public async Task<List<InventoryRecommendation>> GetInventoryRecommendationsAsync()
+        {
+            try
+            {
+                var recommendations = new List<InventoryRecommendation>();
+
+                // Reorder recommendations
+                var reorderItems = await _context.InventoryItems
+                    .Where(i => i.Quantity <= i.ReorderLevel)
+                    .Take(10)
+                    .ToListAsync();
+
+                foreach (var item in reorderItems)
+                {
+                    recommendations.Add(new InventoryRecommendation
+                    {
+                        ItemId = item.Id,
+                        ItemName = item.Name,
+                        RecommendationType = "Reorder",
+                        Message = $"Stock level ({item.Quantity}) is at or below reorder point ({item.ReorderLevel})",
+                        Priority = item.Quantity == 0 ? "Critical" : "High",
+                        CreatedDate = DateTime.UtcNow
+                    });
+                }
+
+                // Excess stock recommendations
+                var excessItems = await _context.InventoryItems
+                    .Where(i => i.Quantity > i.MaximumStock * 1.5m)
+                    .Take(5)
+                    .ToListAsync();
+
+                foreach (var item in excessItems)
+                {
+                    recommendations.Add(new InventoryRecommendation
+                    {
+                        ItemId = item.Id,
+                        ItemName = item.Name,
+                        RecommendationType = "Excess Stock",
+                        Message = $"Stock level ({item.Quantity}) significantly exceeds maximum ({item.MaximumStock})",
+                        Priority = "Medium",
+                        CreatedDate = DateTime.UtcNow
+                    });
+                }
+
+                return recommendations.OrderByDescending(r => r.Priority).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting inventory recommendations");
+                throw;
+            }
+        }
+
+        #endregion
     }
 
     #region Supporting Models and Interfaces
@@ -1071,6 +1168,8 @@ namespace HospitalAssetTracker.Services
         Task<SpaceOptimizationResult> OptimizeWarehouseLayoutAsync(int locationId);
         Task<QualityAssessmentResult> PerformQualityAssessmentAsync(int inventoryItemId, string inspectorUserId, QualityChecklistData checklistData);
         Task<RequestFulfillmentResult> FulfillRequestIntelligentlyAsync(int requestId, string fulfillerUserId);
+        Task<WarehouseMetrics> GetWarehouseMetricsAsync();
+        Task<List<InventoryRecommendation>> GetInventoryRecommendationsAsync();
     }
 
     // Supporting model classes would be defined in Models/WarehouseModels.cs

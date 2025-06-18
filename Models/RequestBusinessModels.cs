@@ -350,6 +350,7 @@ namespace HospitalAssetTracker.Models
         public List<RequestQualityMetrics> QualityMetrics { get; set; } = new List<RequestQualityMetrics>();
         public double OverallSatisfactionScore { get; set; }
         public double AverageResolutionTime { get; set; }
+        public double FirstCallResolutionRate { get; set; }
         public List<string> ImprovementRecommendations { get; set; } = new List<string>();
         public Dictionary<string, double> SatisfactionByCategory { get; set; } = new Dictionary<string, double>();
         public Dictionary<string, double> ResolutionTimeByCategory { get; set; } = new Dictionary<string, double>();
