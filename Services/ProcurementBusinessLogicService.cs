@@ -1062,19 +1062,19 @@ namespace HospitalAssetTracker.Services
             return insights;
         }
         
-        private List<string> IdentifySpendOptimizationOpportunities(Dictionary<string, decimal> categorySpend, List<SpendAnomaly> anomalies)
+        private List<string> IdentifySpendOptimizationOpportunities(SpendAnalysisResult analysis)
         {
             var opportunities = new List<string>();
             
-            var highSpendCategories = categorySpend.Where(kvp => kvp.Value > 25000m).ToList();
+            var highSpendCategories = analysis.SpendByCategory.Where(kvp => kvp.Value > 25000m).ToList();
             if (highSpendCategories.Any())
             {
                 opportunities.Add($"Consider strategic sourcing for high-spend categories: {string.Join(", ", highSpendCategories.Select(kvp => kvp.Key))}");
             }
             
-            if (anomalies.Any())
+            if (analysis.Anomalies.Any())
             {
-                opportunities.Add($"Review {anomalies.Count} spending anomalies for potential cost optimization");
+                opportunities.Add($"Review {analysis.Anomalies.Count} spending anomalies for potential cost optimization");
             }
             
             return opportunities;

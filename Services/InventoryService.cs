@@ -1600,20 +1600,10 @@ namespace HospitalAssetTracker.Services
                     MovementType = adjustmentQuantity > 0 ? InventoryMovementType.StockIn : InventoryMovementType.StockOut,
                     Quantity = Math.Abs(adjustmentQuantity),
                     MovementDate = DateTime.UtcNow,
-                    UserId = userId,
-                    Notes = $"Quantity updated from {oldQuantity} to {newQuantity}",
-                    ItemCodeAtTime = item.ItemCode,
-                    ItemNameAtTime = item.ItemName,
-                    UnitCostAtTime = item.UnitCost,
-                    LocationIdAtTime = item.LocationId,
-                    StatusAtTime = item.Status,
-                    ConditionAtTime = item.Condition
+                    Notes = $"Quantity updated from {oldQuantity} to {newQuantity}"
                 };
 
                 _context.InventoryMovements.Add(movement);
-                
-                item.LastModifiedDate = DateTime.UtcNow;
-                item.LastModifiedBy = userId;
 
                 await _context.SaveChangesAsync();
 
