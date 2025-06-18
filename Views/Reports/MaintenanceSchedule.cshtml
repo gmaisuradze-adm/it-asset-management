@@ -1,0 +1,140 @@
+@model IEnumerable<HospitalAssetTracker.Models.Asset>
+@{
+    ViewData["Title"] = "Maintenance Schedule";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h3 class="card-title text-dark">
+                        <i class="bi bi-tools"></i> Maintenance Schedule
+                    </h3>
+                    <div class="card-tools">
+                        <span class="badge bg-dark">@Model.Count() assets requiring maintenance</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="maintenanceTable">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Asset Tag</th>
+                                        <th>Category</th>
+                                        <th>Brand/Model</th>
+                                        <th>Location</th>
+                                        <th>Current Status</th>
+                                        <th>Installation Date</th>
+                                        <th>Last Maintenance</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var asset in Model)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@asset.AssetTag</strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@asset.Category.ToString().Replace("_", " ")</span>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <strong>@asset.Brand</strong>
+                                                    <br><small class="text-muted">@asset.Model</small>
+                                                </div>
+                                            </td>
+                                            <td>@(asset.Location?.FullLocation ?? "N/A")</td>
+                                            <td>
+                                                @switch (asset.Status)
+                                                {
+                                                    case AssetStatus.Available:
+                                                        <span class="badge bg-success">Available</span>
+                                                        break;
+                                                    case AssetStatus.InUse:
+                                                        <span class="badge bg-primary">In Use</span>
+                                                        break;
+                                                    case AssetStatus.Maintenance:
+                                                        <span class="badge bg-warning">Maintenance</span>
+                                                        break;
+                                                    default:
+                                                        <span class="badge bg-light text-dark">@asset.Status</span>
+                                                        break;
+                                                }
+                                            </td>
+                                            <td>
+                                                <small>@asset.InstallationDate.ToString("yyyy-MM-dd")</small>
+                                            </td>
+                                            <td>
+                                                @if (asset.MaintenanceRecords != null && asset.MaintenanceRecords.Any())
+                                                {
+                                                    var lastMaintenance = asset.MaintenanceRecords.OrderByDescending(m => m.ScheduledDate).FirstOrDefault();
+                                                    if (lastMaintenance != null)
+                                                    {
+                                                        <small>@lastMaintenance.ScheduledDate.ToString("yyyy-MM-dd")</small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-warning">Never</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-warning">Never</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group-vertical btn-group-sm">
+                                                    <a asp-controller="Assets" asp-action="Details" asp-route-id="@asset.Id" class="btn btn-outline-primary btn-sm">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </a>
+                                                    @if (asset.Status != AssetStatus.Maintenance)
+                                                    {
+                                                        <form asp-controller="Assets" asp-action="ChangeStatus" method="post" class="d-inline">
+                                                            <input type="hidden" name="id" value="@asset.Id" />
+                                                            <input type="hidden" name="newStatus" value="@((int)AssetStatus.Maintenance)" />
+                                                            <input type="hidden" name="reason" value="Scheduled maintenance" />
+                                                            <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Mark this asset for maintenance?');">
+                                                                <i class="bi bi-tools"></i> Maintenance
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-success" role="alert">
+                            <i class="bi bi-check-circle"></i> Great! No assets currently require maintenance.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#maintenanceTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[5, 'asc']], // Sort by installation date
+                dom: 'Bfrtip',
+                buttons: [
+                    'copy', 'csv', 'excel', 'pdf', 'print'
+                ]
+            });
+        });
+    </script>
+}

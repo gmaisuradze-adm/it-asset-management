@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="0eb2c938-bcf8-4e48-8f0e-ec6b6bd3fa95" name="@itsystems 2025-06-16 21:39:29" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2025-06-16T21:39:29.3272473+00:00" queuing="2025-06-16T21:39:29.3272475+00:00" start="2025-06-16T21:39:28.4985161+00:00" finish="2025-06-16T21:39:29.3335971+00:00" />
+  <TestSettings name="default" id="30ac0199-ba35-4e0e-a288-508f09910e32">
+    <Deployment runDeploymentRoot="_itsystems_2025-06-16_21_39_29" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="08c7d09f-ca96-4fed-ac71-42a53c9bce37" testId="db610633-d983-5eb3-ef5e-48e00819c8c8" testName="HospitalAssetTracker.Tests.AssetServiceTests.GetAllAssetsAsync_ReturnsList" computerName="itsystems" duration="00:00:00.0039076" startTime="2025-06-16T21:39:29.1975626+00:00" endTime="2025-06-16T21:39:29.1976807+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="08c7d09f-ca96-4fed-ac71-42a53c9bce37" />
+    <UnitTestResult executionId="01eedbca-4a68-46f1-9df3-a2e25ad4f4f3" testId="a3daf8ba-0e83-a49e-5c49-a153dba76bd3" testName="HospitalAssetTracker.Tests.AssetServiceTests.GetAssetByIdAsync_ReturnsAsset" computerName="itsystems" duration="00:00:00.0782301" startTime="2025-06-16T21:39:29.1018996+00:00" endTime="2025-06-16T21:39:29.1810321+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="01eedbca-4a68-46f1-9df3-a2e25ad4f4f3" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="HospitalAssetTracker.Tests.AssetServiceTests.GetAssetByIdAsync_ReturnsAsset" storage="/home/gadmin/it_system_new_gen/tests/bin/debug/net9.0/tests.dll" id="a3daf8ba-0e83-a49e-5c49-a153dba76bd3">
+      <Execution id="01eedbca-4a68-46f1-9df3-a2e25ad4f4f3" />
+      <TestMethod codeBase="/home/gadmin/it_system_new_gen/Tests/bin/Debug/net9.0/Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="HospitalAssetTracker.Tests.AssetServiceTests" name="GetAssetByIdAsync_ReturnsAsset" />
+    </UnitTest>
+    <UnitTest name="HospitalAssetTracker.Tests.AssetServiceTests.GetAllAssetsAsync_ReturnsList" storage="/home/gadmin/it_system_new_gen/tests/bin/debug/net9.0/tests.dll" id="db610633-d983-5eb3-ef5e-48e00819c8c8">
+      <Execution id="08c7d09f-ca96-4fed-ac71-42a53c9bce37" />
+      <TestMethod codeBase="/home/gadmin/it_system_new_gen/Tests/bin/Debug/net9.0/Tests.dll" adapterTypeName="executor://xunit/VsTestRunner3/netcore/" className="HospitalAssetTracker.Tests.AssetServiceTests" name="GetAllAssetsAsync_ReturnsList" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="db610633-d983-5eb3-ef5e-48e00819c8c8" executionId="08c7d09f-ca96-4fed-ac71-42a53c9bce37" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a3daf8ba-0e83-a49e-5c49-a153dba76bd3" executionId="01eedbca-4a68-46f1-9df3-a2e25ad4f4f3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="2" executed="2" passed="2" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v3.1.1+bf6400fd51 (64-bit .NET 9.0.6)
+[xUnit.net 00:00:00.08]   Discovering: Tests
+[xUnit.net 00:00:00.12]   Discovered:  Tests
+[xUnit.net 00:00:00.15]   Starting:    Tests
+[xUnit.net 00:00:00.28]   Finished:    Tests
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

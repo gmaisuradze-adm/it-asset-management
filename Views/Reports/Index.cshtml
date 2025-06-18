@@ -1,0 +1,104 @@
+@{
+    ViewData["Title"] = "Reports Dashboard";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-bar-chart"></i> Reports Dashboard
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h5>Asset Reports</h5>
+                                            <p class="mb-0">Generate comprehensive asset reports</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="bi bi-clipboard-data fs-2"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a asp-action="Assets" class="text-white text-decoration-none">
+                                        View Reports <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h5>Audit Logs</h5>
+                                            <p class="mb-0">Review system audit trails</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="bi bi-shield-check fs-2"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a asp-action="AuditLog" class="text-white text-decoration-none">
+                                        View Audit Log <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h5>Maintenance</h5>
+                                            <p class="mb-0">Assets due for maintenance</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="bi bi-tools fs-2"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a asp-action="MaintenanceSchedule" class="text-dark text-decoration-none">
+                                        View Schedule <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h5>Warranties</h5>
+                                            <p class="mb-0">Expired warranty alerts</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="bi bi-exclamation-triangle fs-2"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a asp-action="ExpiredWarranties" class="text-white text-decoration-none">
+                                        View Expired <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

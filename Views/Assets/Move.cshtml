@@ -1,0 +1,169 @@
+@model HospitalAssetTracker.Models.Asset
+@{
+    ViewData["Title"] = "Move Asset";
+}
+
+<h1>Move Asset</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Current Asset Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="bi bi-info-circle"></i> Current Asset Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Asset Tag:</strong><br>
+                        <span class="fs-5 text-primary">@Model.AssetTag</span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Asset Type:</strong><br>
+                        @Model.Brand @Model.Model
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>Current Location:</strong><br>
+                        @if (Model.Location != null)
+                        {
+                            <span class="text-info">@Model.Location.FullLocation</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Unassigned</span>
+                        }
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Currently Assigned To:</strong><br>
+                        @if (Model.AssignedToUser != null)
+                        {
+                            <span class="text-info">@Model.AssignedToUser.FullName</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Unassigned</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Move Form -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-arrow-right-square"></i> Move Asset</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Move" method="post" class="needs-validation" novalidate>
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newLocationId" class="form-label">New Location</label>
+                                <select name="newLocationId" id="newLocationId" class="form-select">
+                                    <option value="">Select Location</option>
+                                    @if (ViewBag.Locations != null)
+                                    {
+                                        @foreach (var location in ViewBag.Locations)
+                                        {
+                                            <option value="@location.Value">@location.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <div class="form-text">Leave empty if only changing assigned user</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newUserId" class="form-label">Assign To User</label>
+                                <select name="newUserId" id="newUserId" class="form-select">
+                                    <option value="">Select User</option>
+                                    @if (ViewBag.Users != null)
+                                    {
+                                        @foreach (var user in ViewBag.Users)
+                                        {
+                                            <option value="@user.Value">@user.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <div class="form-text">Leave empty if only changing location</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reason" class="form-label">Reason for Move *</label>
+                        <textarea name="reason" id="reason" class="form-control" rows="3" required 
+                                  placeholder="Please provide a reason for moving this asset..."></textarea>
+                        <div class="invalid-feedback">
+                            Please provide a reason for the move.
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Note:</strong> This action will be logged in the asset's movement history.
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary me-md-2">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-arrow-right-square"></i> Move Asset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Guidelines -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-lightbulb"></i> Guidelines</h5>
+            </div>
+            <div class="card-body">
+                <h6>Moving Assets</h6>
+                <ul class="small">
+                    <li>You can change location, assigned user, or both</li>
+                    <li>At least one field (location or user) must be different</li>
+                    <li>A reason is required for audit purposes</li>
+                    <li>The move will be logged in the asset history</li>
+                </ul>
+                
+                <h6>Best Practices</h6>
+                <ul class="small">
+                    <li>Update the location when physically moving the asset</li>
+                    <li>Update the assigned user when changing responsibility</li>
+                    <li>Provide clear and detailed reasons</li>
+                    <li>Verify the new location exists and is accessible</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Form validation
+        (function() {
+            'use strict';
+            var forms = document.querySelectorAll('.needs-validation');
+            Array.prototype.slice.call(forms).forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        })();
+    </script>
+}

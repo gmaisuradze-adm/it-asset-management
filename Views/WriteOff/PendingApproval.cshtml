@@ -1,0 +1,107 @@
+@model IEnumerable<HospitalAssetTracker.Models.WriteOffRecord>
+
+@{
+    ViewData["Title"] = "Pending Write-Off Approvals";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-clock-history"></i> Pending Write-Off Approvals</h2>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No write-off requests are currently pending approval.
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="pendingTable">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>Write-Off #</th>
+                                    <th>Asset</th>
+                                    <th>Reason</th>
+                                    <th>Requested By</th>
+                                    <th>Request Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var writeOff in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="fw-bold">@writeOff.WriteOffNumber</span>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <span class="fw-bold">@writeOff.Asset.AssetTag</span>
+                                                <small class="text-muted d-block">@writeOff.Asset.Brand @writeOff.Asset.Model</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">@writeOff.Reason</span>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <span>@writeOff.RequestedByUser.FirstName @writeOff.RequestedByUser.LastName</span>
+                                                <small class="text-muted d-block">@writeOff.RequestedByUser.Department</small>
+                                            </div>
+                                        </td>
+                                        <td>@writeOff.RequestDate.ToString("MMM dd, yyyy")</td>
+                                        <td>
+                                            @if (writeOff.Status == HospitalAssetTracker.Models.WriteOffStatus.Pending)
+                                            {
+                                                <span class="badge bg-warning">Pending Review</span>
+                                            }
+                                            else if (writeOff.Status == HospitalAssetTracker.Models.WriteOffStatus.UnderReview)
+                                            {
+                                                <span class="badge bg-info">Under Review</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="@Url.Action("Details", new { id = writeOff.Id })" 
+                                                   class="btn btn-sm btn-outline-primary" title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                @if (User.IsInRole("Admin") || User.IsInRole("Asset Manager"))
+                                                {
+                                                    <a href="@Url.Action("Review", new { id = writeOff.Id })" 
+                                                       class="btn btn-sm btn-outline-success" title="Review">
+                                                        <i class="bi bi-check-circle"></i>
+                                                    </a>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#pendingTable').DataTable({
+                responsive: true,
+                order: [[4, 'desc']], // Sort by request date
+                columnDefs: [
+                    { orderable: false, targets: -1 } // Disable sorting on actions column
+                ]
+            });
+        });
+    </script>
+}

@@ -1,0 +1,229 @@
+@model ITRequest
+@{
+    ViewData["Title"] = "New IT Request";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-plus-circle"></i> New IT Request</h2>
+    <a asp-action="MyRequests" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to My Requests
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Request Details</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label asp-for="Title" class="form-label">Title <span class="text-danger">*</span></label>
+                            <input asp-for="Title" class="form-control" placeholder="Brief description of your request">
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Priority" class="form-label">Priority</label>
+                            <select asp-for="Priority" class="form-select" asp-items="@ViewBag.Priorities">
+                                <option value="">Select Priority</option>
+                            </select>
+                            <span asp-validation-for="Priority" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea asp-for="Description" class="form-control" rows="4" placeholder="Detailed description of your request"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="RequestType" class="form-label">Request Type <span class="text-danger">*</span></label>
+                            <select asp-for="RequestType" class="form-select" asp-items="@ViewBag.RequestTypes" id="requestTypeSelect">
+                                <option value="">Select Request Type</option>
+                            </select>
+                            <span asp-validation-for="RequestType" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="RequiredByDate" class="form-label">Required By Date</label>
+                            <input asp-for="RequiredByDate" type="date" class="form-control">
+                            <span asp-validation-for="RequiredByDate" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <!-- Asset-related fields -->
+                    <div id="assetSection" class="mb-3" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Location</label>
+                                <select class="form-select" id="locationSelect" asp-items="@ViewBag.Locations">
+                                    <option value="">Select Location</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="AssetId" class="form-label">Related Asset</label>
+                                <select asp-for="AssetId" class="form-select" id="assetSelect">
+                                    <option value="">Select Asset</option>
+                                </select>
+                                <span asp-validation-for="AssetId" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Equipment request fields -->
+                    <div id="equipmentSection" class="mb-3" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label asp-for="RequestedItemCategory" class="form-label">Equipment Category</label>
+                                <select asp-for="RequestedItemCategory" class="form-select" asp-items="@ViewBag.ItemCategories">
+                                    <option value="">Select Category</option>
+                                </select>
+                                <span asp-validation-for="RequestedItemCategory" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="EstimatedCost" class="form-label">Estimated Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input asp-for="EstimatedCost" type="number" class="form-control" step="0.01" min="0">
+                                </div>
+                                <span asp-validation-for="EstimatedCost" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label asp-for="RequestedItemSpecifications" class="form-label">Specifications</label>
+                            <textarea asp-for="RequestedItemSpecifications" class="form-control" rows="3" placeholder="Detailed specifications of the requested equipment"></textarea>
+                            <span asp-validation-for="RequestedItemSpecifications" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="BusinessJustification" class="form-label">Business Justification</label>
+                        <textarea asp-for="BusinessJustification" class="form-control" rows="3" placeholder="Justify why this request is needed for business operations"></textarea>
+                        <span asp-validation-for="BusinessJustification" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="MyRequests" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Request Guidelines</h6>
+            </div>
+            <div class="card-body">
+                <h6>Priority Levels:</h6>
+                <ul class="list-unstyled">
+                    <li><span class="badge bg-danger">Critical</span> - System down, blocking work</li>
+                    <li><span class="badge bg-warning text-dark">High</span> - Significant impact on productivity</li>
+                    <li><span class="badge bg-info">Medium</span> - Moderate impact</li>
+                    <li><span class="badge bg-success">Low</span> - Minor impact or enhancement</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Request Types:</h6>
+                <ul class="small">
+                    <li><strong>Hardware Replacement:</strong> Replace faulty equipment</li>
+                    <li><strong>New Equipment:</strong> Request new IT equipment</li>
+                    <li><strong>Software Installation:</strong> Install or update software</li>
+                    <li><strong>Network Connectivity:</strong> Network issues or access</li>
+                    <li><strong>Maintenance Service:</strong> Preventive maintenance</li>
+                    <li><strong>User Access Rights:</strong> Account or permission changes</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Tips for Better Requests:</h6>
+                <ul class="small">
+                    <li>Be specific in your description</li>
+                    <li>Include error messages if applicable</li>
+                    <li>Provide business justification</li>
+                    <li>Set realistic required dates</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Handle request type change
+            $('#requestTypeSelect').change(function() {
+                var selectedType = $(this).val();
+                
+                // Hide all conditional sections
+                $('#assetSection').hide();
+                $('#equipmentSection').hide();
+                
+                // Show relevant sections based on request type
+                if (selectedType === 'HardwareReplacement' || selectedType === 'MaintenanceService') {
+                    $('#assetSection').show();
+                } else if (selectedType === 'NewEquipmentProvisioning') {
+                    $('#equipmentSection').show();
+                }
+            });
+            
+            // Handle location change to load assets
+            $('#locationSelect').change(function() {
+                var locationId = $(this).val();
+                var department = '@ViewBag.CurrentUserDepartment';
+                
+                if (locationId) {
+                    $.get('@Url.Action("GetAssetsByLocation", "Requests")', {
+                        locationId: locationId,
+                        department: department
+                    }, function(data) {
+                        var assetSelect = $('#assetSelect');
+                        assetSelect.empty();
+                        assetSelect.append('<option value="">Select Asset</option>');
+                        
+                        $.each(data, function(index, asset) {
+                            assetSelect.append('<option value="' + asset.id + '">' + asset.name + ' (' + asset.status + ')</option>');
+                        });
+                    });
+                } else {
+                    $('#assetSelect').empty().append('<option value="">Select Asset</option>');
+                }
+            });
+            
+            // Trigger change event if request type is already selected
+            $('#requestTypeSelect').trigger('change');
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .badge {
+            font-size: 0.75em;
+        }
+        
+        .list-unstyled li {
+            padding: 0.25rem 0;
+        }
+    </style>
+}

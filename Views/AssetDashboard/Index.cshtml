@@ -1,0 +1,527 @@
+@model HospitalAssetTracker.Models.AssetDashboardModel
+@{
+    ViewData["Title"] = "Asset Dashboard";
+    ViewData["ActivePage"] = "AssetDashboard";
+}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+        <i class="fas fa-desktop text-primary"></i> Asset Management Dashboard
+    </h1>
+    <div class="d-none d-sm-inline-block">
+        <a asp-action="Analytics" class="btn btn-sm btn-primary shadow-sm mr-2">
+            <i class="fas fa-chart-line fa-sm text-white-50"></i> Analytics
+        </a>
+        <a asp-action="Reports" class="btn btn-sm btn-success shadow-sm mr-2">
+            <i class="fas fa-file-export fa-sm text-white-50"></i> Reports
+        </a>
+        <a asp-action="Export" asp-route-type="dashboard" class="btn btn-sm btn-info shadow-sm">
+            <i class="fas fa-download fa-sm text-white-50"></i> Export
+        </a>
+    </div>
+</div>
+
+<!-- Overview Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Assets
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.Overview.TotalAssets.ToString("N0")
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-desktop fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Active Assets
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.Overview.ActiveAssets.ToString("N0")
+                        </div>
+                        <div class="text-xs text-muted">
+                            @Model.Overview.ActivePercentage.ToString("F1")% of total
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Total Value
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.Overview.TotalValue.ToString("C0")
+                        </div>
+                        <div class="text-xs text-muted">
+                            Avg: @Model.Overview.AverageAssetValue.ToString("C0")
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            In Maintenance
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @Model.Overview.InMaintenanceAssets.ToString("N0")
+                        </div>
+                        <div class="text-xs text-muted">
+                            @Model.Overview.NewAssetsThisMonth.ToString("N0") new this month
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-tools fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <!-- Asset Status Chart -->
+    <div class="col-xl-8 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Asset Status Overview</h6>
+                <div class="dropdown no-arrow">
+                    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow">
+                        <div class="dropdown-header">Actions:</div>
+                        <a class="dropdown-item" href="javascript:void(0);" onclick="refreshChart('statusChart')">Refresh</a>
+                        <a class="dropdown-item" href="javascript:void(0);" onclick="exportChart('statusChart')">Export</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-area">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asset Categories Pie Chart -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Asset Categories</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-pie pt-4 pb-2">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <div class="mt-4 text-center small">
+                    @foreach (var category in Model.CategoryBreakdown.Take(3))
+                    {
+                        <span class="mr-2">
+                            <i class="fas fa-circle" style="color: @GetCategoryColor(category.Category)"></i> @category.Category
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts and Maintenance Row -->
+<div class="row mb-4">
+    <!-- Alerts -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-exclamation-triangle text-warning"></i> Active Alerts
+                </h6>
+            </div>
+            <div class="card-body">
+                @if (Model.Alerts.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Type</th>
+                                    <th>Severity</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var alert in Model.Alerts.Take(5))
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@alert.AssetTag</strong><br>
+                                            <small class="text-muted">@alert.AssetName</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-@GetAlertTypeColor(alert.AlertType)">
+                                                @alert.AlertType
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-@GetSeverityColor(alert.Severity)">
+                                                @alert.Severity
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="acknowledgeAlert(@alert.AssetId, '@alert.AlertType')">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model.Alerts.Count > 5)
+                    {
+                        <div class="text-center">
+                            <a asp-action="Alerts" class="btn btn-sm btn-link">View All Alerts (@Model.Alerts.Count)</a>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-check-circle fa-3x mb-2"></i>
+                        <p>No active alerts</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Maintenance -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-calendar-alt text-info"></i> Upcoming Maintenance
+                </h6>
+            </div>
+            <div class="card-body">
+                @if (Model.UpcomingMaintenance.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Type</th>
+                                    <th>Due Date</th>
+                                    <th>Priority</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var maintenance in Model.UpcomingMaintenance.Take(5))
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@maintenance.AssetTag</strong><br>
+                                            <small class="text-muted">@maintenance.AssetName</small>
+                                        </td>
+                                        <td>@maintenance.MaintenanceType</td>
+                                        <td>
+                                            @maintenance.ScheduledDate.ToString("MMM dd")
+                                            <br><small class="text-muted">@maintenance.DaysUntilDue days</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-@GetPriorityColor(maintenance.Priority)">
+                                                @maintenance.Priority
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model.UpcomingMaintenance.Count > 5)
+                    {
+                        <div class="text-center">
+                            <a href="#" class="btn btn-sm btn-link">View All Maintenance (@Model.UpcomingMaintenance.Count)</a>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-calendar-check fa-3x mb-2"></i>
+                        <p>No upcoming maintenance</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Location Summary -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-map-marker-alt text-success"></i> Asset Distribution by Location
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="locationTable">
+                        <thead>
+                            <tr>
+                                <th>Location</th>
+                                <th>Asset Count</th>
+                                <th>Total Value</th>
+                                <th>Active Assets</th>
+                                <th>Utilization</th>
+                                <th>Top Categories</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var location in Model.LocationSummary)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@location.LocationName</strong>
+                                        <br><small class="text-muted">@location.LocationCode</small>
+                                    </td>
+                                    <td>@location.AssetCount</td>
+                                    <td>@location.TotalValue.ToString("C0")</td>
+                                    <td>
+                                        @location.ActiveAssets
+                                        <small class="text-muted">(@location.MaintenanceAssets in maintenance)</small>
+                                    </td>
+                                    <td>
+                                        <div class="progress progress-sm">
+                                            <div class="progress-bar bg-@GetUtilizationColor(location.UtilizationRate)" 
+                                                 role="progressbar" 
+                                                 style="width: @location.UtilizationRate%">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">@location.UtilizationRate.ToString("F1")%</small>
+                                    </td>
+                                    <td>
+                                        @foreach (var category in location.TopCategories.Take(3))
+                                        {
+                                            <span class="badge badge-light mr-1">@category</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/chart.js/Chart.min.js"></script>
+    <script>
+        // Status Chart
+        var statusCtx = document.getElementById('statusChart').getContext('2d');
+        var statusChart = new Chart(statusCtx, {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.Trends.FirstOrDefault()?.DataPoints.Select(d => d.Date.ToString("MMM dd")) ?? new string[0])),
+                datasets: [{
+                    label: 'Active Assets',
+                    data: @Html.Raw(Json.Serialize(Model.Trends.FirstOrDefault()?.DataPoints.Select(d => d.Value) ?? new double[0])),
+                    borderColor: '#4e73df',
+                    backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: {
+                    display: false
+                },
+                scales: {
+                    xAxes: [{
+                        gridLines: {
+                            display: false
+                        }
+                    }],
+                    yAxes: [{
+                        gridLines: {
+                            display: true
+                        },
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                }
+            }
+        });
+
+        // Category Chart
+        var categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        var categoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.CategoryBreakdown.Select(c => c.Category).ToArray())),
+                datasets: [{
+                    data: @Html.Raw(Json.Serialize(Model.CategoryBreakdown.Select(c => c.Count).ToArray())),
+                    backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'],
+                    hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf', '#f4b619', '#e02424', '#6c757d']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: {
+                    display: false
+                },
+                cutoutPercentage: 80
+            }
+        });
+
+        // Initialize DataTable
+        $(document).ready(function() {
+            $('#locationTable').DataTable({
+                responsive: true,
+                order: [[1, 'desc']],
+                pageLength: 10,
+                columnDefs: [
+                    { targets: [2], render: function(data, type, row) {
+                        return type === 'display' ? data : parseFloat(data.replace(/[^0-9.-]+/g, ''));
+                    }}
+                ]
+            });
+        });
+
+        // Acknowledge Alert
+        function acknowledgeAlert(assetId, alertType) {
+            $.post('@Url.Action("AcknowledgeAlert")', {
+                assetId: assetId,
+                alertType: alertType
+            }, function(response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                    location.reload();
+                } else {
+                    toastr.error(response.message);
+                }
+            });
+        }
+
+        // Refresh Chart
+        function refreshChart(chartId) {
+            location.reload();
+        }
+
+        // Export Chart
+        function exportChart(chartId) {
+            var chart = chartId === 'statusChart' ? statusChart : categoryChart;
+            var url = chart.toBase64Image();
+            var link = document.createElement('a');
+            link.download = chartId + '.png';
+            link.href = url;
+            link.click();
+        }
+    </script>
+}
+
+@functions {
+    string GetCategoryColor(string category)
+    {
+        var colors = new Dictionary<string, string>
+        {
+            { "Desktop", "#4e73df" },
+            { "Laptop", "#1cc88a" },
+            { "Printer", "#36b9cc" },
+            { "Server", "#f6c23e" },
+            { "Network", "#e74a3b" }
+        };
+        return colors.GetValueOrDefault(category, "#858796");
+    }
+
+    string GetAlertTypeColor(string alertType)
+    {
+        return alertType.ToLower() switch
+        {
+            "warranty" => "warning",
+            "maintenance" => "info",
+            "performance" => "danger",
+            "security" => "dark",
+            _ => "secondary"
+        };
+    }
+
+    string GetSeverityColor(string severity)
+    {
+        return severity.ToLower() switch
+        {
+            "low" => "success",
+            "medium" => "warning",
+            "high" => "danger",
+            "critical" => "dark",
+            _ => "secondary"
+        };
+    }
+
+    string GetPriorityColor(string priority)
+    {
+        return priority.ToLower() switch
+        {
+            "low" => "success",
+            "medium" => "warning",
+            "high" => "danger",
+            "critical" => "dark",
+            _ => "secondary"
+        };
+    }
+
+    string GetUtilizationColor(double utilization)
+    {
+        return utilization switch
+        {
+            >= 90 => "success",
+            >= 70 => "info",
+            >= 50 => "warning",
+            _ => "danger"
+        };
+    }
+}

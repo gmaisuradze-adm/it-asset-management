@@ -1,0 +1,85 @@
+@model IEnumerable<HospitalAssetTracker.Models.Asset>
+@{
+    ViewData["Title"] = "Expired Warranty Assets";
+}
+
+<h1>Expired Warranty Assets</h1>
+
+<div class="row mb-3">
+    <div class="col">
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Assets
+        </a>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Asset Tag</th>
+                    <th>Brand</th>
+                    <th>Model</th>
+                    <th>Serial Number</th>
+                    <th>Warranty Expiry</th>
+                    <th>Location</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var asset in Model)
+                {
+                    <tr>
+                        <td>@asset.AssetTag</td>
+                        <td>@asset.Brand</td>
+                        <td>@asset.Model</td>
+                        <td>@asset.SerialNumber</td>
+                        <td>
+                            @if (asset.WarrantyExpiry.HasValue)
+                            {
+                                <span class="text-danger">@asset.WarrantyExpiry.Value.ToString("MM/dd/yyyy")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">N/A</span>
+                            }
+                        </td>
+                        <td>@(asset.Location?.FullLocation ?? "Not assigned")</td>
+                        <td>
+                            <a asp-action="Details" asp-route-id="@asset.Id" class="btn btn-sm btn-info">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <a asp-action="Edit" asp-route-id="@asset.Id" class="btn btn-sm btn-primary">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        <h4>No Expired Warranties</h4>
+        <p>Great news! All assets have valid warranties or no warranty information is recorded.</p>
+        <a asp-action="Index" class="btn btn-primary">Back to All Assets</a>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('.table').DataTable({
+                responsive: true,
+                order: [[4, 'asc']], // Sort by warranty expiry date
+                columnDefs: [
+                    { orderable: false, targets: [6] } // Disable sorting on Actions column
+                ]
+            });
+        });
+    </script>
+}

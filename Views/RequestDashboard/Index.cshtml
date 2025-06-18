@@ -1,0 +1,541 @@
+@model HospitalAssetTracker.Models.RequestDashboardViewModel
+@{
+    ViewData["Title"] = "Request Management Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-primary">
+                        <i class="fas fa-clipboard-list me-2"></i>Request Management Dashboard
+                    </h1>
+                    <p class="text-muted">Comprehensive view of IT request lifecycle and performance metrics</p>
+                </div>
+                <div class="btn-group" role="group">
+                    <a href="@Url.Action("Create", "Requests")" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>New Request
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#filtersModal">
+                        <i class="fas fa-filter me-2"></i>Filters
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="exportDashboard()">
+                        <i class="fas fa-download me-2"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Performance Indicators -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="text-muted mb-1">Active Requests</h6>
+                            <h3 class="mb-0 text-primary">@Model.TotalActiveRequests</h3>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 rounded p-3">
+                                <i class="fas fa-tasks text-primary fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="text-muted mb-1">Pending Approvals</h6>
+                            <h3 class="mb-0 text-warning">@Model.PendingApprovals</h3>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 rounded p-3">
+                                <i class="fas fa-clock text-warning fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="text-muted mb-1">Overdue Requests</h6>
+                            <h3 class="mb-0 text-danger">@Model.OverdueRequests</h3>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="bg-danger bg-opacity-10 rounded p-3">
+                                <i class="fas fa-exclamation-triangle text-danger fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="text-muted mb-1">Completed Today</h6>
+                            <h3 class="mb-0 text-success">@Model.CompletedToday</h3>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 rounded p-3">
+                                <i class="fas fa-check-circle text-success fa-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="mb-0 text-primary">
+                        <i class="fas fa-tachometer-alt me-2"></i>Performance Metrics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted">Avg Response Time</span>
+                            <span class="fw-bold">@Model.AverageResponseTime.ToString("F1")h</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-info" style="width: @(Math.Min(Model.AverageResponseTime * 10, 100))%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted">SLA Compliance</span>
+                            <span class="fw-bold">@Model.SlaComplianceRate.ToString("F1")%</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success" style="width: @Model.SlaComplianceRate%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="mb-0 text-primary">
+                        <i class="fas fa-chart-line me-2"></i>Request Trends (Last 30 Days)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="requestTrendsChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analytics Row -->
+    <div class="row mb-4">
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="mb-0 text-primary">
+                        <i class="fas fa-chart-pie me-2"></i>Requests by Type
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="requestTypeChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="mb-0 text-primary">
+                        <i class="fas fa-chart-bar me-2"></i>Requests by Priority
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="requestPriorityChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="mb-0 text-primary">
+                        <i class="fas fa-building me-2"></i>Requests by Department
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="requestDepartmentChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity and High Priority -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 text-primary">
+                            <i class="fas fa-history me-2"></i>Recent Requests
+                        </h6>
+                        <a href="@Url.Action("Index", "Requests")" class="text-decoration-none">View All</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if(Model.RecentRequests?.Any() == true)
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach(var request in Model.RecentRequests.Take(5))
+                            {
+                                <div class="list-group-item border-0 px-0">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">@request.Title</h6>
+                                            <p class="mb-1 small text-muted">@request.Description</p>
+                                            <small class="text-muted">@request.CreatedDate.ToString("MMM dd, yyyy HH:mm")</small>
+                                        </div>
+                                        <span class="badge bg-@(request.Status == RequestStatus.Open ? "warning" : 
+                                                                request.Status == RequestStatus.InProgress ? "info" : 
+                                                                request.Status == RequestStatus.Completed ? "success" : "secondary") ms-2">
+                                            @request.Status
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No recent requests</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 text-primary">
+                            <i class="fas fa-exclamation-circle me-2"></i>High Priority Requests
+                        </h6>
+                        <a href="@Url.Action("Index", "Requests", new { priority = "High" })" class="text-decoration-none">View All</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if(Model.HighPriorityRequests?.Any() == true)
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach(var request in Model.HighPriorityRequests.Take(5))
+                            {
+                                <div class="list-group-item border-0 px-0">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">@request.Title</h6>
+                                            <p class="mb-1 small text-muted">@request.Department</p>
+                                            <small class="text-muted">Due: @request.DueDate?.ToString("MMM dd, yyyy")</small>
+                                        </div>
+                                        <div class="d-flex flex-column align-items-end">
+                                            <span class="badge bg-@(request.Priority == RequestPriority.Critical ? "danger" : 
+                                                                    request.Priority == RequestPriority.High ? "warning" : "secondary")">
+                                                @request.Priority
+                                            </span>
+                                            <small class="text-muted mt-1">@request.AssignedTo</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <p class="text-muted">No high priority requests</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Analytics Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h6 class="mb-0 text-primary">
+                        <i class="fas fa-chart-area me-2"></i>Advanced Analytics & Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <button type="button" class="btn btn-outline-primary w-100" onclick="loadRequestAnalysis()">
+                                <i class="fas fa-search me-2"></i>Request Analysis
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <button type="button" class="btn btn-outline-info w-100" onclick="loadSlaCompliance()">
+                                <i class="fas fa-stopwatch me-2"></i>SLA Compliance
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <button type="button" class="btn btn-outline-success w-100" onclick="loadDemandForecasting()">
+                                <i class="fas fa-chart-line me-2"></i>Demand Forecasting
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <button type="button" class="btn btn-outline-warning w-100" onclick="loadResourceOptimization()">
+                                <i class="fas fa-cogs me-2"></i>Resource Optimization
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Modals -->
+<div class="modal fade" id="analyticsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="analyticsModalTitle">Analytics</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="analyticsModalBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Modal -->
+<div class="modal fade" id="filtersModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dashboard Filters</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="filtersForm">
+                    <div class="mb-3">
+                        <label class="form-label">Date Range</label>
+                        <select class="form-select" name="dateRange">
+                            <option value="7">Last 7 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                            <option value="365">Last year</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" name="department">
+                            <option value="">All Departments</option>
+                            <option value="IT">IT</option>
+                            <option value="Emergency">Emergency</option>
+                            <option value="Surgery">Surgery</option>
+                            <option value="Radiology">Radiology</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Request Type</label>
+                        <select class="form-select" name="requestType">
+                            <option value="">All Types</option>
+                            <option value="Hardware">Hardware</option>
+                            <option value="Software">Software</option>
+                            <option value="Maintenance">Maintenance</option>
+                            <option value="Support">Support</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Chart.js configurations
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        };
+
+        // Request Trends Chart
+        const trendsCtx = document.getElementById('requestTrendsChart').getContext('2d');
+        new Chart(trendsCtx, {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.TrendData.TrendLabels)),
+                datasets: [{
+                    label: 'Requests',
+                    data: @Html.Raw(Json.Serialize(Model.TrendData.LastMonthData)),
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                ...chartOptions,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Request Type Chart
+        const typeCtx = document.getElementById('requestTypeChart').getContext('2d');
+        new Chart(typeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.RequestsByType.Select(x => x.Type.ToString()))),
+                datasets: [{
+                    data: @Html.Raw(Json.Serialize(Model.RequestsByType.Select(x => x.Count))),
+                    backgroundColor: [
+                        '#0d6efd', '#6f42c1', '#d63384', '#fd7e14',
+                        '#198754', '#20c997', '#ffc107', '#6c757d'
+                    ]
+                }]
+            },
+            options: chartOptions
+        });
+
+        // Request Priority Chart
+        const priorityCtx = document.getElementById('requestPriorityChart').getContext('2d');
+        new Chart(priorityCtx, {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.RequestsByPriority.Select(x => x.Priority.ToString()))),
+                datasets: [{
+                    label: 'Requests',
+                    data: @Html.Raw(Json.Serialize(Model.RequestsByPriority.Select(x => x.Count))),
+                    backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#28a745']
+                }]
+            },
+            options: {
+                ...chartOptions,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Request Department Chart
+        const deptCtx = document.getElementById('requestDepartmentChart').getContext('2d');
+        new Chart(deptCtx, {
+            type: 'horizontalBar',
+            data: {
+                labels: @Html.Raw(Json.Serialize(Model.RequestsByDepartment.Select(x => x.Department))),
+                datasets: [{
+                    label: 'Requests',
+                    data: @Html.Raw(Json.Serialize(Model.RequestsByDepartment.Select(x => x.RequestCount))),
+                    backgroundColor: '#0d6efd'
+                }]
+            },
+            options: {
+                ...chartOptions,
+                indexAxis: 'y'
+            }
+        });
+
+        // Analytics functions
+        function loadRequestAnalysis() {
+            showAnalyticsModal('Request Analysis', '@Url.Action("RequestAnalysis", "RequestDashboard")');
+        }
+
+        function loadSlaCompliance() {
+            showAnalyticsModal('SLA Compliance', '@Url.Action("SlaCompliance", "RequestDashboard")');
+        }
+
+        function loadDemandForecasting() {
+            showAnalyticsModal('Demand Forecasting', '@Url.Action("DemandForecasting", "RequestDashboard")');
+        }
+
+        function loadResourceOptimization() {
+            showAnalyticsModal('Resource Optimization', '@Url.Action("ResourceOptimization", "RequestDashboard")');
+        }
+
+        function showAnalyticsModal(title, url) {
+            document.getElementById('analyticsModalTitle').textContent = title;
+            const modalBody = document.getElementById('analyticsModalBody');
+            modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+            
+            const modal = new bootstrap.Modal(document.getElementById('analyticsModal'));
+            modal.show();
+
+            fetch(url)
+                .then(response => response.text())
+                .then(html => {
+                    modalBody.innerHTML = html;
+                })
+                .catch(error => {
+                    modalBody.innerHTML = '<div class="alert alert-danger">Error loading analytics data.</div>';
+                });
+        }
+
+        function applyFilters() {
+            const formData = new FormData(document.getElementById('filtersForm'));
+            const params = new URLSearchParams(formData);
+            window.location.href = '?' + params.toString();
+        }
+
+        function exportDashboard() {
+            window.open('@Url.Action("ExportDashboard", "RequestDashboard")', '_blank');
+        }
+
+        // Auto-refresh dashboard every 5 minutes
+        setInterval(() => {
+            location.reload();
+        }, 300000);
+    </script>
+}

@@ -1,0 +1,282 @@
+@model PagedResult<ProcurementRequest>
+@{
+    ViewData["Title"] = "Procurement Requests";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-cart3"></i> Procurement Requests</h2>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> New Procurement
+    </a>
+</div>
+
+<!-- Search and Filter Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" name="SearchTerm" value="@Model.SearchTerm" placeholder="Search procurements...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Type</label>
+                <select class="form-select" name="ProcurementType">
+                    <option value="">All Types</option>
+                    @foreach (var type in ViewBag.ProcurementTypes as IEnumerable<SelectListItem>)
+                    {
+                        <option value="@type.Value" selected="@type.Selected">@type.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select class="form-select" name="Status">
+                    <option value="">All Statuses</option>
+                    @foreach (var status in ViewBag.Statuses as IEnumerable<SelectListItem>)
+                    {
+                        <option value="@status.Value" selected="@status.Selected">@status.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Priority</label>
+                <select class="form-select" name="Priority">
+                    <option value="">All Priorities</option>
+                    @foreach (var priority in ViewBag.Priorities as IEnumerable<SelectListItem>)
+                    {
+                        <option value="@priority.Value" selected="@priority.Selected">@priority.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Vendor</label>
+                <select class="form-select" name="VendorId">
+                    <option value="">All Vendors</option>
+                    @foreach (var vendor in ViewBag.Vendors as IEnumerable<SelectListItem>)
+                    {
+                        <option value="@vendor.Value" selected="@vendor.Selected">@vendor.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-outline-primary d-block">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="card-title text-primary">@Model.TotalItems</h4>
+                <p class="card-text">Total Procurements</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="card-title text-warning">
+                    @Model.Items.Count(p => p.Status == ProcurementStatus.PendingApproval)
+                </h4>
+                <p class="card-text">Pending Approval</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="card-title text-info">
+                    @Model.Items.Count(p => p.Status == ProcurementStatus.InProgress || p.Status == ProcurementStatus.Ordered)
+                </h4>
+                <p class="card-text">In Progress</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h4 class="card-title text-success">
+                    @Model.Items.Count(p => p.Status == ProcurementStatus.Received)
+                </h4>
+                <p class="card-text">Completed</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Procurements Table -->
+<div class="card">
+    <div class="card-body">
+        @if (Model.Items.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-striped" id="procurementsTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Request #</th>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Vendor</th>
+                            <th>Amount</th>
+                            <th>Requester</th>
+                            <th>Created</th>
+                            <th>Required By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var procurement in Model.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@procurement.Id" class="text-decoration-none">
+                                        @procurement.RequestNumber
+                                    </a>
+                                </td>
+                                <td>@procurement.Title</td>
+                                <td>
+                                    <span class="badge bg-secondary">@procurement.ProcurementType.ToString().Replace("_", " ")</span>
+                                </td>
+                                <td>
+                                    <span class="badge @GetPriorityBadgeClass(procurement.Priority)">
+                                        @procurement.Priority
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge @GetStatusBadgeClass(procurement.Status)">
+                                        @procurement.Status.ToString().Replace("_", " ")
+                                    </span>
+                                </td>
+                                <td>@(procurement.Vendor?.Name ?? "Not Assigned")</td>
+                                <td>@(procurement.TotalAmount?.ToString("C") ?? "N/A")</td>
+                                <td>@procurement.Requester?.FirstName @procurement.Requester?.LastName</td>
+                                <td>@procurement.CreatedDate.ToString("MM/dd/yyyy")</td>
+                                <td>
+                                    @if (procurement.RequiredByDate.HasValue)
+                                    {
+                                        <span class="@(procurement.RequiredByDate.Value < DateTime.Now && procurement.Status != ProcurementStatus.Received ? "text-danger" : "")">
+                                            @procurement.RequiredByDate.Value.ToString("MM/dd/yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/A</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a asp-action="Details" asp-route-id="@procurement.Id" class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @if (procurement.Status == ProcurementStatus.Draft || procurement.Status == ProcurementStatus.PendingApproval)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@procurement.Id" class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        }
+                                        @if (procurement.Status == ProcurementStatus.Ordered)
+                                        {
+                                            <a asp-action="Receive" asp-route-id="@procurement.Id" class="btn btn-sm btn-outline-success" title="Receive Items">
+                                                <i class="bi bi-box-arrow-in-down"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Procurement pagination">
+                    <ul class="pagination justify-content-center">
+                        @if (Model.Page > 1)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" asp-route-page="@(Model.Page - 1)" asp-all-route-data="@Context.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString())">Previous</a>
+                            </li>
+                        }
+                        
+                        @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Model.TotalPages, Model.Page + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.Page ? "active" : "")">
+                                <a class="page-link" asp-route-page="@i" asp-all-route-data="@Context.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString())">@i</a>
+                            </li>
+                        }
+                        
+                        @if (Model.Page < Model.TotalPages)
+                        {
+                            <li class="page-item">
+                                <a class="page-link" asp-route-page="@(Model.Page + 1)" asp-all-route-data="@Context.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString())">Next</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div class="text-center py-4">
+                <i class="bi bi-cart-x display-1 text-muted"></i>
+                <h4 class="mt-3">No procurements found</h4>
+                <p class="text-muted">No procurement requests match your current filters.</p>
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Create Your First Procurement
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTables with sorting and searching disabled (we handle it server-side)
+            $('#procurementsTable').DataTable({
+                paging: false,
+                searching: false,
+                info: false,
+                ordering: false
+            });
+        });
+    </script>
+}
+
+@functions {
+    private string GetPriorityBadgeClass(ProcurementPriority priority)
+    {
+        return priority switch
+        {
+            ProcurementPriority.High => "bg-danger",
+            ProcurementPriority.Medium => "bg-warning text-dark",
+            ProcurementPriority.Low => "bg-success",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetStatusBadgeClass(ProcurementStatus status)
+    {
+        return status switch
+        {
+            ProcurementStatus.Draft => "bg-secondary",
+            ProcurementStatus.PendingApproval => "bg-warning text-dark",
+            ProcurementStatus.Approved => "bg-info",
+            ProcurementStatus.InProgress => "bg-primary",
+            ProcurementStatus.Ordered => "bg-info",
+            ProcurementStatus.Received => "bg-success",
+            ProcurementStatus.Cancelled => "bg-secondary",
+            _ => "bg-secondary"
+        };
+    }
+}

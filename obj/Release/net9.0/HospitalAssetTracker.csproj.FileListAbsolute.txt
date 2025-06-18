@@ -1,0 +1,10 @@
+/home/gadmin/it_system_new_gen/obj/Release/net9.0/HospitalAssetTracker.csproj.AssemblyReference.cache
+/home/gadmin/it_system_new_gen/obj/Release/net9.0/rpswa.dswa.cache.json
+/home/gadmin/it_system_new_gen/obj/Release/net9.0/HospitalAssetTracker.GeneratedMSBuildEditorConfig.editorconfig
+/home/gadmin/it_system_new_gen/obj/Release/net9.0/HospitalAssetTracker.AssemblyInfoInputs.cache
+/home/gadmin/it_system_new_gen/obj/Release/net9.0/HospitalAssetTracker.AssemblyInfo.cs
+/home/gadmin/it_system_new_gen/obj/Release/net9.0/HospitalAssetTracker.csproj.CoreCompileInputs.cache
+/home/gadmin/it_system_new_gen/obj/Release/net9.0/HospitalAssetTracker.MvcApplicationPartsAssemblyInfo.cs
+/home/gadmin/it_system_new_gen/obj/Release/net9.0/HospitalAssetTracker.MvcApplicationPartsAssemblyInfo.cache
+/home/gadmin/it_system_new_gen/obj/Release/net9.0/HospitalAssetTracker.RazorAssemblyInfo.cache
+/home/gadmin/it_system_new_gen/obj/Release/net9.0/HospitalAssetTracker.RazorAssemblyInfo.cs

@@ -1,0 +1,363 @@
+@model Dictionary<string, object>
+@{
+    ViewData["Title"] = "Dashboard";
+    var totalAssets = (int)Model.GetValueOrDefault("TotalAssets", 0);
+    var inUseAssets = (int)Model.GetValueOrDefault("InUseAssets", 0);
+    var underRepairAssets = (int)Model.GetValueOrDefault("UnderRepairAssets", 0);
+    var expiredWarrantyAssets = (int)Model.GetValueOrDefault("ExpiredWarrantyAssets", 0);
+    var recentMovements = Model.GetValueOrDefault("RecentMovements") as List<HospitalAssetTracker.Models.AssetMovement> ?? new List<HospitalAssetTracker.Models.AssetMovement>();
+    var upcomingMaintenance = Model.GetValueOrDefault("UpcomingMaintenance") as List<HospitalAssetTracker.Models.MaintenanceRecord> ?? new List<HospitalAssetTracker.Models.MaintenanceRecord>();
+    var writeOffSummary = ViewBag.WriteOffSummary as HospitalAssetTracker.Models.WriteOffSummary;
+}
+
+<div class="row">
+    <div class="col-12">
+        <h1 class="display-4">Hospital IT Asset Dashboard</h1>
+        <p class="lead">Comprehensive overview of your IT assets and recent activities</p>
+    </div>
+</div>
+
+<!-- Key Metrics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-primary text-white mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="text-white-75 small">Total Assets</div>
+                        <div class="text-lg font-weight-bold">@totalAssets</div>
+                    </div>
+                    <div class="fa-3x">
+                        <i class="bi bi-laptop"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-white stretched-link" asp-controller="Assets" asp-action="Index">View All Assets</a>
+                <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-success text-white mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="text-white-75 small">In Use</div>
+                        <div class="text-lg font-weight-bold">@inUseAssets</div>
+                    </div>
+                    <div class="fa-3x">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-white stretched-link" asp-controller="Assets" asp-action="Index" asp-route-status="@HospitalAssetTracker.Models.AssetStatus.InUse">View In Use Assets</a>
+                <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-warning text-white mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="text-white-75 small">Under Repair</div>
+                        <div class="text-lg font-weight-bold">@underRepairAssets</div>
+                    </div>
+                    <div class="fa-3x">
+                        <i class="bi bi-tools"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-white stretched-link" asp-controller="Assets" asp-action="Index" asp-route-status="@HospitalAssetTracker.Models.AssetStatus.UnderRepair">View Repair Assets</a>
+                <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="card bg-danger text-white mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <div class="text-white-75 small">Expired Warranty</div>
+                        <div class="text-lg font-weight-bold">@expiredWarrantyAssets</div>
+                    </div>
+                    <div class="fa-3x">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+                <a class="small text-white stretched-link" asp-controller="Assets" asp-action="ExpiredWarranty">View Expired Warranties</a>
+                <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-bar-chart-fill me-1"></i>
+                Assets by Category
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" width="100%" height="40"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-pie-chart-fill me-1"></i>
+                Assets by Status
+            </div>
+            <div class="card-body">
+                <canvas id="statusChart" width="100%" height="40"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="row">
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-activity me-1"></i>
+                Recent Asset Movements
+            </div>
+            <div class="card-body">
+                @if (recentMovements.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Performed By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var movement in recentMovements)
+                                {
+                                    <tr>
+                                        <td>@movement.Asset?.AssetTag</td>
+                                        <td>@movement.MovementType</td>
+                                        <td>@movement.MovementDate.ToString("MM/dd/yyyy")</td>
+                                        <td>@movement.PerformedByUser?.FullName</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No recent movements to display.</p>
+                }
+            </div>
+            <div class="card-footer">
+                <a class="btn btn-sm btn-outline-primary" asp-controller="Reports" asp-action="AuditLog">View All Activity</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-calendar-event me-1"></i>
+                Upcoming Maintenance
+            </div>
+            <div class="card-body">
+                @if (upcomingMaintenance.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Type</th>
+                                    <th>Scheduled</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var maintenance in upcomingMaintenance)
+                                {
+                                    <tr>
+                                        <td>@maintenance.Asset?.AssetTag</td>
+                                        <td>@maintenance.MaintenanceType</td>
+                                        <td>@maintenance.ScheduledDate.ToString("MM/dd/yyyy")</td>
+                                        <td>
+                                            <span class="badge bg-info">@maintenance.Status</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No upcoming maintenance scheduled.</p>
+                }
+            </div>
+            <div class="card-footer">
+                <a class="btn btn-sm btn-outline-primary" asp-controller="Assets" asp-action="Maintenance">View Maintenance Schedule</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Write-Off Statistics Row -->
+@if (writeOffSummary != null)
+{
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3"><i class="bi bi-trash"></i> Write-Off Statistics</h3>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-info text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-75 small">Total Write-Offs</div>
+                            <div class="text-lg font-weight-bold">@writeOffSummary.TotalWriteOffs</div>
+                        </div>
+                        <div class="fa-3x">
+                            <i class="bi bi-archive"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" asp-controller="WriteOff" asp-action="Index">View All Write-Offs</a>
+                    <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-dark mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-dark-75 small">Pending Approval</div>
+                            <div class="text-lg font-weight-bold">@writeOffSummary.PendingRequests</div>
+                        </div>
+                        <div class="fa-3x">
+                            <i class="bi bi-clock"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-dark stretched-link" asp-controller="WriteOff" asp-action="PendingApproval">Review Pending</a>
+                    <div class="small text-dark"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-75 small">Processed</div>
+                            <div class="text-lg font-weight-bold">@writeOffSummary.ProcessedRequests</div>
+                        </div>
+                        <div class="fa-3x">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" asp-controller="WriteOff" asp-action="Index" asp-route-status="Processed">View Processed</a>
+                    <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-secondary text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-75 small">Total Value</div>
+                            <div class="text-lg font-weight-bold">$@writeOffSummary.TotalEstimatedValue.ToString("N0")</div>
+                        </div>
+                        <div class="fa-3x">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" asp-controller="Reports" asp-action="WriteOffSummary">View Report</a>
+                    <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        // Assets by Category Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        const categoryData = @Html.Raw(Json.Serialize(ViewBag.AssetsByCategory));
+        const categoryLabels = Object.keys(categoryData);
+        const categoryValues = Object.values(categoryData);
+
+        new Chart(categoryCtx, {
+            type: 'bar',
+            data: {
+                labels: categoryLabels,
+                datasets: [{
+                    label: 'Number of Assets',
+                    data: categoryValues,
+                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Assets by Status Chart
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        const statusData = @Html.Raw(Json.Serialize(ViewBag.AssetsByStatus));
+        const statusLabels = Object.keys(statusData);
+        const statusValues = Object.values(statusData);
+
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusValues,
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(220, 53, 69, 0.8)',
+                        'rgba(23, 162, 184, 0.8)',
+                        'rgba(108, 117, 125, 0.8)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    </script>
+}

@@ -1,0 +1,184 @@
+@model HospitalAssetTracker.Models.WriteOffSummary
+@{
+    ViewData["Title"] = "Write-Off Report";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-bar-chart"></i> Write-Off Report
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Filter Form -->
+                    <form method="get" class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" name="startDate" class="form-control" value="@ViewBag.StartDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">End Date</label>
+                            <input type="date" name="endDate" class="form-control" value="@ViewBag.EndDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Reason</label>
+                            <select name="reason" class="form-select" asp-items="ViewBag.Reasons">
+                                <option value="">All Reasons</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> Filter
+                                </button>
+                                <a asp-action="Report" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-clockwise"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4 class="mb-0">@Model.TotalWriteOffs</h4>
+                                            <p class="mb-0">Total Write-Offs</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="bi bi-file-x" style="font-size: 2rem;"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4 class="mb-0">@Model.PendingRequests</h4>
+                                            <p class="mb-0">Pending Approval</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="bi bi-clock" style="font-size: 2rem;"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4 class="mb-0">@Model.ApprovedRequests</h4>
+                                            <p class="mb-0">Approved</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h4 class="mb-0">@Model.RejectedRequests</h4>
+                                            <p class="mb-0">Rejected</p>
+                                        </div>
+                                        <div class="align-self-center">
+                                            <i class="bi bi-x-circle" style="font-size: 2rem;"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts would go here -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Write-Offs by Reason</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="reasonChart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Write-Offs by Status</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="statusChart" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Sample chart data - would be populated from server data
+        const reasonCtx = document.getElementById('reasonChart').getContext('2d');
+        new Chart(reasonCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Obsolete', 'Damaged', 'Lost', 'Upgrade', 'Other'],
+                datasets: [{
+                    data: [1, 2, 3, 4, 5], // Sample data
+                    backgroundColor: [
+                        '#FF6384',
+                        '#36A2EB',
+                        '#FFCE56',
+                        '#4BC0C0',
+                        '#9966FF'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+        
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        new Chart(statusCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Pending', 'Approved', 'Rejected'],
+                datasets: [{
+                    data: [@Model.PendingRequests, @Model.ApprovedRequests, @Model.RejectedRequests],
+                    backgroundColor: ['#FFC107', '#28A745', '#DC3545']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    </script>
+}

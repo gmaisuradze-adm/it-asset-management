@@ -1,0 +1,15 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+/home/gadmin/it_system_new_gen/Models/RequestSlaCompliance.cs(5,18): error CS0101: The namespace 'HospitalAssetTracker.Models' already contains a definition for 'RequestSlaCompliance' [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/IProcurementBusinessLogicService.cs(63,86): warning CS8625: Cannot convert null literal to non-nullable reference type. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/ProcurementBusinessLogicService.cs(410,99): warning CS8625: Cannot convert null literal to non-nullable reference type. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+
+Build FAILED.
+
+/home/gadmin/it_system_new_gen/Services/IProcurementBusinessLogicService.cs(63,86): warning CS8625: Cannot convert null literal to non-nullable reference type. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/ProcurementBusinessLogicService.cs(410,99): warning CS8625: Cannot convert null literal to non-nullable reference type. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Models/RequestSlaCompliance.cs(5,18): error CS0101: The namespace 'HospitalAssetTracker.Models' already contains a definition for 'RequestSlaCompliance' [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+    2 Warning(s)
+    1 Error(s)
+
+Time Elapsed 00:00:02.37

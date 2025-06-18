@@ -1,0 +1,431 @@
+@model PagedResult<InventoryItem>
+@using static HospitalAssetTracker.Models.InventorySearchModels
+@{
+    ViewData["Title"] = "IT Inventory Management";
+    var criteria = ViewData["SearchCriteria"] as InventorySearchCriteria ?? new InventorySearchCriteria();
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-warehouse text-primary"></i>
+                        IT Inventory Management
+                    </h3>
+                    @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                    {
+                        <div class="btn-group">
+                            <a asp-action="Create" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Add New Item
+                            </a>
+                            <a asp-action="Alerts" class="btn btn-warning">
+                                <i class="fas fa-exclamation-triangle"></i> Alerts
+                            </a>
+                            <a asp-action="Dashboard" class="btn btn-info">
+                                <i class="fas fa-chart-line"></i> Dashboard
+                            </a>
+                        </div>
+                    }
+                </div>
+
+                <div class="card-body">
+                    <!-- Search and Filter Form -->
+                    <form method="get" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="SearchTerm">Search</label>
+                                    <input type="text" class="form-control" name="SearchTerm" value="@criteria.SearchTerm" 
+                                           placeholder="Search by name, code, brand, model..." />
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="Category">Category</label>
+                                    <select class="form-control" name="Category">
+                                        <option value="">All Categories</option>
+                                        @foreach (var item in ViewBag.Categories)
+                                        {
+                                            <option value="@item.Value" selected="@(criteria.Category == item.Value)">@item.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="Status">Status</label>
+                                    <select class="form-control" name="Status">
+                                        <option value="">All Status</option>
+                                        @foreach (var item in ViewBag.Statuses)
+                                        {
+                                            <option value="@item.Value" selected="@(criteria.Status == item.Value)">@item.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="LocationId">Location</label>
+                                    <select class="form-control" name="LocationId">
+                                        <option value="">All Locations</option>
+                                        @foreach (var item in ViewBag.Locations)
+                                        {
+                                            <option value="@item.Value" selected="@(criteria.LocationId == int.Parse(item.Value))">@item.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <div class="btn-group d-block">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-search"></i> Search
+                                        </button>
+                                        <a href="@Url.Action("Index")" class="btn btn-secondary">
+                                            <i class="fas fa-times"></i> Clear
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Advanced Filters Toggle -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" data-toggle="collapse" data-target="#advancedFilters">
+                                    <i class="fas fa-filter"></i> Advanced Filters
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="collapse mt-3" id="advancedFilters">
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label for="Condition">Condition</label>
+                                        <select class="form-control" name="Condition">
+                                            <option value="">All Conditions</option>
+                                            @foreach (var item in ViewBag.Conditions)
+                                            {
+                                                <option value="@item.Value" selected="@(criteria.Condition == item.Value)">@item.Text</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label for="Brand">Brand</label>
+                                        <input type="text" class="form-control" name="Brand" value="@criteria.Brand" placeholder="Brand name" />
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label for="Model">Model</label>
+                                        <input type="text" class="form-control" name="Model" value="@criteria.Model" placeholder="Model name" />
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" name="IsLowStock" value="true" checked="@(criteria.IsLowStock ?? false)" />
+                                        <label class="form-check-label">Low Stock Only</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" name="IsCriticalStock" value="true" checked="@(criteria.IsCriticalStock ?? false)" />
+                                        <label class="form-check-label">Critical Stock Only</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Results Summary -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="text-muted">
+                                Showing @Model.StartIndex to @Model.EndIndex of @Model.TotalCount items
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="exportToExcel()">
+                                    <i class="fas fa-file-excel"></i> Export Excel
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="printTable()">
+                                    <i class="fas fa-print"></i> Print
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Table -->
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover" id="inventoryTable">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>Item Code</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Brand/Model</th>
+                                    <th>Status</th>
+                                    <th>Condition</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Cost</th>
+                                    <th>Total Value</th>
+                                    <th>Location</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Items)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@item.ItemCode</strong>
+                                        </td>
+                                        <td>
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none">
+                                                @item.Name
+                                            </a>
+                                            @if (!string.IsNullOrEmpty(item.SerialNumber))
+                                            {
+                                                <br><small class="text-muted">SN: @item.SerialNumber</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-secondary">@item.Category</span>
+                                        </td>
+                                        <td>
+                                            @item.Brand<br>
+                                            <small class="text-muted">@item.Model</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge @GetStatusBadgeClass(item.Status)">@item.Status</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge @GetConditionBadgeClass(item.Condition)">@item.Condition</span>
+                                        </td>
+                                        <td>
+                                            <span class="@GetQuantityClass(item)">@item.Quantity</span>
+                                            @if (item.Quantity <= item.ReorderLevel)
+                                            {
+                                                <i class="fas fa-exclamation-triangle text-warning" title="Low Stock"></i>
+                                            }
+                                            @if (item.Quantity <= item.MinimumStock)
+                                            {
+                                                <i class="fas fa-exclamation-circle text-danger" title="Critical Stock"></i>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (item.UnitCost.HasValue)
+                                            {
+                                                @item.UnitCost.Value.ToString("C")
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">N/A</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (item.TotalValue.HasValue)
+                                            {
+                                                <strong>@item.TotalValue.Value.ToString("C")</strong>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">N/A</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @item.Location?.FullLocation
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                                                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    Actions
+                                                </button>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" asp-action="Details" asp-route-id="@item.Id">
+                                                        <i class="fas fa-eye"></i> View Details
+                                                    </a>
+                                                    @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                                                    {
+                                                        <a class="dropdown-item" asp-action="Edit" asp-route-id="@item.Id">
+                                                            <i class="fas fa-edit"></i> Edit
+                                                        </a>
+                                                        <div class="dropdown-divider"></div>
+                                                        <a class="dropdown-item" asp-action="StockIn" asp-route-id="@item.Id">
+                                                            <i class="fas fa-plus-circle text-success"></i> Stock In
+                                                        </a>
+                                                        <a class="dropdown-item" asp-action="StockOut" asp-route-id="@item.Id">
+                                                            <i class="fas fa-minus-circle text-warning"></i> Stock Out
+                                                        </a>
+                                                        <a class="dropdown-item" asp-action="Deploy" asp-route-id="@item.Id">
+                                                            <i class="fas fa-arrow-right text-info"></i> Deploy to Asset
+                                                        </a>
+                                                        @if (User.IsInRole("Admin"))
+                                                        {
+                                                            <div class="dropdown-divider"></div>
+                                                            <a class="dropdown-item text-danger" asp-action="Delete" asp-route-id="@item.Id">
+                                                                <i class="fas fa-trash"></i> Delete
+                                                            </a>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (!Model.Items.Any())
+                    {
+                        <div class="text-center py-5">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <h5>No inventory items found</h5>
+                            <p class="text-muted">Try adjusting your search criteria or add new inventory items.</p>
+                            @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                            {
+                                <a asp-action="Create" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Add First Item
+                                </a>
+                            }
+                        </div>
+                    }
+
+                    <!-- Pagination -->
+                    @if (Model.TotalPages > 1)
+                    {
+                        <nav aria-label="Inventory pagination">
+                            <ul class="pagination justify-content-center">
+                                @if (Model.HasPreviousPage)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="@GetPageUrl(Model.PageNumber - 1, criteria)">Previous</a>
+                                    </li>
+                                }
+
+                                @for (int i = Math.Max(1, Model.PageNumber - 2); i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                                {
+                                    <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                        <a class="page-link" href="@GetPageUrl(i, criteria)">@i</a>
+                                    </li>
+                                }
+
+                                @if (Model.HasNextPage)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link" href="@GetPageUrl(Model.PageNumber + 1, criteria)">Next</a>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function exportToExcel() {
+            // Implementation for Excel export
+            window.location.href = '@Url.Action("ExportExcel", "Inventory")' + window.location.search;
+        }
+
+        function printTable() {
+            window.print();
+        }
+
+        // Initialize tooltips
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+    </script>
+}
+
+@functions {
+    private string GetStatusBadgeClass(InventoryStatus status)
+    {
+        return status switch
+        {
+            InventoryStatus.InStock => "badge-success",
+            InventoryStatus.Reserved => "badge-warning",
+            InventoryStatus.Allocated => "badge-info",
+            InventoryStatus.Deployed => "badge-primary",
+            InventoryStatus.InTransit => "badge-secondary",
+            InventoryStatus.OnLoan => "badge-info",
+            InventoryStatus.UnderTesting => "badge-warning",
+            InventoryStatus.Quarantine => "badge-danger",
+            InventoryStatus.AwaitingDisposal => "badge-dark",
+            InventoryStatus.Disposed => "badge-dark",
+            InventoryStatus.Lost => "badge-danger",
+            InventoryStatus.Stolen => "badge-danger",
+            InventoryStatus.Damaged => "badge-warning",
+            _ => "badge-secondary"
+        };
+    }
+
+    private string GetConditionBadgeClass(InventoryCondition condition)
+    {
+        return condition switch
+        {
+            InventoryCondition.New => "badge-success",
+            InventoryCondition.Excellent => "badge-success",
+            InventoryCondition.Good => "badge-info",
+            InventoryCondition.Fair => "badge-warning",
+            InventoryCondition.Poor => "badge-warning",
+            InventoryCondition.Defective => "badge-danger",
+            InventoryCondition.ForRepair => "badge-warning",
+            InventoryCondition.Salvage => "badge-dark",
+            InventoryCondition.Unknown => "badge-secondary",
+            _ => "badge-secondary"
+        };
+    }
+
+    private string GetQuantityClass(InventoryItem item)
+    {
+        if (item.Quantity <= item.MinimumStock)
+            return "text-danger font-weight-bold";
+        if (item.Quantity <= item.ReorderLevel)
+            return "text-warning font-weight-bold";
+        return "text-success";
+    }
+
+    private string GetPageUrl(int pageNumber, InventorySearchCriteria criteria)
+    {
+        var queryParams = new List<string>();
+        
+        if (!string.IsNullOrEmpty(criteria.SearchTerm))
+            queryParams.Add($"SearchTerm={Uri.EscapeDataString(criteria.SearchTerm)}");
+        if (criteria.Category.HasValue)
+            queryParams.Add($"Category={criteria.Category}");
+        if (criteria.Status.HasValue)
+            queryParams.Add($"Status={criteria.Status}");
+        if (criteria.Condition.HasValue)
+            queryParams.Add($"Condition={criteria.Condition}");
+        if (criteria.LocationId.HasValue)
+            queryParams.Add($"LocationId={criteria.LocationId}");
+        if (!string.IsNullOrEmpty(criteria.Brand))
+            queryParams.Add($"Brand={Uri.EscapeDataString(criteria.Brand)}");
+        if (!string.IsNullOrEmpty(criteria.Model))
+            queryParams.Add($"Model={Uri.EscapeDataString(criteria.Model)}");
+        if (criteria.IsLowStock.HasValue)
+            queryParams.Add($"IsLowStock={criteria.IsLowStock}");
+        if (criteria.IsCriticalStock.HasValue)
+            queryParams.Add($"IsCriticalStock={criteria.IsCriticalStock}");
+
+        queryParams.Add($"PageNumber={pageNumber}");
+        queryParams.Add($"PageSize={criteria.PageSize}");
+
+        return Url.Action("Index") + "?" + string.Join("&", queryParams);
+    }
+}

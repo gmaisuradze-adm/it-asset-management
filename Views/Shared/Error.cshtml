@@ -1,0 +1,123 @@
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        An Error Occurred
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (Model?.ShowRequestId == true)
+                    {
+                        <div class="alert alert-warning">
+                            <strong>Request ID:</strong> @Model.RequestId
+                        </div>
+                    }
+                    
+                    <div class="text-center mb-4">
+                        <i class="bi bi-exclamation-circle text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <h3 class="text-center mb-4">Oops! Something went wrong</h3>
+                    
+                    <p class="text-center text-muted mb-4">
+                        We're sorry, but something unexpected happened while processing your request.
+                        This issue has been logged and our technical team will investigate.
+                    </p>
+                    
+                    <div class="text-center">
+                        <a href="javascript:history.back()" class="btn btn-secondary me-2">
+                            <i class="bi bi-arrow-left"></i> Go Back
+                        </a>
+                        <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
+                            <i class="bi bi-house"></i> Home
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small>
+                                <i class="bi bi-clock"></i>
+                                Error occurred at: @DateTime.Now.ToString("MMM dd, yyyy HH:mm")
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <small>
+                                If this problem persists, please contact IT Support.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (ViewContext.HttpContext.RequestServices.GetService<IWebHostEnvironment>()?.IsDevelopment() == true)
+{
+    <div class="container mt-4">
+        <div class="card border-warning">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">
+                    <i class="bi bi-bug"></i>
+                    Development Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <p><strong>This information is only shown in development mode.</strong></p>
+                
+                @if (ViewData["Exception"] != null)
+                {
+                    <div class="mb-3">
+                        <h6>Exception Details:</h6>
+                        <pre class="bg-light p-3 rounded">@ViewData["Exception"]</pre>
+                    </div>
+                }
+                
+                @if (ViewData["StackTrace"] != null)
+                {
+                    <div class="mb-3">
+                        <h6>Stack Trace:</h6>
+                        <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">@ViewData["StackTrace"]</pre>
+                    </div>
+                }
+                
+                <div class="mb-3">
+                    <h6>Request Information:</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Method:</strong> @Context.Request.Method</li>
+                        <li><strong>Path:</strong> @Context.Request.Path</li>
+                        <li><strong>Query:</strong> @Context.Request.QueryString</li>
+                        <li><strong>User Agent:</strong> @Context.Request.Headers["User-Agent"]</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Styles {
+    <style>
+        .card {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .bi {
+            margin-right: 0.25rem;
+        }
+        
+        pre {
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+}

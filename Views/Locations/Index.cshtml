@@ -1,0 +1,101 @@
+@model IEnumerable<HospitalAssetTracker.Models.Location>
+
+@{
+    ViewData["Title"] = "Manage Locations";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-geo-alt"></i> Manage Locations</h2>
+            <a href="@Url.Action("Create")" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add New Location
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="locationsTable">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>Building</th>
+                                <th>Floor</th>
+                                <th>Room</th>
+                                <th>Full Location</th>
+                                <th>Status</th>
+                                <th>Assets Count</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var location in Model)
+                            {
+                                <tr>
+                                    <td>@location.Building</td>
+                                    <td>@(location.Floor ?? "N/A")</td>
+                                    <td>@location.Room</td>
+                                    <td><strong>@location.FullLocation</strong></td>
+                                    <td>
+                                        @if (location.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@location.Assets.Count</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="@Url.Action("Details", new { id = location.Id })" 
+                                               class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="@Url.Action("Edit", new { id = location.Id })" 
+                                               class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            @if (location.Assets.Count == 0)
+                                            {
+                                                <a href="@Url.Action("Delete", new { id = location.Id })" 
+                                                   class="btn btn-sm btn-outline-danger" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            }
+                                            <form asp-action="ToggleActive" method="post" style="display: inline;">
+                                                <input type="hidden" name="id" value="@location.Id" />
+                                                <button type="submit" 
+                                                        class="btn btn-sm @(location.IsActive ? "btn-outline-warning" : "btn-outline-success")" 
+                                                        title="@(location.IsActive ? "Deactivate" : "Activate")">
+                                                    <i class="bi @(location.IsActive ? "bi-pause-circle" : "bi-play-circle")"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#locationsTable').DataTable({
+                responsive: true,
+                order: [[0, 'asc']],
+                columnDefs: [
+                    { orderable: false, targets: -1 }
+                ]
+            });
+        });
+    </script>
+}

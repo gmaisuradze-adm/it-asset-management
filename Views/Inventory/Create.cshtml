@@ -1,0 +1,422 @@
+@model InventoryItem
+@{
+    ViewData["Title"] = "Add New Inventory Item";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fas fa-plus-circle text-success"></i>
+                        Add New Inventory Item
+                    </h3>
+                </div>
+
+                <div class="card-body">
+                    <form asp-action="Create" method="post" class="needs-validation" novalidate>
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-info-circle"></i> Basic Information
+                                </h5>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="Name" class="form-label required">Item Name</label>
+                                    <input asp-for="Name" class="form-control" placeholder="Enter item name" required />
+                                    <span asp-validation-for="Name" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="Category" class="form-label required">Category</label>
+                                    <select asp-for="Category" class="form-control" asp-items="ViewBag.Categories" required>
+                                        <option value="">Select Category</option>
+                                    </select>
+                                    <span asp-validation-for="Category" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="ItemType" class="form-label required">Item Type</label>
+                                    <select asp-for="ItemType" class="form-control" asp-items="ViewBag.ItemTypes" required>
+                                        <option value="">Select Item Type</option>
+                                    </select>
+                                    <span asp-validation-for="ItemType" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label asp-for="Brand" class="form-label required">Brand</label>
+                                    <input asp-for="Brand" class="form-control" placeholder="Enter brand" required />
+                                    <span asp-validation-for="Brand" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label asp-for="Model" class="form-label required">Model</label>
+                                    <input asp-for="Model" class="form-control" placeholder="Enter model" required />
+                                    <span asp-validation-for="Model" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label asp-for="SerialNumber" class="form-label">Serial Number</label>
+                                    <input asp-for="SerialNumber" class="form-control" placeholder="Enter serial number" />
+                                    <span asp-validation-for="SerialNumber" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label asp-for="PartNumber" class="form-label">Part Number</label>
+                                    <input asp-for="PartNumber" class="form-control" placeholder="Enter part number" />
+                                    <span asp-validation-for="PartNumber" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label asp-for="Description" class="form-label">Description</label>
+                                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter detailed description"></textarea>
+                                    <span asp-validation-for="Description" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status and Condition -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h5 class="text-primary mb-3 mt-4">
+                                    <i class="fas fa-cog"></i> Status & Condition
+                                </h5>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="Status" class="form-label required">Status</label>
+                                    <select asp-for="Status" class="form-control" asp-items="ViewBag.Statuses" required>
+                                        <option value="">Select Status</option>
+                                    </select>
+                                    <span asp-validation-for="Status" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="Condition" class="form-label required">Condition</label>
+                                    <select asp-for="Condition" class="form-control" asp-items="ViewBag.Conditions" required>
+                                        <option value="">Select Condition</option>
+                                    </select>
+                                    <span asp-validation-for="Condition" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stock Information -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h5 class="text-primary mb-3 mt-4">
+                                    <i class="fas fa-boxes"></i> Stock Information
+                                </h5>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label asp-for="Quantity" class="form-label required">Initial Quantity</label>
+                                    <input asp-for="Quantity" type="number" class="form-control" min="0" value="1" required />
+                                    <span asp-validation-for="Quantity" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label asp-for="MinimumStock" class="form-label">Minimum Stock</label>
+                                    <input asp-for="MinimumStock" type="number" class="form-control" min="0" value="0" />
+                                    <span asp-validation-for="MinimumStock" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label asp-for="MaximumStock" class="form-label">Maximum Stock</label>
+                                    <input asp-for="MaximumStock" type="number" class="form-control" min="0" />
+                                    <span asp-validation-for="MaximumStock" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label asp-for="ReorderLevel" class="form-label">Reorder Level</label>
+                                    <input asp-for="ReorderLevel" type="number" class="form-control" min="0" value="0" />
+                                    <span asp-validation-for="ReorderLevel" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Financial Information -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h5 class="text-primary mb-3 mt-4">
+                                    <i class="fas fa-dollar-sign"></i> Financial Information
+                                </h5>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="UnitCost" class="form-label">Unit Cost</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">$</span>
+                                        </div>
+                                        <input asp-for="UnitCost" type="number" step="0.01" class="form-control" placeholder="0.00" />
+                                    </div>
+                                    <span asp-validation-for="UnitCost" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="Supplier" class="form-label">Supplier</label>
+                                    <input asp-for="Supplier" class="form-control" placeholder="Enter supplier name" />
+                                    <span asp-validation-for="Supplier" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="SupplierPartNumber" class="form-label">Supplier Part Number</label>
+                                    <input asp-for="SupplierPartNumber" class="form-control" placeholder="Enter supplier part number" />
+                                    <span asp-validation-for="SupplierPartNumber" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="PurchaseDate" class="form-label">Purchase Date</label>
+                                    <input asp-for="PurchaseDate" type="date" class="form-control" />
+                                    <span asp-validation-for="PurchaseDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="WarrantyExpiry" class="form-label">Warranty Expiry</label>
+                                    <input asp-for="WarrantyExpiry" type="date" class="form-control" />
+                                    <span asp-validation-for="WarrantyExpiry" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Information -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h5 class="text-primary mb-3 mt-4">
+                                    <i class="fas fa-map-marker-alt"></i> Location & Storage
+                                </h5>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="LocationId" class="form-label">Location</label>
+                                    <select asp-for="LocationId" class="form-control" asp-items="ViewBag.Locations">
+                                        <option value="">Select Location</option>
+                                    </select>
+                                    <span asp-validation-for="LocationId" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label asp-for="StorageZone" class="form-label">Storage Zone</label>
+                                    <input asp-for="StorageZone" class="form-control" placeholder="e.g., A, B, C" />
+                                    <span asp-validation-for="StorageZone" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label asp-for="StorageShelf" class="form-label">Storage Shelf</label>
+                                    <input asp-for="StorageShelf" class="form-control" placeholder="e.g., 1, 2, 3" />
+                                    <span asp-validation-for="StorageShelf" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label asp-for="StorageBin" class="form-label">Storage Bin</label>
+                                    <input asp-for="StorageBin" class="form-control" placeholder="e.g., A1, B2" />
+                                    <span asp-validation-for="StorageBin" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Information -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h5 class="text-primary mb-3 mt-4">
+                                    <i class="fas fa-clipboard"></i> Additional Information
+                                </h5>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label asp-for="WarrantyPeriodMonths" class="form-label">Warranty Period (Months)</label>
+                                    <input asp-for="WarrantyPeriodMonths" type="number" class="form-control" min="0" placeholder="12" />
+                                    <span asp-validation-for="WarrantyPeriodMonths" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check mt-4">
+                                    <input asp-for="IsConsumable" class="form-check-input" type="checkbox" />
+                                    <label asp-for="IsConsumable" class="form-check-label">Is Consumable Item</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check mt-4">
+                                    <input asp-for="RequiresCalibration" class="form-check-input" type="checkbox" />
+                                    <label asp-for="RequiresCalibration" class="form-check-label">Requires Calibration</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="Specifications" class="form-label">Specifications</label>
+                                    <textarea asp-for="Specifications" class="form-control" rows="3" placeholder="Enter technical specifications"></textarea>
+                                    <span asp-validation-for="Specifications" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="CompatibleWith" class="form-label">Compatible With</label>
+                                    <textarea asp-for="CompatibleWith" class="form-control" rows="3" placeholder="Enter compatibility information"></textarea>
+                                    <span asp-validation-for="CompatibleWith" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label asp-for="Notes" class="form-label">Notes</label>
+                                    <textarea asp-for="Notes" class="form-control" rows="2" placeholder="Additional notes or comments"></textarea>
+                                    <span asp-validation-for="Notes" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-save"></i> Create Inventory Item
+                                    </button>
+                                    <a asp-action="Index" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left"></i> Back to List
+                                    </a>
+                                    <button type="reset" class="btn btn-outline-warning">
+                                        <i class="fas fa-undo"></i> Reset Form
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        $(document).ready(function() {
+            // Auto-calculate total value when unit cost or quantity changes
+            $('#UnitCost, #Quantity').on('input', function() {
+                var unitCost = parseFloat($('#UnitCost').val()) || 0;
+                var quantity = parseInt($('#Quantity').val()) || 0;
+                var totalValue = unitCost * quantity;
+                
+                // Display calculated total (read-only info)
+                if (totalValue > 0) {
+                    if (!$('#totalValueDisplay').length) {
+                        $('#UnitCost').closest('.form-group').append(
+                            '<small class="form-text text-muted" id="totalValueDisplay">Total Value: $' + totalValue.toFixed(2) + '</small>'
+                        );
+                    } else {
+                        $('#totalValueDisplay').text('Total Value: $' + totalValue.toFixed(2));
+                    }
+                } else {
+                    $('#totalValueDisplay').remove();
+                }
+            });
+
+            // Auto-set warranty expiry based on purchase date and warranty period
+            $('#PurchaseDate, #WarrantyPeriodMonths').on('change', function() {
+                var purchaseDate = $('#PurchaseDate').val();
+                var warrantyMonths = parseInt($('#WarrantyPeriodMonths').val());
+                
+                if (purchaseDate && warrantyMonths) {
+                    var date = new Date(purchaseDate);
+                    date.setMonth(date.getMonth() + warrantyMonths);
+                    $('#WarrantyExpiry').val(date.toISOString().split('T')[0]);
+                }
+            });
+
+            // Bootstrap form validation
+            (function() {
+                'use strict';
+                window.addEventListener('load', function() {
+                    var forms = document.getElementsByClassName('needs-validation');
+                    var validation = Array.prototype.filter.call(forms, function(form) {
+                        form.addEventListener('submit', function(event) {
+                            if (form.checkValidity() === false) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                            }
+                            form.classList.add('was-validated');
+                        }, false);
+                    });
+                }, false);
+            })();
+        });
+    </script>
+
+    <style>
+        .required::after {
+            content: " *";
+            color: red;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .card-header h3 {
+            margin-bottom: 0;
+        }
+        
+        .text-primary {
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 0.5rem;
+        }
+    </style>
+}

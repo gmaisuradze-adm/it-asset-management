@@ -1,0 +1,278 @@
+@model HospitalAssetTracker.Models.InventoryItem
+@{
+    ViewData["Title"] = "Inventory Item Details";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-box text-primary"></i> @Model.Name
+                </h1>
+                <div class="page-options">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a asp-action="StockIn" asp-route-id="@Model.Id" class="btn btn-outline-success">
+                        <i class="fas fa-plus"></i> Stock In
+                    </a>
+                    <a asp-action="StockOut" asp-route-id="@Model.Id" class="btn btn-outline-warning">
+                        <i class="fas fa-minus"></i> Stock Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Item Information -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Item Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Name:</dt>
+                                <dd class="col-sm-8">@Model.Name</dd>
+                                
+                                <dt class="col-sm-4">Category:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-secondary">@Model.Category</span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">Description:</dt>
+                                <dd class="col-sm-8">@(Model.Description ?? "No description")</dd>
+                                
+                                <dt class="col-sm-4">Brand:</dt>
+                                <dd class="col-sm-8">@(Model.Brand ?? "Not specified")</dd>
+                                
+                                <dt class="col-sm-4">Model:</dt>
+                                <dd class="col-sm-8">@(Model.Model ?? "Not specified")</dd>
+                                
+                                <dt class="col-sm-4">SKU:</dt>
+                                <dd class="col-sm-8">@(Model.SKU ?? "Not assigned")</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Location:</dt>
+                                <dd class="col-sm-8">@(Model.Location?.Name ?? "Not assigned")</dd>
+                                
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8">
+                                    <span class="badge bg-@(Model.Status == InventoryStatus.Available ? "success" : 
+                                        Model.Status == InventoryStatus.Reserved ? "info" : 
+                                        Model.Status == InventoryStatus.Deployed ? "primary" : "secondary")">
+                                        @Model.Status
+                                    </span>
+                                </dd>
+                                
+                                <dt class="col-sm-4">Unit:</dt>
+                                <dd class="col-sm-8">@Model.Unit</dd>
+                                
+                                <dt class="col-sm-4">Unit Cost:</dt>
+                                <dd class="col-sm-8">$@Model.UnitCost?.ToString("N2")</dd>
+                                
+                                <dt class="col-sm-4">Created:</dt>
+                                <dd class="col-sm-8">@Model.CreatedDate.ToString("MMM dd, yyyy")</dd>
+                                
+                                <dt class="col-sm-4">Created By:</dt>
+                                <dd class="col-sm-8">@(Model.CreatedByUser?.FirstName + " " + Model.CreatedByUser?.LastName)</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Information -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-warehouse me-2"></i>Stock Information
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <h2 class="text-@(Model.Quantity <= Model.MinimumLevel ? "danger" : "success")">
+                            @Model.Quantity
+                        </h2>
+                        <p class="text-muted mb-0">Current Stock (@Model.Unit)</p>
+                    </div>
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h5 class="text-warning">@Model.MinimumLevel</h5>
+                                <small class="text-muted">Minimum Level</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h5 class="text-info">@Model.MaximumLevel</h5>
+                            <small class="text-muted">Maximum Level</small>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <h4 class="text-primary">$@((Model.Quantity * Model.UnitCost) ?? 0).ToString("N2")</h4>
+                        <p class="text-muted mb-0">Total Value</p>
+                    </div>
+                    
+                    @if (Model.Quantity <= Model.MinimumLevel)
+                    {
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Low Stock Alert!</strong><br>
+                            Current stock is at or below minimum level.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asset Mappings -->
+    @if (Model.AssetMappings?.Any() == true)
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-link me-2"></i>Asset Deployments
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Quantity</th>
+                                        <th>Status</th>
+                                        <th>Deployed Date</th>
+                                        <th>Deployed By</th>
+                                        <th>Return Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var mapping in Model.AssetMappings)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @if (mapping.Asset != null)
+                                                {
+                                                    <a href="/Assets/Details/@mapping.Asset.Id">@mapping.Asset.AssetTag</a>
+                                                    <br><small class="text-muted">@mapping.Asset.Brand @mapping.Asset.Model</small>
+                                                }
+                                            </td>
+                                            <td>@mapping.Quantity</td>
+                                            <td>
+                                                <span class="badge bg-@(mapping.Status == AssetInventoryMappingStatus.Active ? "success" : 
+                                                    mapping.Status == AssetInventoryMappingStatus.Returned ? "secondary" : "info")">
+                                                    @mapping.Status
+                                                </span>
+                                            </td>
+                                            <td>@mapping.DeploymentDate.ToString("MMM dd, yyyy")</td>
+                                            <td>@(mapping.DeployedByUser?.FirstName + " " + mapping.DeployedByUser?.LastName)</td>
+                                            <td>@(mapping.ReturnDate?.ToString("MMM dd, yyyy") ?? "-")</td>
+                                            <td>
+                                                @if (mapping.Status == AssetInventoryMappingStatus.Active)
+                                                {
+                                                    <button class="btn btn-sm btn-outline-warning" onclick="returnFromAsset(@mapping.Id)">
+                                                        <i class="fas fa-undo"></i> Return
+                                                    </button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Movement History -->
+    @if (Model.Movements?.Any() == true)
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history me-2"></i>Movement History
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="movementTable">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Quantity</th>
+                                        <th>Reason</th>
+                                        <th>User</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var movement in Model.Movements.OrderByDescending(m => m.MovementDate))
+                                    {
+                                        <tr>
+                                            <td>@movement.MovementDate.ToString("MMM dd, yyyy HH:mm")</td>
+                                            <td>
+                                                <span class="badge bg-@(movement.MovementType == InventoryMovementType.In ? "success" : "danger")">
+                                                    @movement.MovementType
+                                                </span>
+                                            </td>
+                                            <td>@movement.Quantity</td>
+                                            <td>@movement.Reason</td>
+                                            <td>@(movement.User?.FirstName + " " + movement.User?.LastName)</td>
+                                            <td>@movement.Notes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#movementTable').DataTable({
+                "order": [[ 0, "desc" ]], // Sort by date descending
+                "pageLength": 10,
+                "responsive": true
+            });
+        });
+
+        function returnFromAsset(mappingId) {
+            if (confirm('Are you sure you want to return this item from the asset?')) {
+                // Implement return functionality
+                console.log('Return mapping ID:', mappingId);
+            }
+        }
+    </script>
+}

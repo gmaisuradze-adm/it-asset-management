@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Hospital Asset Tracker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-primary border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-hospital"></i> Hospital Asset Tracker
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-laptop"></i> Assets
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-controller="AssetDashboard" asp-action="Index">
+                                    <i class="bi bi-speedometer2"></i> Asset Dashboard
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-controller="Assets" asp-action="Index">
+                                    <i class="bi bi-list-ul"></i> All Assets
+                                </a></li>
+                                <li><a class="dropdown-item" asp-controller="Assets" asp-action="Create">
+                                    <i class="bi bi-plus-circle"></i> Add New Asset
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-controller="AssetImport" asp-action="Index">
+                                    <i class="bi bi-upload"></i> Bulk Import
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-controller="Assets" asp-action="Maintenance">
+                                    <i class="bi bi-tools"></i> Maintenance Schedule
+                                </a></li>
+                                <li><a class="dropdown-item" asp-controller="Assets" asp-action="ExpiredWarranty">
+                                    <i class="bi bi-calendar-x"></i> Expired Warranties
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-controller="Assets" asp-action="BulkActions">
+                                    <i class="bi bi-gear-wide-connected"></i> Bulk Operations
+                                </a></li>
+                                @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                                {
+                                    <li><a class="dropdown-item" asp-controller="WriteOff" asp-action="Index">
+                                        <i class="bi bi-archive"></i> Write-Off Management
+                                    </a></li>
+                                }
+                            </ul>
+                        </li>
+                        @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-box-seam"></i> Inventory
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-controller="WarehouseDashboard" asp-action="Index">
+                                        <i class="bi bi-speedometer2"></i> Warehouse Dashboard
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Inventory" asp-action="Index">
+                                        <i class="bi bi-list-ul"></i> All Inventory
+                                    </a></li>
+                                    <li><a class="dropdown-item" asp-controller="Inventory" asp-action="Create">
+                                        <i class="bi bi-plus-circle"></i> Add New Item
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Inventory" asp-action="Dashboard">
+                                        <i class="bi bi-graph-up"></i> Old Dashboard
+                                    </a></li>
+                                    <li><a class="dropdown-item" asp-controller="Inventory" asp-action="Alerts">
+                                        <i class="bi bi-exclamation-triangle"></i> Stock Alerts
+                                    </a></li>
+                                </ul>
+                            </li>
+                        }
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-clipboard-check"></i> Requests
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-controller="RequestDashboard" asp-action="Index">
+                                    <i class="bi bi-speedometer2"></i> Request Dashboard
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" asp-controller="Requests" asp-action="MyRequests">
+                                    <i class="bi bi-person-check"></i> My Requests
+                                </a></li>
+                                <li><a class="dropdown-item" asp-controller="Requests" asp-action="Create">
+                                    <i class="bi bi-plus-circle"></i> New Request
+                                </a></li>
+                                @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                                {
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Requests" asp-action="Index">
+                                        <i class="bi bi-list-ul"></i> All Requests
+                                    </a></li>
+                                    <li><a class="dropdown-item" asp-controller="Requests" asp-action="AssignedToMe">
+                                        <i class="bi bi-person-gear"></i> Assigned to Me
+                                    </a></li>
+                                    <li><a class="dropdown-item" asp-controller="Requests" asp-action="Dashboard">
+                                        <i class="bi bi-graph-up"></i> Old Dashboard
+                                    </a></li>
+                                    <li><a class="dropdown-item" asp-controller="Requests" asp-action="Overdue">
+                                        <i class="bi bi-exclamation-triangle"></i> Overdue
+                                    </a></li>
+                                }
+                            </ul>
+                        </li>
+                        @if (User.IsInRole("Admin") || User.IsInRole("Asset Manager"))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-cart3"></i> Procurement
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-controller="ProcurementDashboard" asp-action="Index">
+                                        <i class="bi bi-speedometer2"></i> Procurement Dashboard
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Procurement" asp-action="Index">
+                                        <i class="bi bi-list-ul"></i> All Procurements
+                                    </a></li>
+                                    <li><a class="dropdown-item" asp-controller="Procurement" asp-action="Create">
+                                        <i class="bi bi-plus-circle"></i> New Procurement
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Procurement" asp-action="Dashboard">
+                                        <i class="bi bi-graph-up"></i> Old Dashboard
+                                    </a></li>
+                                    <li><a class="dropdown-item" asp-controller="Procurement" asp-action="Overdue">
+                                        <i class="bi bi-exclamation-triangle"></i> Overdue
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-controller="Procurement" asp-action="Vendors">
+                                        <i class="bi bi-building"></i> Vendors
+                                    </a></li>
+                                </ul>
+                            </li>
+                        }
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-bar-chart"></i> Reports
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-controller="Reports" asp-action="Assets">Asset Reports</a></li>
+                                <li><a class="dropdown-item" asp-controller="Reports" asp-action="AuditLog">Audit Log</a></li>
+                                <li><a class="dropdown-item" asp-controller="Reports" asp-action="MaintenanceSchedule">Maintenance Report</a></li>
+                                <li><a class="dropdown-item" asp-controller="Reports" asp-action="ExpiredWarranties">Warranty Report</a></li>
+                            </ul>
+                        </li>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-gear"></i> Admin
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" asp-controller="Locations" asp-action="Index">Manage Locations</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Users" asp-action="Index">Manage Users</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Reports" asp-action="AuditLog">System Audit</a></li>
+                                </ul>
+                            </li>
+                        }
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Home" asp-action="About">
+                                <i class="bi bi-info-circle"></i> About
+                            </a>
+                        </li>
+                    </ul>
+                    <partial name="_LoginPartial" />
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container-fluid">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i> @ViewBag.ErrorMessage
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    &copy; 2025 - Hospital Asset Tracker - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">
+                        <i class="bi bi-code-square"></i> v1.0.0
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

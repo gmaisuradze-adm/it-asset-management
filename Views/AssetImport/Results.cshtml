@@ -1,0 +1,144 @@
+@model List<HospitalAssetTracker.Models.AssetImportResult>
+
+@{
+    ViewData["Title"] = "Import Results";
+    var successCount = ViewBag.SuccessCount ?? 0;
+    var errorCount = ViewBag.ErrorCount ?? 0;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">
+        <i class="fas fa-clipboard-list text-primary me-2"></i>
+        Import Results
+    </h1>
+    <div>
+        <a asp-action="Index" class="btn btn-secondary me-2">
+            <i class="fas fa-upload me-1"></i>Import More
+        </a>
+        <a asp-action="Index" asp-controller="Assets" class="btn btn-primary">
+            <i class="fas fa-list me-1"></i>View All Assets
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="display-4 text-success mb-2">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h4 class="text-success">@successCount</h4>
+                <p class="text-muted">Assets Successfully Imported</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="display-4 text-danger mb-2">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h4 class="text-danger">@errorCount</h4>
+                <p class="text-muted">Import Errors</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (errorCount > 0 && Model != null)
+{
+    var errorResults = Model.Where(r => !r.IsSuccess).ToList();
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                Import Errors
+            </h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">
+                The following errors occurred during the import process. Please review and correct the data before re-importing.
+            </p>
+            
+            <div class="table-responsive">
+                <table class="table table-striped" id="errorsTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Line #</th>
+                            <th>Asset Tag</th>
+                            <th>Error Message</th>
+                            <th>Raw Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var error in errorResults)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="badge bg-danger">@error.LineNumber</span>
+                                </td>
+                                <td>@error.AssetTag</td>
+                                <td>
+                                    <i class="fas fa-exclamation-circle text-danger me-2"></i>
+                                    @error.ErrorMessage
+                                </td>
+                                <td>
+                                    <code class="text-break">@error.RawData</code>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else if (successCount > 0)
+{
+    <div class="card mt-4">
+        <div class="card-body text-center py-5">
+            <div class="display-1 text-success mb-3">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 class="text-success">Import Completed Successfully!</h3>
+            <p class="text-muted mb-4">
+                All @successCount assets have been imported without any errors.
+            </p>
+            <a asp-action="Index" asp-controller="Assets" class="btn btn-primary btn-lg">
+                <i class="fas fa-list me-2"></i>View Imported Assets
+            </a>
+        </div>
+    </div>
+}
+
+@if (successCount > 0 && errorCount > 0)
+{
+    <div class="alert alert-info mt-4">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-info-circle me-3 fa-2x"></i>
+            <div>
+                <h6 class="alert-heading mb-1">Partial Import Completed</h6>
+                <p class="mb-0">
+                    @successCount assets were successfully imported, but @errorCount rows had errors. 
+                    You can fix the errors and re-import the failed rows.
+                </p>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            if ($('#errorsTable').length > 0) {
+                $('#errorsTable').DataTable({
+                    responsive: true,
+                    order: [[0, 'asc']], // Sort by line number
+                    pageLength: 25
+                });
+            }
+        });
+    </script>
+}

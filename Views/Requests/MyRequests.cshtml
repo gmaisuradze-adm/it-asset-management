@@ -1,0 +1,158 @@
+@model List<ITRequest>
+@{
+    ViewData["Title"] = "My Requests";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-check"></i> My Requests</h2>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> New Request
+    </a>
+</div>
+
+@if (Model.Any())
+{
+    <div class="row">
+        @foreach (var request in Model)
+        {
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">@request.RequestNumber</span>
+                        <span class="badge @GetStatusBadgeClass(request.Status)">
+                            @request.Status.ToString().Replace("_", " ")
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title">@request.Title</h6>
+                        <p class="card-text text-muted small">@request.Description?.Substring(0, Math.Min(100, request.Description.Length))@(request.Description?.Length > 100 ? "..." : "")</p>
+                        
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="bi bi-tag"></i> @request.RequestType.ToString().Replace("_", " ")
+                            </small>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="bi bi-flag"></i> Priority: 
+                            </small>
+                            <span class="badge badge-sm @GetPriorityBadgeClass(request.Priority)">
+                                @request.Priority
+                            </span>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar3"></i> Created: @request.CreatedDate.ToString("MM/dd/yyyy")
+                            </small>
+                        </div>
+                        
+                        @if (request.RequiredByDate.HasValue)
+                        {
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar-check"></i> Due: 
+                                </small>
+                                <small class="@(request.RequiredByDate.Value < DateTime.Now && request.Status != RequestStatus.Completed ? "text-danger" : "")">
+                                    @request.RequiredByDate.Value.ToString("MM/dd/yyyy")
+                                </small>
+                            </div>
+                        }
+                        
+                        @if (request.AssignedToUser != null)
+                        {
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-person-gear"></i> Assigned to: @request.AssignedToUser.FirstName @request.AssignedToUser.LastName
+                                </small>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Details" asp-route-id="@request.Id" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View Details
+                            </a>
+                            @if (request.Status == RequestStatus.Submitted || request.Status == RequestStatus.InProgress)
+                            {
+                                <a asp-action="Edit" asp-route-id="@request.Id" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="bi bi-clipboard-x display-1 text-muted"></i>
+        <h4 class="mt-3">No Requests Yet</h4>
+        <p class="text-muted">You haven't submitted any IT requests yet.</p>
+        <a asp-action="Create" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle"></i> Create Your First Request
+        </a>
+    </div>
+}
+
+@section Styles {
+    <style>
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transition: transform 0.15s ease-in-out;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .badge-sm {
+            font-size: 0.7em;
+        }
+        
+        .card-footer {
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
+}
+
+@functions {
+    private string GetPriorityBadgeClass(RequestPriority priority)
+    {
+        return priority switch
+        {
+            RequestPriority.Critical => "bg-danger",
+            RequestPriority.High => "bg-warning text-dark",
+            RequestPriority.Medium => "bg-info",
+            RequestPriority.Low => "bg-success",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetStatusBadgeClass(RequestStatus status)
+    {
+        return status switch
+        {
+            RequestStatus.Submitted => "bg-primary",
+            RequestStatus.InProgress => "bg-warning text-dark",
+            RequestStatus.PendingApproval => "bg-info",
+            RequestStatus.Approved => "bg-success",
+            RequestStatus.Completed => "bg-success",
+            RequestStatus.Cancelled => "bg-secondary",
+            RequestStatus.OnHold => "bg-warning text-dark",
+            RequestStatus.ReadyForCompletion => "bg-info",
+            _ => "bg-secondary"
+        };
+    }
+}

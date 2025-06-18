@@ -1,0 +1,33 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+/home/gadmin/it_system_new_gen/Controllers/AssetTemplatesController.cs(86,35): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Views/AssetImport/Results.cshtml(51,24): warning CS8604: Possible null reference argument for parameter 'source' in 'IEnumerable<AssetImportResult> Enumerable.Where<AssetImportResult>(IEnumerable<AssetImportResult> source, Func<AssetImportResult, bool> predicate)'. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Controllers/ReportsController.cs(166,37): warning CS8629: Nullable value type may be null. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/AuditService.cs(84,21): warning CS8602: Dereference of a possibly null reference. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Views/Assets/History.cshtml(9,44): warning CS8602: Dereference of a possibly null reference. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Controllers/AssetsController.cs(103,40): warning CS8602: Dereference of a possibly null reference. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Controllers/AssetsController.cs(249,34): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Controllers/AssetsController.cs(253,33): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Views/Assets/Maintenance.cshtml(184,50): warning CS8629: Nullable value type may be null. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Views/Assets/Maintenance.cshtml(201,142): warning CS8629: Nullable value type may be null. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Views/Assets/Index.cshtml(29,43): warning CS8602: Dereference of a possibly null reference. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Views/Assets/Index.cshtml(39,43): warning CS8602: Dereference of a possibly null reference. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Views/Assets/Index.cshtml(49,43): warning CS8602: Dereference of a possibly null reference. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/WriteOffService.cs(298,96): warning CS8629: Nullable value type may be null. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/WriteOffService.cs(299,92): warning CS8629: Nullable value type may be null. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/WriteOffService.cs(326,96): warning CS8629: Nullable value type may be null. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/WriteOffService.cs(327,92): warning CS8629: Nullable value type may be null. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/AssetService.cs(1097,37): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/AssetService.cs(1232,109): warning CS8629: Nullable value type may be null. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+  HospitalAssetTracker -> /home/gadmin/it_system_new_gen/bin/Debug/net9.0/HospitalAssetTracker.dll
+/home/gadmin/dotnet9/sdk/9.0.301/Microsoft.Common.CurrentVersion.targets(5395,5): warning MSB3026: Could not copy "/home/gadmin/it_system_new_gen/Tests/bin/Debug/net9.0/HospitalAssetTracker.deps.json" to "bin/Debug/net9.0/Tests/bin/Debug/net9.0/HospitalAssetTracker.deps.json". Beginning retry 1 in 1000ms. Could not find file '/home/gadmin/it_system_new_gen/Tests/bin/Debug/net9.0/HospitalAssetTracker.deps.json'.  [/home/gadmin/it_system_new_gen/Tests/Tests.csproj]
+  Tests -> /home/gadmin/it_system_new_gen/Tests/bin/Debug/net9.0/Tests.dll
+Test run for /home/gadmin/it_system_new_gen/Tests/bin/Debug/net9.0/Tests.dll (.NETCoreApp,Version=v9.0)
+VSTest version 17.14.0 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+WARNING: Overwriting results file: /home/gadmin/it_system_new_gen/Tests/TestResults/test_results.trx
+Results File: /home/gadmin/it_system_new_gen/Tests/TestResults/test_results.trx
+
+Passed!  - Failed:     0, Passed:     2, Skipped:     0, Total:     2, Duration: 95 ms - Tests.dll (net9.0)

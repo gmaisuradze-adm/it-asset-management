@@ -1,0 +1,185 @@
+@model HospitalAssetTracker.Models.WriteOffRecord
+
+@{
+    ViewData["Title"] = "Create Write-Off Record";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="card-title mb-0">
+                        <i class="fas fa-trash-alt me-2"></i>Create Write-Off Record
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="AssetId" class="form-label">Asset <span class="text-danger">*</span></label>
+                                    <select asp-for="AssetId" class="form-select" id="assetSelect" required>
+                                        <option value="">Select an asset...</option>
+                                    </select>
+                                    <span asp-validation-for="AssetId" class="text-danger"></span>
+                                    @if (ViewBag.AssetId != null)
+                                    {
+                                        <div class="mt-2 p-2 bg-light border rounded">
+                                            <strong>@ViewBag.AssetTag</strong><br>
+                                            <small class="text-muted">@ViewBag.AssetDescription</small>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Reason" class="form-label">Write-Off Reason <span class="text-danger">*</span></label>
+                                    <select asp-for="Reason" asp-items="ViewBag.Reasons" class="form-select" required>
+                                        <option value="">Select reason...</option>
+                                    </select>
+                                    <span asp-validation-for="Reason" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Method" class="form-label">Write-Off Method <span class="text-danger">*</span></label>
+                                    <select asp-for="Method" asp-items="ViewBag.Methods" class="form-select" required>
+                                        <option value="">Select method...</option>
+                                    </select>
+                                    <span asp-validation-for="Method" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="EstimatedValue" class="form-label">Estimated Value</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input asp-for="EstimatedValue" class="form-control" type="number" step="0.01" min="0" placeholder="0.00">
+                                    </div>
+                                    <span asp-validation-for="EstimatedValue" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Justification" class="form-label">Justification <span class="text-danger">*</span></label>
+                            <textarea asp-for="Justification" class="form-control" rows="4" placeholder="Provide detailed justification for the write-off..." required></textarea>
+                            <span asp-validation-for="Justification" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DisposalMethod" class="form-label">Disposal Method</label>
+                                    <input asp-for="DisposalMethod" class="form-control" placeholder="e.g., Recycling, Donation, Destruction">
+                                    <span asp-validation-for="DisposalMethod" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="DisposalDate" class="form-label">Planned Disposal Date</label>
+                                    <input asp-for="DisposalDate" class="form-control" type="date">
+                                    <span asp-validation-for="DisposalDate" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">Additional Notes</label>
+                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Any additional information..."></textarea>
+                            <span asp-validation-for="Notes" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to List
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-save me-1"></i>Create Write-Off Record
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize asset selector
+            loadAssets();
+            
+            // Pre-select asset if provided
+            @if (ViewBag.AssetId != null)
+            {
+                <text>
+                $('#assetSelect').val('@ViewBag.AssetId');
+                </text>
+            }
+            
+            // Auto-populate estimated value when asset is selected
+            $('#assetSelect').change(function() {
+                var assetId = $(this).val();
+                if (assetId) {
+                    loadAssetDetails(assetId);
+                }
+            });
+        });
+
+        function loadAssets() {
+            $.get('/api/assets/list', function(data) {
+                var select = $('#assetSelect');
+                select.empty();
+                select.append('<option value="">Select an asset...</option>');
+                
+                $.each(data, function(index, asset) {
+                    var optionText = asset.assetTag + ' - ' + asset.brand + ' ' + asset.model;
+                    if (asset.status === 'Decommissioned' || asset.status === 'WriteOff' || asset.status === 'InUse') {
+                        select.append('<option value="' + asset.id + '">' + optionText + '</option>');
+                    }
+                });
+            }).fail(function() {
+                console.log('Failed to load assets');
+            });
+        }
+
+        function loadAssetDetails(assetId) {
+            $.get('/api/assets/' + assetId, function(asset) {
+                if (asset.purchasePrice) {
+                    $('#EstimatedValue').val(asset.purchasePrice);
+                }
+            }).fail(function() {
+                console.log('Failed to load asset details');
+            });
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .form-label {
+            font-weight: 600;
+        }
+        
+        .text-danger {
+            font-size: 0.875em;
+        }
+        
+        .card-header {
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+    </style>
+}
