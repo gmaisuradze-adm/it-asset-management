@@ -293,6 +293,7 @@ namespace HospitalAssetTracker.Models
         SecuritySoftware = 9,
         ProductivitySoftware = 10,
         MaintenanceContract = 11,
+        Maintenance = 11, // Alias for MaintenanceContract
         SupportServices = 12,
         ConsultingServices = 13,
         TrainingServices = 14,

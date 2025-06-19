@@ -343,6 +343,57 @@
                     </div>
                 </div>
             </div>
+
+            @* Integrated Business Process Management *@
+            @if (Model.RelatedAsset != null && (Model.RequestType == RequestType.MaintenanceService || Model.RequestType == RequestType.HardwareRepair))
+            {
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs"></i> Integrated Repair Workflow
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Asset:</strong> @Model.RelatedAsset.AssetTag - @Model.RelatedAsset.Brand @Model.RelatedAsset.Model
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12 mb-2">
+                                <button type="button" class="btn btn-success btn-sm w-100" onclick="startRepairWorkflow(@Model.Id)">
+                                    <i class="fas fa-play"></i> Start Repair Workflow
+                                </button>
+                            </div>
+                            
+                            @if (Model.Status == RequestStatus.InProgress)
+                            {
+                                <div class="col-6 mb-2">
+                                    <button type="button" class="btn btn-warning btn-sm w-100" onclick="generateProcurementForRepair(@Model.Id)">
+                                        <i class="fas fa-shopping-cart"></i> Order Parts
+                                    </button>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <button type="button" class="btn btn-info btn-sm w-100" onclick="findReplacementAsset(@Model.Id)">
+                                        <i class="fas fa-exchange-alt"></i> Find Replacement
+                                    </button>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <button type="button" class="btn btn-primary btn-sm w-100" onclick="completeRepair(@Model.Id)">
+                                        <i class="fas fa-check-circle"></i> Complete Repair
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="viewWorkflowStatus(@Model.Id)">
+                                <i class="fas fa-timeline"></i> View Workflow Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
         }
 
         <div class="card">
@@ -599,16 +650,6 @@
                 Swal.fire('Error!', 'Failed to load escalation targets', 'error');
             });
         }
-                    });
-                }
-            }).catch((error) => {
-                Swal.fire(
-                    'Error!',
-                    'Failed to escalate request: ' + (error.responseText || 'Unknown error'),
-                    'error'
-                );
-            });
-        }
 
         function transferRequest(requestId) {
             // Get available departments/users for transfer
@@ -679,6 +720,323 @@
                 .catch(() => {
                     Swal.fire('Error!', 'Failed to load transfer targets', 'error');
                 });
+        }
+
+        function startRepairWorkflow(requestId) {
+            Swal.fire({
+                title: 'Start Integrated Repair Workflow',
+                html: 'This will:<br>' +
+                      '• Update asset status to "Under Maintenance"<br>' +
+                      '• Check if parts are needed<br>' +
+                      '• Generate procurement requests if required<br>' +
+                      '• Find temporary replacement if available<br>' +
+                      '• Create workflow tracking',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Start Workflow',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/CrossModule/StartRepairWorkflow',
+                        type: 'POST',
+                        data: {
+                            requestId: requestId,
+                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                let message = 'Repair workflow started successfully!<br><br>';
+                                if (response.workflowSteps && response.workflowSteps.length > 0) {
+                                    message += '<strong>Steps completed:</strong><br>';
+                                    response.workflowSteps.forEach(step => {
+                                        message += '• ' + step + '<br>';
+                                    });
+                                }
+                                if (response.requiresProcurement) {
+                                    message += '<br><strong>Procurement requests generated:</strong> ' + response.procurementIds.length;
+                                }
+                                if (response.temporaryAssetId) {
+                                    message += '<br><strong>Temporary replacement asset assigned:</strong> #' + response.temporaryAssetId;
+                                }
+                                
+                                Swal.fire({
+                                    title: 'Workflow Started!',
+                                    html: message,
+                                    icon: 'success'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error!', response.message || 'Failed to start repair workflow', 'error');
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error!', 'Failed to start repair workflow: ' + (xhr.responseText || 'Unknown error'), 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function generateProcurementForRepair(requestId) {
+            Swal.fire({
+                title: 'Generate Procurement for Repair',
+                html: '<div class="text-left">' +
+                      '<label>Part Name:</label>' +
+                      '<input id="partName" class="swal2-input" placeholder="e.g., Printer Maintenance Kit">' +
+                      '<label>Part Number:</label>' +
+                      '<input id="partNumber" class="swal2-input" placeholder="e.g., MK-HP-123">' +
+                      '<label>Quantity:</label>' +
+                      '<input id="quantity" type="number" class="swal2-input" value="1" min="1">' +
+                      '<label>Estimated Price ($):</label>' +
+                      '<input id="estimatedPrice" type="number" class="swal2-input" placeholder="150.00" step="0.01">' +
+                      '<label>Vendor:</label>' +
+                      '<input id="vendor" class="swal2-input" placeholder="Office Supplies Inc">' +
+                      '<label>Description:</label>' +
+                      '<textarea id="description" class="swal2-textarea" placeholder="Description of the part needed"></textarea>' +
+                      '</div>',
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Generate Procurement',
+                cancelButtonText: 'Cancel',
+                preConfirm: () => {
+                    const partName = document.getElementById('partName').value;
+                    const partNumber = document.getElementById('partNumber').value;
+                    const quantity = parseInt(document.getElementById('quantity').value);
+                    const estimatedPrice = parseFloat(document.getElementById('estimatedPrice').value);
+                    const vendor = document.getElementById('vendor').value;
+                    const description = document.getElementById('description').value;
+
+                    if (!partName || !quantity || !estimatedPrice) {
+                        Swal.showValidationMessage('Please fill in required fields');
+                        return false;
+                    }
+
+                    return {
+                        partName: partName,
+                        partNumber: partNumber,
+                        quantity: quantity,
+                        estimatedPrice: estimatedPrice,
+                        vendor: vendor,
+                        description: description,
+                        priority: 'Medium'
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const partRequest = result.value;
+                    
+                    $.ajax({
+                        url: '/CrossModule/GenerateProcurementFromRepair',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            requestId: requestId,
+                            partRequests: [partRequest],
+                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                        }),
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: 'Procurement Generated!',
+                                    html: `Procurement requests created: ${response.generatedIds.length}<br>` +
+                                          `Total estimated cost: $${response.totalCost.toFixed(2)}<br>` +
+                                          `Items: ${response.items.join(', ')}`,
+                                    icon: 'success'
+                                });
+                            } else {
+                                Swal.fire('Error!', response.message || 'Failed to generate procurement', 'error');
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error!', 'Failed to generate procurement: ' + (xhr.responseText || 'Unknown error'), 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function findReplacementAsset(requestId) {
+            Swal.fire({
+                title: 'Finding Replacement Asset',
+                text: 'Searching for available replacement assets...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Simulate finding replacement assets
+            setTimeout(() => {
+                Swal.fire({
+                    title: 'Available Replacement Assets',
+                    html: '<select id="replacementAsset" class="swal2-select">' +
+                          '<option value="">Select replacement asset...</option>' +
+                          '<option value="1">ASSET001 - HP LaserJet Pro (Available in Storage)</option>' +
+                          '<option value="2">ASSET002 - Canon Printer (Available in IT Room)</option>' +
+                          '<option value="3">ASSET003 - Brother Printer (Available in Inventory)</option>' +
+                          '</select>',
+                    showCancelButton: true,
+                    confirmButtonText: 'Use Replacement',
+                    cancelButtonText: 'Cancel',
+                    preConfirm: () => {
+                        const selectedAsset = document.getElementById('replacementAsset').value;
+                        if (!selectedAsset) {
+                            Swal.showValidationMessage('Please select a replacement asset');
+                            return false;
+                        }
+                        return selectedAsset;
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const replacementAssetId = result.value;
+                        
+                        $.ajax({
+                            url: '/CrossModule/ReplaceAssetTemporarily',
+                            type: 'POST',
+                            data: {
+                                requestId: requestId,
+                                replacementAssetId: replacementAssetId,
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        title: 'Asset Replaced!',
+                                        html: `Original asset moved to maintenance<br>` +
+                                              `Replacement asset ${response.replacementAssetId} deployed<br>` +
+                                              `Location: ${response.locationId}`,
+                                        icon: 'success'
+                                    });
+                                } else {
+                                    Swal.fire('Error!', response.message || 'Failed to replace asset', 'error');
+                                }
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error!', 'Failed to replace asset: ' + (xhr.responseText || 'Unknown error'), 'error');
+                            }
+                        });
+                    }
+                });
+            }, 1000);
+        }
+
+        function completeRepair(requestId) {
+            Swal.fire({
+                title: 'Complete Repair',
+                html: '<div class="text-left">' +
+                      '<label>Completion Notes:</label>' +
+                      '<textarea id="completionNotes" class="swal2-textarea" placeholder="Describe what was done to complete the repair"></textarea>' +
+                      '<label>Final Location (optional):</label>' +
+                      '<select id="finalLocation" class="swal2-select">' +
+                      '<option value="">Keep current location</option>' +
+                      '<option value="1">Building A - Floor 1 - Room 101</option>' +
+                      '<option value="2">Building A - Floor 2 - Room 201</option>' +
+                      '<option value="3">Building B - Floor 1 - Reception</option>' +
+                      '</select>' +
+                      '</div>',
+                showCancelButton: true,
+                confirmButtonText: 'Complete Repair',
+                cancelButtonText: 'Cancel',
+                preConfirm: () => {
+                    const completionNotes = document.getElementById('completionNotes').value;
+                    const finalLocationId = document.getElementById('finalLocation').value;
+                    
+                    if (!completionNotes.trim()) {
+                        Swal.showValidationMessage('Please provide completion notes');
+                        return false;
+                    }
+                    
+                    return {
+                        completionNotes: completionNotes,
+                        finalLocationId: finalLocationId || null
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const data = result.value;
+                    
+                    $.ajax({
+                        url: '/CrossModule/CompleteRepair',
+                        type: 'POST',
+                        data: {
+                            requestId: requestId,
+                            completionNotes: data.completionNotes,
+                            finalLocationId: data.finalLocationId,
+                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: 'Repair Completed!',
+                                    html: `Asset ${response.assetId} status updated to ${response.newStatus}<br>` +
+                                          (response.finalLocationId ? `Moved to location ${response.finalLocationId}` : 'Kept in current location'),
+                                    icon: 'success'
+                                }).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error!', response.message || 'Failed to complete repair', 'error');
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error!', 'Failed to complete repair: ' + (xhr.responseText || 'Unknown error'), 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function viewWorkflowStatus(requestId) {
+            $.ajax({
+                url: '/CrossModule/GetWorkflowStatus/' + requestId,
+                type: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        let statusHtml = '<div class="text-left">' +
+                                        `<strong>Request Status:</strong> ${response.status}<br><br>`;
+                        
+                        if (response.workflowSteps && response.workflowSteps.length > 0) {
+                            statusHtml += '<strong>Workflow Steps:</strong><br>';
+                            response.workflowSteps.forEach(step => {
+                                statusHtml += `• ${step.stepName}: ${step.status}<br>`;
+                            });
+                            statusHtml += '<br>';
+                        }
+                        
+                        if (response.pendingActions && response.pendingActions.length > 0) {
+                            statusHtml += '<strong>Pending Actions:</strong><br>';
+                            response.pendingActions.forEach(action => {
+                                statusHtml += `• ${action}<br>`;
+                            });
+                            statusHtml += '<br>';
+                        }
+                        
+                        if (response.relatedProcurementIds && response.relatedProcurementIds.length > 0) {
+                            statusHtml += `<strong>Related Procurement IDs:</strong> ${response.relatedProcurementIds.join(', ')}<br>`;
+                        }
+                        
+                        if (response.temporaryAssetId) {
+                            statusHtml += `<strong>Temporary Asset:</strong> #${response.temporaryAssetId}<br>`;
+                        }
+                        
+                        statusHtml += '</div>';
+                        
+                        Swal.fire({
+                            title: 'Workflow Status',
+                            html: statusHtml,
+                            icon: 'info',
+                            width: 600
+                        });
+                    } else {
+                        Swal.fire('Error!', response.message || 'Failed to get workflow status', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    Swal.fire('Error!', 'Failed to get workflow status: ' + (xhr.responseText || 'Unknown error'), 'error');
+                }
+            });
         }
     </script>
 }

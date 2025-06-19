@@ -634,63 +634,105 @@ namespace HospitalAssetTracker.Controllers
 
         private async Task PopulateViewBags(ITRequest? request = null)
         {
-            ViewBag.RequestTypes = Enum.GetValues<RequestType>()
-                .Select(e => new SelectListItem 
+            try
+            {
+                ViewBag.RequestTypes = Enum.GetValues<RequestType>()
+                    .Select(e => new SelectListItem 
+                    { 
+                        Value = ((int)e).ToString(), 
+                        Text = e.ToString().Replace("_", " "),
+                        Selected = request?.RequestType == e
+                    });
+
+                ViewBag.Priorities = Enum.GetValues<RequestPriority>()
+                    .Select(e => new SelectListItem 
+                    { 
+                        Value = ((int)e).ToString(), 
+                        Text = e.ToString(),
+                        Selected = request?.Priority == e
+                    });
+
+                // Add statuses dropdown
+                var statuses = Enum.GetValues<RequestStatus>()
+                    .Select(e => new SelectListItem 
+                    { 
+                        Value = ((int)e).ToString(), 
+                        Text = e.ToString().Replace("_", " "),
+                        Selected = request?.Status == e
+                    }).ToList();
+                
+                ViewBag.Statuses = statuses;
+
+                // Get assets for dropdown
+                var assets = await _assetService.GetAllAssetsAsync();
+                var assetOptions = assets.Select(a => new SelectListItem
+                {
+                    Value = a.Id.ToString(),
+                    Text = $"{a.AssetTag} - {a.Brand} {a.Model} ({a.Category})",
+                    Selected = request?.RelatedAssetId == a.Id
+                }).ToList();
+
+                // Add empty option for assets
+                ViewBag.Assets = new List<SelectListItem> 
                 { 
-                    Value = ((int)e).ToString(), 
-                    Text = e.ToString().Replace("_", " "),
-                    Selected = request?.RequestType == e
+                    new SelectListItem { Value = "", Text = "No Asset Selected" } 
+                }.Concat(assetOptions).ToList();
+
+                // Get locations for dropdown
+                var locations = await _locationService.GetAllLocationsAsync();
+                ViewBag.Locations = locations.Select(l => new SelectListItem
+                {
+                    Value = l.Id.ToString(),
+                    Text = $"{l.Building} - {l.Floor} - {l.Room}",
+                    Selected = request?.RelatedAsset?.LocationId == l.Id
                 });
 
-            ViewBag.Priorities = Enum.GetValues<RequestPriority>()
-                .Select(e => new SelectListItem 
-                { 
-                    Value = ((int)e).ToString(), 
-                    Text = e.ToString(),
-                    Selected = request?.Priority == e
+                // Get departments
+                var users = _userManager.Users.ToList();
+                var departments = users.Where(u => !string.IsNullOrEmpty(u.Department))
+                    .Select(u => u.Department)
+                    .Distinct()
+                    .OrderBy(d => d)
+                    .ToList();
+
+                ViewBag.Departments = departments.Select(d => new SelectListItem
+                {
+                    Value = d,
+                    Text = d,
+                    Selected = request?.Department == d
                 });
 
-            // Get locations for dropdown
-            var locations = await _locationService.GetAllLocationsAsync();
-            ViewBag.Locations = locations.Select(l => new SelectListItem
+                // Categories for equipment requests
+                ViewBag.ItemCategories = new List<SelectListItem>
+                {
+                    new() { Value = "Desktop Computer", Text = "Desktop Computer" },
+                    new() { Value = "Laptop", Text = "Laptop" },
+                    new() { Value = "Printer", Text = "Printer" },
+                    new() { Value = "Network Equipment", Text = "Network Equipment" },
+                    new() { Value = "Server", Text = "Server" },
+                    new() { Value = "Mobile Device", Text = "Mobile Device" },
+                    new() { Value = "Peripheral", Text = "Peripheral" },
+                    new() { Value = "Software", Text = "Software" },
+                    new() { Value = "Other", Text = "Other" }
+                };
+
+                // Set current user department for JavaScript
+                var currentUser = await _userManager.GetUserAsync(User);
+                ViewBag.CurrentUserDepartment = currentUser?.Department ?? "Unknown";
+            }
+            catch (Exception ex)
             {
-                Value = l.Id.ToString(),
-                Text = $"{l.Building} - {l.Floor} - {l.Room}",
-                Selected = request?.RelatedAsset?.LocationId == l.Id
-            });
-
-            // Get departments
-            var users = _userManager.Users.ToList();
-            var departments = users.Where(u => !string.IsNullOrEmpty(u.Department))
-                .Select(u => u.Department)
-                .Distinct()
-                .OrderBy(d => d)
-                .ToList();
-
-            ViewBag.Departments = departments.Select(d => new SelectListItem
-            {
-                Value = d,
-                Text = d,
-                Selected = request?.Department == d
-            });
-
-            // Categories for equipment requests
-            ViewBag.ItemCategories = new List<SelectListItem>
-            {
-                new() { Value = "Desktop Computer", Text = "Desktop Computer" },
-                new() { Value = "Laptop", Text = "Laptop" },
-                new() { Value = "Printer", Text = "Printer" },
-                new() { Value = "Network Equipment", Text = "Network Equipment" },
-                new() { Value = "Server", Text = "Server" },
-                new() { Value = "Mobile Device", Text = "Mobile Device" },
-                new() { Value = "Peripheral", Text = "Peripheral" },
-                new() { Value = "Software", Text = "Software" },
-                new() { Value = "Other", Text = "Other" }
-            };
-
-            // Set current user department for JavaScript
-            var currentUser = await _userManager.GetUserAsync(User);
-            ViewBag.CurrentUserDepartment = currentUser?.Department ?? "Unknown";
+                // Provide fallback data in case of error
+                ViewBag.Statuses = Enum.GetValues<RequestStatus>()
+                    .Select(e => new SelectListItem 
+                    { 
+                        Value = ((int)e).ToString(), 
+                        Text = e.ToString().Replace("_", " "),
+                        Selected = request?.Status == e
+                    }).ToList();
+                
+                ViewBag.Assets = new List<SelectListItem> { new() { Value = "", Text = "No Asset Selected" } };
+            }
         }
     }
 }

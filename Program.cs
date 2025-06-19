@@ -68,6 +68,7 @@ builder.Services.AddScoped<IProcurementBusinessLogicService, ProcurementBusiness
 builder.Services.AddScoped<IRequestBusinessLogicService, RequestBusinessLogicService>();
 builder.Services.AddScoped<IAssetBusinessLogicService, AssetBusinessLogicService>();
 builder.Services.AddScoped<IIntegratedBusinessLogicService, IntegratedBusinessLogicService>();
+builder.Services.AddScoped<ICrossModuleIntegrationService, CrossModuleIntegrationService>();
 
 var app = builder.Build();
 
