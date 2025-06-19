@@ -192,6 +192,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmVxdWVzdERhc2hib2FyZC9SZXNvdXJjZU9wdGltaXphdGlvblJlcG9ydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[/home/gadmin/it_system_new_gen/Views/RequestDashboard/SelectRequestForAnalysis.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmVxdWVzdERhc2hib2FyZC9TZWxlY3RSZXF1ZXN0Rm9yQW5hbHlzaXMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [/home/gadmin/it_system_new_gen/Views/RequestDashboard/SlaCompliance.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvUmVxdWVzdERhc2hib2FyZC9TbGFDb21wbGlhbmNlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 

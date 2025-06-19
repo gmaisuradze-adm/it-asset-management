@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HospitalAssetTracker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dc7021a69a5aaa563259947c82a7d14c9aa8fbdf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+07124a0b6048a9b894a8dc8a4c442cd077e48d24")]
 [assembly: System.Reflection.AssemblyProductAttribute("HospitalAssetTracker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HospitalAssetTracker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
