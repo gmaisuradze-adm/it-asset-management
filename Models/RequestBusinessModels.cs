@@ -233,6 +233,12 @@ namespace HospitalAssetTracker.Models
         public double AverageWorkload { get; set; }
         public double PeakCapacity { get; set; }
         public double CurrentWorkload { get; set; }
+        
+        // Additional properties for ResourceOptimizationReport view
+        public int TotalActiveRequests { get; set; }
+        public double OptimizationScore { get; set; }
+        public double EfficiencyGain { get; set; }
+        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
     }
 
     /// <summary>
