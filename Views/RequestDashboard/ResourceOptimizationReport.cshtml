@@ -1,0 +1,272 @@
+@model ResourceOptimizationResult
+
+@{
+    ViewData["Title"] = "Resource Optimization Report";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chart-line"></i> Resource Optimization Report</h2>
+        <div>
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print Report
+            </button>
+            <button class="btn btn-success" onclick="exportToPDF()">
+                <i class="fas fa-file-pdf"></i> Export PDF
+            </button>
+            <button class="btn btn-info" onclick="exportToExcel()">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </button>
+        </div>
+    </div>
+
+    @if (Model != null)
+    {
+        <!-- Executive Summary -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="fas fa-chart-pie"></i> Executive Summary</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="stat-box text-center">
+                                    <h3 class="text-primary">@Model.TotalActiveRequests</h3>
+                                    <p class="mb-0">Active Requests</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-box text-center">
+                                    <h3 class="text-warning">@Model.AverageWorkload.ToString("F1")</h3>
+                                    <p class="mb-0">Avg Workload/User</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-box text-center">
+                                    <h3 class="text-success">@Model.OptimizationScore.ToString("F1")%</h3>
+                                    <p class="mb-0">Optimization Score</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-box text-center">
+                                    <h3 class="text-info">@Model.EfficiencyGain.ToString("F1")%</h3>
+                                    <p class="mb-0">Efficiency Gain</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workload Distribution -->
+        @if (Model.WorkloadDistribution?.Any() == true)
+        {
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4><i class="fas fa-users"></i> Current Workload Distribution</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Team Member</th>
+                                            <th>Active Requests</th>
+                                            <th>Workload %</th>
+                                            <th>Status</th>
+                                            <th>Utilization</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{
+                                            var maxWorkload = Model.WorkloadDistribution.Values.DefaultIfEmpty(0).Max();
+                                        }
+                                        @foreach (var workload in Model.WorkloadDistribution.OrderByDescending(w => w.Value))
+                                        {
+                                            var percentage = maxWorkload > 0 ? (double)workload.Value / maxWorkload * 100 : 0;
+                                            var statusClass = percentage > 80 ? "danger" : percentage > 60 ? "warning" : "success";
+                                            var statusText = percentage > 80 ? "Overloaded" : percentage > 60 ? "High" : "Normal";
+                                            
+                                            <tr>
+                                                <td><strong>@workload.Key</strong></td>
+                                                <td>@workload.Value</td>
+                                                <td>
+                                                    <div class="progress">
+                                                        <div class="progress-bar bg-@statusClass" style="width: @percentage.ToString("F1")%">
+                                                            @percentage.ToString("F1")%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-@statusClass">@statusText</span>
+                                                </td>
+                                                <td>
+                                                    @if (percentage > 80)
+                                                    {
+                                                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                                                    }
+                                                    else if (percentage > 60)
+                                                    {
+                                                        <i class="fas fa-exclamation-circle text-warning"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="fas fa-check-circle text-success"></i>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Recommendations -->
+        @if (Model.Recommendations?.Any() == true)
+        {
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4><i class="fas fa-lightbulb"></i> Optimization Recommendations</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                @foreach (var recommendation in Model.Recommendations)
+                                {
+                                    <div class="col-md-6 mb-3">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-lightbulb"></i>
+                                            <strong>Recommendation:</strong><br>
+                                            @recommendation
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Performance Metrics -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-tachometer-alt"></i> Performance Metrics</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><strong>Total Capacity:</strong> @Model.PeakCapacity requests</li>
+                            <li><strong>Current Load:</strong> @Model.CurrentWorkload requests</li>
+                            <li><strong>Available Capacity:</strong> @(Model.PeakCapacity - Model.CurrentWorkload) requests</li>
+                            <li><strong>Utilization Rate:</strong> @((double)Model.CurrentWorkload / Model.PeakCapacity).ToString("P1")</li>
+                            <li><strong>Optimization Score:</strong> @Model.OptimizationScore.ToString("F1")%</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-bar"></i> Efficiency Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><strong>Average Workload:</strong> @Model.AverageWorkload.ToString("F1") requests/person</li>
+                            <li><strong>Efficiency Gain:</strong> @Model.EfficiencyGain.ToString("F1")%</li>
+                            <li><strong>Resource Balance:</strong> 
+                                @{
+                                    var balanceScore = Model.OptimizationScore;
+                                    var balanceText = balanceScore > 80 ? "Excellent" : balanceScore > 60 ? "Good" : balanceScore > 40 ? "Fair" : "Poor";
+                                    var balanceClass = balanceScore > 80 ? "success" : balanceScore > 60 ? "info" : balanceScore > 40 ? "warning" : "danger";
+                                }
+                                <span class="badge bg-@balanceClass">@balanceText</span>
+                            </li>
+                            <li><strong>Last Updated:</strong> @Model.LastUpdated.ToString("MMM dd, yyyy HH:mm")</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Information -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <p class="text-muted mb-1">
+                            <i class="fas fa-info-circle"></i>
+                            Report generated on @DateTime.Now.ToString("MMMM dd, yyyy 'at' HH:mm")
+                        </p>
+                        <p class="text-muted mb-0">
+                            <small>Hospital IT Asset Tracker - Resource Optimization Module</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            No resource optimization data available. Please ensure there are active requests and team members.
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function exportToPDF() {
+            toastr.info('PDF export feature will be implemented soon.');
+        }
+        
+        function exportToExcel() {
+            toastr.info('Excel export feature will be implemented soon.');
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .stat-box {
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            margin-bottom: 10px;
+        }
+        
+        .stat-box h3 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .progress {
+            height: 20px;
+        }
+        
+        @media print {
+            .btn {
+                display: none;
+            }
+            
+            .card {
+                border: 1px solid #ddd !important;
+                break-inside: avoid;
+            }
+        }
+    </style>
+}

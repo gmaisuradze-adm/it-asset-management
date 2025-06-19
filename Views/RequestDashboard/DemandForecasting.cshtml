@@ -1,0 +1,196 @@
+@model DemandForecastingViewModel
+@{
+    ViewData["Title"] = "Demand Forecasting";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-line"></i>
+                        IT Request Demand Forecasting
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4>Demand Forecast</h4>
+                                </div>
+                                <div class="card-body">
+                                    @if (Model.Forecast != null)
+                                    {
+                                        <canvas id="demandChart" width="400" height="300"></canvas>
+                                        
+                                        <div class="mt-3">
+                                            <h5>Forecast Summary</h5>
+                                            <ul class="list-unstyled">
+                                                <li><strong>Forecast Period:</strong> @Model.Forecast.ForecastPeriodDays days</li>
+                                                <li><strong>Projected Total Requests:</strong> @Model.Forecast.TotalProjectedRequests</li>
+                                                <li><strong>Peak Period:</strong> @Model.Forecast.PeakPeriod</li>
+                                                <li><strong>Confidence Level:</strong> @Model.Forecast.ConfidenceLevel.ToString("P")</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        @if (Model.Forecast.CategoryBreakdown?.Any() == true)
+                                        {
+                                            <div class="mt-3">
+                                                <h5>Category Breakdown</h5>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Category</th>
+                                                                <th>Projected Requests</th>
+                                                                <th>Growth Rate</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var category in Model.Forecast.CategoryBreakdown)
+                                                            {
+                                                                <tr>
+                                                                    <td>@category.Key</td>
+                                                                    <td>@category.Value</td>
+                                                                    <td><span class="badge badge-info">N/A</span></td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i>
+                                            No forecast data available. Please ensure there is sufficient historical data.
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4>Resource Optimization</h4>
+                                </div>
+                                <div class="card-body">
+                                    @if (Model.ResourceOptimization != null)
+                                    {
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="info-box">
+                                                    <span class="info-box-icon bg-info"><i class="fas fa-users"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Suggested Team Size</span>
+                                                        <span class="info-box-number">@Model.ResourceOptimization.SuggestedTeamSize</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="info-box">
+                                                    <span class="info-box-icon bg-success"><i class="fas fa-percent"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Utilization Rate</span>
+                                                        <span class="info-box-number">@Model.ResourceOptimization.CurrentUtilizationRate.ToString("P")</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        @if (Model.ResourceOptimization.Recommendations?.Any() == true)
+                                        {
+                                            <div class="mt-3">
+                                                <h5>Recommendations</h5>
+                                                <ul class="list-group">
+                                                    @foreach (var recommendation in Model.ResourceOptimization.Recommendations)
+                                                    {
+                                                        <li class="list-group-item">
+                                                            <i class="fas fa-lightbulb text-warning"></i>
+                                                            @recommendation
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i>
+                                            No resource optimization data available.
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Demand Forecast Chart
+        @if (Model.Forecast?.CategoryBreakdown?.Any() == true)
+        {
+            <text>
+            const ctx = document.getElementById('demandChart').getContext('2d');
+            const demandChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.Forecast.CategoryBreakdown.Keys.Select(k => $"'{k}'")))],
+                    datasets: [{
+                        label: 'Projected Requests',
+                        data: [@Html.Raw(string.Join(",", Model.Forecast.CategoryBreakdown.Values))],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Demand Forecast by Category'
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+    </script>
+}

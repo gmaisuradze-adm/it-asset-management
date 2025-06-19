@@ -1,0 +1,374 @@
+@model QualityAssuranceViewModel
+@{
+    ViewData["Title"] = "Quality Assurance";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-shield-alt"></i>
+                        Quality Assurance Dashboard
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.QualityMetrics != null)
+                    {
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-success"><i class="fas fa-star"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Quality Score</span>
+                                        <span class="info-box-number">@Model.QualityMetrics.OverallQualityScore.ToString("F1")</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-info"><i class="fas fa-thumbs-up"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Satisfaction Rate</span>
+                                        <span class="info-box-number">@Model.QualityMetrics.CustomerSatisfactionRate.ToString("P1")</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-warning"><i class="fas fa-redo"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Rework Rate</span>
+                                        <span class="info-box-number">@Model.QualityMetrics.ReworkRate.ToString("P1")</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-primary"><i class="fas fa-clock"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">First Call Resolution</span>
+                                        <span class="info-box-number">@Model.QualityMetrics.FirstCallResolutionRate.ToString("P1")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4>Quality Trends</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="qualityTrendChart" width="400" height="300"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4>Quality by Category</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="categoryQualityChart" width="400" height="300"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (Model.QualityMetrics.QualityByCategory?.Any() == true)
+                        {
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h4>Quality Metrics by Category</h4>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Category</th>
+                                                            <th>Quality Score</th>
+                                                            <th>Total Requests</th>
+                                                            <th>Satisfaction Rate</th>
+                                                            <th>Rework Rate</th>
+                                                            <th>Performance</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var category in Model.QualityMetrics.QualityByCategory)
+                                                        {
+                                                            var performance = GetPerformanceRating(category.Value);
+                                                            var performanceClass = performance == "Excellent" ? "success" : 
+                                                                                  performance == "Good" ? "info" : 
+                                                                                  performance == "Average" ? "warning" : "danger";
+                                                            
+                                                            <tr>
+                                                                <td>@category.Key</td>
+                                                                <td>@category.Value.ToString("F1")</td>
+                                                                <td>@GetCategoryRequestCount(category.Key)</td>
+                                                                <td>@GetCategorySatisfactionRate(category.Key).ToString("P0")</td>
+                                                                <td>@GetCategoryReworkRate(category.Key).ToString("P0")</td>
+                                                                <td><span class="badge badge-@performanceClass">@performance</span></td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4>Quality Issues</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        @if (Model.QualityMetrics.CommonIssues?.Any() == true)
+                                        {
+                                            <ul class="list-group">
+                                                @foreach (var issue in Model.QualityMetrics.CommonIssues)
+                                                {
+                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                        @issue.Key
+                                                        <span class="badge badge-danger badge-pill">@issue.Value</span>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-success">
+                                                <i class="fas fa-check-circle"></i>
+                                                No significant quality issues identified in the current period.
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4>Improvement Areas</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        @if (Model.QualityMetrics.ImprovementAreas?.Any() == true)
+                                        {
+                                            <ul class="list-group">
+                                                @foreach (var area in Model.QualityMetrics.ImprovementAreas)
+                                                {
+                                                    <li class="list-group-item">
+                                                        <i class="fas fa-arrow-up text-primary"></i>
+                                                        @area
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle"></i>
+                                                Quality metrics are within acceptable ranges. Continue monitoring for optimization opportunities.
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4>Quality Actions</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-primary" onclick="runQualityAudit()">
+                                                <i class="fas fa-search"></i> Run Quality Audit
+                                            </button>
+                                            <button type="button" class="btn btn-success" onclick="generateQualityReport()">
+                                                <i class="fas fa-file-alt"></i> Generate Quality Report
+                                            </button>
+                                            <button type="button" class="btn btn-warning" onclick="reviewLowQualityRequests()">
+                                                <i class="fas fa-exclamation-triangle"></i> Review Low Quality Requests
+                                            </button>
+                                            <button type="button" class="btn btn-info" onclick="scheduleTraining()">
+                                                <i class="fas fa-graduation-cap"></i> Schedule Training
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            No quality assurance data available for the selected period.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Quality Trend Chart (Mock data for demonstration)
+        const trendCtx = document.getElementById('qualityTrendChart').getContext('2d');
+        const trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'Quality Score',
+                    data: [7.2, 7.8, 8.1, @Model.QualityMetrics?.OverallQualityScore ?? 8.0],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.1
+                }, {
+                    label: 'Satisfaction Rate',
+                    data: [0.82, 0.85, 0.88, @Model.QualityMetrics?.CustomerSatisfactionRate ?? 0.85],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Quality Trends Over Time'
+                    }
+                }
+            }
+        });
+
+        @if (Model.QualityMetrics?.QualityByCategory?.Any() == true)
+        {
+            <text>
+            // Category Quality Chart
+            const categoryCtx = document.getElementById('categoryQualityChart').getContext('2d');
+            const categoryChart = new Chart(categoryCtx, {
+                type: 'radar',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.QualityMetrics.QualityByCategory.Keys.Select(k => $"'{k}'")))],
+                    datasets: [{
+                        label: 'Quality Score',
+                        data: [@Html.Raw(string.Join(",", Model.QualityMetrics.QualityByCategory.Values))],
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 10
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Quality Score by Category'
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+        
+        function runQualityAudit() {
+            if (confirm('This will run a comprehensive quality audit on recent requests. Continue?')) {
+                fetch('/RequestDashboard/RunQualityAudit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        toastr.success('Quality audit completed successfully');
+                        location.reload();
+                    } else {
+                        toastr.error(data.message || 'Failed to run quality audit');
+                    }
+                })
+                .catch(error => {
+                    toastr.error('An error occurred while running quality audit');
+                });
+            }
+        }
+        
+        function generateQualityReport() {
+            window.open('/RequestDashboard/GenerateQualityReport', '_blank');
+        }
+        
+        function reviewLowQualityRequests() {
+            window.location.href = '/Requests?qualityFilter=low';
+        }
+        
+        function scheduleTraining() {
+            $('#trainingModal').modal('show');
+        }
+    </script>
+}
+
+@functions {
+    private string GetPerformanceRating(double qualityScore)
+    {
+        return qualityScore switch
+        {
+            >= 8.5 => "Excellent",
+            >= 7.0 => "Good", 
+            >= 5.5 => "Average",
+            _ => "Poor"
+        };
+    }
+    
+    private int GetCategoryRequestCount(string category)
+    {
+        // This would typically come from the model
+        return Random.Shared.Next(20, 200);
+    }
+    
+    private double GetCategorySatisfactionRate(string category)
+    {
+        // This would typically come from the model
+        return Random.Shared.NextDouble() * 0.3 + 0.7; // 70-100%
+    }
+    
+    private double GetCategoryReworkRate(string category)
+    {
+        // This would typically come from the model
+        return Random.Shared.NextDouble() * 0.15; // 0-15%
+    }
+}

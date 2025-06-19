@@ -126,7 +126,7 @@ namespace HospitalAssetTracker.Models
         public DateTime? DueDate { get; set; } // Often requested for IT support tickets
 
         // Lifecycle dates
-        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedDate { get; set; }
         public DateTime? LastModifiedDate { get; set; }
         
         // Alias property for services that expect LastUpdatedDate
@@ -230,7 +230,6 @@ namespace HospitalAssetTracker.Models
         HardwareReplacement = 1,
         HardwareRepair = 2,
         NewEquipment = 3,
-        NewEquipmentProvisioning = 3, // Alias
         SoftwareInstallation = 4,
         SoftwareUpgrade = 5,
         NetworkConnectivity = 6,
@@ -238,13 +237,7 @@ namespace HospitalAssetTracker.Models
         ITConsultation = 8,
         MaintenanceService = 9,
         Training = 10,
-        Other = 99,
-        
-        // Aliases for business logic compatibility
-        Hardware = HardwareReplacement,
-        Software = SoftwareInstallation,
-        AccessRequest = UserAccessRights,
-        Maintenance = MaintenanceService
+        Other = 99
     }
 
     public enum RequestPriority

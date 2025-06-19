@@ -30,74 +30,166 @@
         border-color: #28a745;
     }
     
-    /* Minimalist Guidelines Styling */
+    /* Enhanced Smart Guidelines Styling */
     .minimal-checklist .checklist-item {
-        transition: all 0.2s ease;
-        border-radius: 4px;
-        padding: 4px 0;
+        transition: all 0.3s ease;
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 8px;
+        border: 1px solid #e9ecef;
+        background: #fff;
     }
     
     .minimal-checklist .checklist-item:hover {
-        background-color: rgba(13, 110, 253, 0.04);
-        padding-left: 4px;
-        padding-right: 4px;
+        background-color: rgba(13, 110, 253, 0.08);
+        border-color: #0d6efd;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Add Location Button Styling */
+    #addLocationBtn {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+    
+    #locationSelect {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    
+    /* Modal Enhancements */
+    .modal-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .modal-title {
+        font-weight: 600;
     }
     
     .minimal-checklist .form-check-input {
         margin-top: 0.125rem;
-        border-radius: 3px;
-        border: 1.5px solid #dee2e6;
-        transition: all 0.2s ease;
+        border-radius: 4px;
+        border: 2px solid #dee2e6;
+        transition: all 0.3s ease;
+        width: 1.2em;
+        height: 1.2em;
     }
     
     .minimal-checklist .form-check-input:checked {
         background-color: #0d6efd;
         border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     }
     
     .minimal-checklist .form-check-input:checked ~ .form-check-label {
-        color: #6c757d !important;
-        text-decoration: line-through;
-        opacity: 0.8;
+        color: #0d6efd !important;
+        font-weight: 500;
     }
     
     .minimal-checklist .form-check-label {
-        font-size: 0.875rem;
-        line-height: 1.3;
+        font-size: 0.9rem;
+        line-height: 1.4;
         transition: all 0.2s ease;
+        cursor: pointer;
     }
     
+    /* Enhanced Progress Bar */
     .progress {
         transition: all 0.3s ease;
         border-radius: 10px;
         background-color: #f8f9fa;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
     }
     
     .progress-bar {
         border-radius: 10px;
         transition: width 0.6s ease;
+        position: relative;
+        overflow: hidden;
     }
     
+    .progress-bar-animated {
+        background-size: 1rem 1rem;
+    }
+    
+    /* Professional Card Styling */
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        transition: box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .card-header {
+        border-radius: 12px 12px 0 0 !important;
+        border-bottom: none;
+        padding: 1rem 1.25rem;
+    }
+    
+    /* Button Enhancements */
+    .btn-outline-primary:hover, .btn-outline-success:hover, 
+    .btn-outline-info:hover, .btn-outline-warning:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Smart Action Buttons */
+    .btn-sm {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    /* Accordion Enhancements */
     .accordion-button {
         font-size: 0.9rem;
         border: none;
-        padding: 8px 0;
+        padding: 0.75rem 0;
+        background: transparent;
+        border-radius: 6px;
     }
     
     .accordion-button:not(.collapsed) {
-        background-color: transparent;
+        background-color: rgba(13, 110, 253, 0.08);
         color: #0d6efd;
         box-shadow: none;
     }
     
     .accordion-button:focus {
-        box-shadow: none;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
         border: none;
     }
     
-    .card-header.bg-primary {
-        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
-        border: none;
+    /* Field Highlighting */
+    .border-success {
+        border-color: #28a745 !important;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+    
+    .border-danger {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+    
+    /* Status Indicators */
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.6rem;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+    
+    /* Gradient Backgrounds */
+    .bg-gradient {
+        background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-purple) 100%) !important;
+    }
     }
     
     .card-header.bg-info {
@@ -297,7 +389,12 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="AssetTag" class="form-label">Asset Tag *</label>
-                                <input asp-for="AssetTag" class="form-control" placeholder="e.g., DESK-001" required />
+                                <div class="input-group">
+                                    <input asp-for="AssetTag" class="form-control" placeholder="e.g., DESK-1234567" required />
+                                    <button type="button" class="btn btn-outline-secondary" onclick="generateAssetTag()" title="Auto Generate Asset Tag">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
                                 <span asp-validation-for="AssetTag" class="text-danger"></span>
                             </div>
                         </div>
@@ -365,9 +462,14 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="LocationId" class="form-label">Location</label>
-                                <select asp-for="LocationId" class="form-select" asp-items="@ViewBag.Locations">
-                                    <option value="">Select Location</option>
-                                </select>
+                                <div class="input-group">
+                                    <select asp-for="LocationId" id="locationSelect" class="form-select" asp-items="@ViewBag.Locations">
+                                        <option value="">Select Location</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-primary" id="addLocationBtn" title="Add New Location">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </button>
+                                </div>
                                 <span asp-validation-for="LocationId" class="text-danger"></span>
                             </div>
                         </div>
@@ -467,383 +569,224 @@
     </div>
     
     <div class="col-md-4">
-        <!-- Ultra-Minimalist Asset Creation Guidelines -->
-        <div class="card mb-3 border-0" style="background: #fafbfc;">
-            <div class="card-body p-3">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h6 class="mb-0 text-dark fw-normal">
-                        <i class="bi bi-clipboard-check text-primary me-2"></i>
-                        Creation Guidelines
-                    </h6>
-                    <span class="badge bg-light text-dark border" id="completionBadge">0/4</span>
-                </div>
-                
-                <!-- Streamlined Checklist -->
-                <div class="minimal-checklist">
-                    <div class="checklist-item d-flex align-items-center py-2" data-step="1">
-                        <input class="form-check-input me-3" type="checkbox" id="step1" onchange="updateMinimalProgress()">
-                        <label class="form-check-label flex-grow-1 small text-muted" for="step1">
-                            Asset tag & category selection
-                        </label>
-                    </div>
-                    <div class="checklist-item d-flex align-items-center py-2" data-step="2">
-                        <input class="form-check-input me-3" type="checkbox" id="step2" onchange="updateMinimalProgress()">
-                        <label class="form-check-label flex-grow-1 small text-muted" for="step2">
-                            Brand, model & specifications
-                        </label>
-                    </div>
-                    <div class="checklist-item d-flex align-items-center py-2" data-step="3">
-                        <input class="form-check-input me-3" type="checkbox" id="step3" onchange="updateMinimalProgress()">
-                        <label class="form-check-label flex-grow-1 small text-muted" for="step3">
-                            Purchase details & warranty
-                        </label>
-                    </div>
-                    <div class="checklist-item d-flex align-items-center py-2" data-step="4">
-                        <input class="form-check-input me-3" type="checkbox" id="step4" onchange="updateMinimalProgress()">
-                        <label class="form-check-label flex-grow-1 small text-muted" for="step4">
-                            Location & assignment
-                        </label>
-                    </div>
-                </div>
-                
-                <!-- Minimal Progress Indicator -->
-                <div class="progress mt-3" style="height: 2px; background-color: #e9ecef;">
-                    <div class="progress-bar" id="minimalProgressBar" style="width: 0%; background-color: #0d6efd; transition: width 0.3s ease;"></div>
-                </div>
-                
-                <!-- Essential Info Only -->
-                <div class="mt-3 pt-3 border-top border-light">
-                    <div class="row g-2 text-center">
-                        <div class="col-3">
-                            <i class="bi bi-tag-fill text-primary d-block mb-1"></i>
-                            <small class="text-muted">Unique Tag</small>
-                        </div>
-                        <div class="col-3">
-                            <i class="bi bi-asterisk text-danger d-block mb-1"></i>
-                            <small class="text-muted">Required</small>
-                        </div>
-                        <div class="col-3">
-                            <i class="bi bi-shield-check text-success d-block mb-1"></i>
-                            <small class="text-muted">Warranty</small>
-                        </div>
-                        <div class="col-3">
-                            <i class="bi bi-geo-alt-fill text-info d-block mb-1"></i>
-                            <small class="text-muted">Location</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Compact Support -->
-                <div class="text-center mt-3">
-                    <small class="text-muted">
-                        <i class="bi bi-question-circle me-1"></i>
-                        <a href="#" class="text-decoration-none" data-bs-toggle="tooltip" title="Contact IT Support at ext. 2435">
-                            Need help?
-                        </a>
-                    </small>
-                </div>
-            </div>
-        </div>
-
-        <!-- Enhanced Professional Tips Section -->
-        <div class="card shadow-sm">
-            <div class="card-header bg-info text-white">
+        <!-- Professional Asset Management Guidelines -->
+        <div class="card shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-header bg-primary text-white">
                 <h6 class="mb-0">
-                    <i class="bi bi-lightbulb-fill"></i> Professional Tips & Tools
-                    <button class="btn btn-link btn-sm text-white float-end p-0" type="button" data-bs-toggle="collapse" data-bs-target="#tipsContent" aria-expanded="true">
-                        <i class="bi bi-chevron-down" id="tipsToggle"></i>
-                    </button>
+                    <i class="bi bi-book me-2"></i>Asset Management Guidelines
                 </h6>
             </div>
-            <div class="collapse show" id="tipsContent">
-                <div class="card-body">
-                    <!-- Quick Actions Toolbar -->
-                    <div class="mb-3">
-                        <h6 class="text-primary mb-2">
-                            <i class="bi bi-tools"></i> Quick Actions:
-                        </h6>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="generateAssetTag()" title="Generate a unique asset tag based on selected category">
-                                    <i class="bi bi-magic"></i> Generate Tag
-                                </button>
-                            </div>
-                            <div class="col-6">
-                                <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="fillSampleData()" title="Fill form with sample data for testing">
-                                    <i class="bi bi-clipboard-data"></i> Sample Data
-                                </button>
-                            </div>
-                            <div class="col-6">
-                                <button type="button" class="btn btn-outline-success btn-sm w-100" onclick="validateForm()" title="Validate current form data">
-                                    <i class="bi bi-check-circle"></i> Validate
-                                </button>
-                            </div>
-                            <div class="col-6">
-                                <button type="button" class="btn btn-outline-info btn-sm w-100" onclick="clearForm()" title="Clear all form fields">
-                                    <i class="bi bi-arrow-clockwise"></i> Clear Form
-                                </button>
-                            </div>
-                        </div>
+            <div class="card-body">
+                <h6 class="text-primary"><i class="bi bi-check-circle"></i> Best Practices</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-2"><i class="bi bi-check text-success"></i> Verify asset doesn't already exist in system</li>
+                    <li class="mb-2"><i class="bi bi-check text-success"></i> Use standardized naming conventions</li>
+                    <li class="mb-2"><i class="bi bi-check text-success"></i> Complete all required fields accurately</li>
+                    <li class="mb-2"><i class="bi bi-check text-success"></i> Attach relevant documentation if available</li>
+                </ul>
+                
+                <hr>
+                
+                <h6 class="text-primary"><i class="bi bi-tag"></i> Asset Tag Format</h6>
+                <div class="small">
+                    <div class="mb-2">
+                        <span class="badge bg-info">COMP-1234567</span>
+                        <div class="text-muted">Computer equipment</div>
                     </div>
-                    
-                    <hr>
-                    
-                    <!-- Smart Field Guidelines -->
-                    <div class="mb-3">
-                        <h6 class="text-primary mb-2">
-                            <i class="bi bi-book"></i> Smart Guidelines:
-                        </h6>
-                        <div class="accordion accordion-flush" id="tipsAccordion">
-                            <div class="accordion-item border-0">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed py-2 px-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#tipsBasic">
-                                        <small><i class="bi bi-info-circle text-primary me-2"></i><strong>Basic Information</strong></small>
-                                    </button>
-                                </h2>
-                                <div id="tipsBasic" class="accordion-collapse collapse" data-bs-parent="#tipsAccordion">
-                                    <div class="accordion-body p-0 pt-2">
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-borderless">
-                                                <tbody>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0" style="width: 30%;"><strong>Asset Tag:</strong></td>
-                                                        <td class="small">Format: [CATEGORY]-[NUMBER]<br>
-                                                        <em>Examples: DESK-001, LAP-015, PRNT-042</em></td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0"><strong>Category:</strong></td>
-                                                        <td class="small">Determines maintenance schedules and depreciation rates</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0"><strong>Brand/Model:</strong></td>
-                                                        <td class="small">Use exact manufacturer specifications for warranty claims</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0"><strong>Serial Number:</strong></td>
-                                                        <td class="small">Located on device labels, BIOS, or system information</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="accordion-item border-0">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed py-2 px-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#tipsLocation">
-                                        <small><i class="bi bi-geo-alt text-success me-2"></i><strong>Location & Assignment</strong></small>
-                                    </button>
-                                </h2>
-                                <div id="tipsLocation" class="accordion-collapse collapse" data-bs-parent="#tipsAccordion">
-                                    <div class="accordion-body p-0 pt-2">
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-borderless">
-                                                <tbody>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0" style="width: 30%;"><strong>Location:</strong></td>
-                                                        <td class="small">Be as specific as possible (Building → Floor → Room → Desk)</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0"><strong>Department:</strong></td>
-                                                        <td class="small">Responsible organizational unit for budgeting and maintenance</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0"><strong>Assignment:</strong></td>
-                                                        <td class="small">Leave blank if asset is not yet assigned to a specific user</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0"><strong>Responsible Person:</strong></td>
-                                                        <td class="small">Primary contact for asset-related issues and maintenance</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="accordion-item border-0">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed py-2 px-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#tipsFinancial">
-                                        <small><i class="bi bi-calendar-check text-warning me-2"></i><strong>Financial & Dates</strong></small>
-                                    </button>
-                                </h2>
-                                <div id="tipsFinancial" class="accordion-collapse collapse" data-bs-parent="#tipsAccordion">
-                                    <div class="accordion-body p-0 pt-2">
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-borderless">
-                                                <tbody>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0" style="width: 30%;"><strong>Purchase Price:</strong></td>
-                                                        <td class="small">Original acquisition cost (excluding taxes and shipping)</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0"><strong>Installation Date:</strong></td>
-                                                        <td class="small">When asset was put into active service</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0"><strong>Warranty:</strong></td>
-                                                        <td class="small">Critical for automated maintenance alerts and support planning</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="text-muted small ps-0"><strong>Supplier:</strong></td>
-                                                        <td class="small">Vendor information for future purchases and support</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="accordion-item border-0">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed py-2 px-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#tipsBestPractices">
-                                        <small><i class="bi bi-star text-danger me-2"></i><strong>Best Practices</strong></small>
-                                    </button>
-                                </h2>
-                                <div id="tipsBestPractices" class="accordion-collapse collapse" data-bs-parent="#tipsAccordion">
-                                    <div class="accordion-body p-0 pt-2">
-                                        <ul class="list-unstyled small">
-                                            <li class="mb-2"><i class="bi bi-check2-circle text-success me-1"></i> <strong>Standardize naming:</strong> Use consistent naming conventions across all assets</li>
-                                            <li class="mb-2"><i class="bi bi-check2-circle text-success me-1"></i> <strong>Document everything:</strong> Complete descriptions help future maintenance and audits</li>
-                                            <li class="mb-2"><i class="bi bi-check2-circle text-success me-1"></i> <strong>Regular updates:</strong> Keep asset information current as changes occur</li>
-                                            <li class="mb-2"><i class="bi bi-check2-circle text-success me-1"></i> <strong>Photo documentation:</strong> Add photos in Notes section for visual reference</li>
-                                            <li class="mb-0"><i class="bi bi-check2-circle text-success me-1"></i> <strong>Lifecycle planning:</strong> Set realistic warranty and replacement timelines</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="mb-2">
+                        <span class="badge bg-warning">MED-9876543</span>
+                        <div class="text-muted">Medical devices</div>
                     </div>
-                    
-                    <!-- Expert Tip of the Day -->
-                    <div class="alert alert-info py-2 mb-2">
-                        <h6 class="alert-heading mb-1">
-                            <i class="bi bi-lightbulb-fill"></i> Expert Tip:
-                        </h6>
-                        <small id="expertTip">Complete all sections comprehensively for optimal asset lifecycle management and compliance reporting.</small>
-                        <button type="button" class="btn btn-link btn-sm p-0 float-end" onclick="rotateExpertTip()">
-                            <i class="bi bi-arrow-clockwise"></i>
-                        </button>
+                    <div class="mb-2">
+                        <span class="badge bg-success">FURN-5432187</span>
+                        <div class="text-muted">Furniture items</div>
                     </div>
-                    
-                    <!-- Status Indicator -->
-                    <div class="bg-light rounded p-2">
-                        <div class="row align-items-center">
-                            <div class="col">
-                                <small class="text-muted">
-                                    <i class="bi bi-shield-check text-success"></i> 
-                                    <strong>Form Status:</strong> <span id="formStatus">Ready for input</span>
-                                </small>
-                            </div>
-                            <div class="col-auto">
-                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" onclick="showKeyboardShortcuts()">
-                                    <small><i class="bi bi-keyboard"></i> Shortcuts</small>
-                                </button>
-                            </div>
-                        </div>
+                    <div class="mb-2">
+                        <span class="badge bg-secondary">NET-8765421</span>
+                        <div class="text-muted">Network equipment</div>
                     </div>
+                </div>
+                
+                <hr>
+                
+                <h6 class="text-primary"><i class="bi bi-gear"></i> Asset Status Guide</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-1"><span class="badge bg-success">Active</span> - In use and functional</li>
+                    <li class="mb-1"><span class="badge bg-warning">Maintenance</span> - Under repair/service</li>
+                    <li class="mb-1"><span class="badge bg-info">Available</span> - Ready for assignment</li>
+                    <li class="mb-1"><span class="badge bg-secondary">Retired</span> - End of lifecycle</li>
+                </ul>
+                
+                <hr>
+                
+                <h6 class="text-primary"><i class="bi bi-shield-check"></i> Compliance Requirements</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-1">• Maintain accurate warranty information</li>
+                    <li class="mb-1">• Record all maintenance activities</li>
+                    <li class="mb-1">• Document asset location changes</li>
+                    <li class="mb-1">• Follow hospital regulatory standards</li>
+                </ul>
+                
+                <hr>
+                
+                <h6 class="text-primary"><i class="bi bi-clock"></i> Required Actions</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-1"><strong>Immediate:</strong> Asset tag assignment</li>
+                    <li class="mb-1"><strong>Within 24h:</strong> Location verification</li>
+                    <li class="mb-1"><strong>Within 48h:</strong> Warranty registration</li>
+                    <li class="mb-1"><strong>Ongoing:</strong> Status monitoring</li>
+                </ul>
+                
+                <hr>
+                
+                <div class="alert alert-info alert-sm">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Note:</strong> All assets must comply with hospital safety and regulatory standards.
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Add New Location Modal -->
+<div class="modal fade" id="addLocationModal" tabindex="-1" aria-labelledby="addLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addLocationModalLabel">
+                    <i class="bi bi-geo-alt-fill text-primary"></i> Add New Location
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addLocationForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newLocationName" class="form-label">Location Name *</label>
+                                <input type="text" class="form-control" id="newLocationName" required 
+                                       placeholder="e.g., Server Room A1, Emergency Ward">
+                                <div class="form-text">
+                                    Enter a descriptive name for the location.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newLocationBuilding" class="form-label">Building</label>
+                                <input type="text" class="form-control" id="newLocationBuilding" 
+                                       placeholder="e.g., Main Building, Tower A">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newLocationFloor" class="form-label">Floor</label>
+                                <input type="text" class="form-control" id="newLocationFloor" 
+                                       placeholder="e.g., Ground Floor, 2nd Floor">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newLocationRoom" class="form-label">Room</label>
+                                <input type="text" class="form-control" id="newLocationRoom" 
+                                       placeholder="e.g., Room 201, Suite A">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newLocationDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="newLocationDescription" rows="3" 
+                                placeholder="Brief description of this location (optional)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveLocationBtn">
+                    <i class="bi bi-check-circle"></i> Add Location
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-$(document).ready(function() {
+// Wait for DOM content to load
+document.addEventListener('DOMContentLoaded', function() {
     console.log('Asset Create page loaded');
     
-    // Form validation
-    $('.needs-validation').on('submit', function(e) {
-        if (!this.checkValidity()) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        $(this).addClass('was-validated');
-    });
-    
-    // Add required field indicators
-    $('input[required], select[required], textarea[required]').each(function() {
-        var label = $('label[for="' + $(this).attr('id') + '"]');
-        if (label.length && !label.find('.text-danger').length) {
-            label.append(' <span class="text-danger">*</span>');
-        }
-    });
-    
-    // Initialize progress tracking
-    updateProgress();
-    
-    // Real-time form status updates
-    $('input, select, textarea').on('input change', function() {
-        updateFormStatus();
-    });
-    
-    // Keyboard shortcuts
-    $(document).on('keydown', function(e) {
-        if (e.ctrlKey) {
-            switch(e.key.toLowerCase()) {
-                case 'g':
-                    e.preventDefault();
-                    generateAssetTag();
-                    break;
-                case 'd':
-                    e.preventDefault();
-                    fillSampleData();
-                    break;
-                case 'v':
-                    if (!e.shiftKey) { // Avoid conflict with paste
-                        e.preventDefault();
-                        validateForm();
-                    }
-                    break;
-                case 'r':
-                    if (!e.shiftKey) { // Avoid conflict with refresh
-                        e.preventDefault();
-                        clearForm();
-                    }
-                    break;
+    // Initialize form validation
+    const forms = document.querySelectorAll('.needs-validation');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
             }
+            form.classList.add('was-validated');
+        });
+    });
+    
+    // Add required field indicators using vanilla JS
+    const requiredFields = document.querySelectorAll('input[required], select[required], textarea[required]');
+    requiredFields.forEach(field => {
+        const label = document.querySelector(`label[for="${field.id}"]`);
+        if (label && !label.querySelector('.text-danger')) {
+            label.innerHTML += ' <span class="text-danger">*</span>';
         }
     });
     
-    // Enhanced collapse animations
-    $('.collapse').on('show.bs.collapse', function() {
-        $(this).prev('.card-header').find('.bi-chevron-down').addClass('rotate');
-    }).on('hide.bs.collapse', function() {
-        $(this).prev('.card-header').find('.bi-chevron-down').removeClass('rotate');
-    });
+    // Category change handler
+    const categorySelect = document.querySelector('select[name="Category"]');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            const category = this.value;
+            const suggestions = getCategorySuggestions(category);
+            
+            if (suggestions.supplier) {
+                const supplierField = document.querySelector('[name="Supplier"]');
+                if (supplierField) {
+                    supplierField.placeholder = `e.g., ${suggestions.supplier}`;
+                }
+            }
+            if (suggestions.model) {
+                const modelField = document.querySelector('[name="Model"]');
+                if (modelField) {
+                    modelField.placeholder = `e.g., ${suggestions.model}`;
+                }
+            }
+            
+            // Auto-generate Asset Tag if field is empty
+            const assetTagInput = document.querySelector('[name="AssetTag"]');
+            if (assetTagInput && !assetTagInput.value && category) {
+                generateAssetTag();
+            }
+        });
+    }
     
-    // Auto-rotate expert tips every 30 seconds
-    setInterval(rotateExpertTip, 30000);
+    // Asset Tag validation
+    const assetTagField = document.querySelector('[name="AssetTag"]');
+    if (assetTagField) {
+        assetTagField.addEventListener('blur', function() {
+            validateAssetTag();
+        });
+    }
     
-    // Enhanced field validation
-    $('[name="AssetTag"]').on('blur', function() {
-        validateAssetTag();
-    });
-    
-    $('[name="PurchasePrice"]').on('input', function() {
-        const value = parseFloat($(this).val());
-        if (value < 0) {
-            $(this).addClass('is-invalid');
-            showToast('Purchase price cannot be negative', 'error');
-        } else {
-            $(this).removeClass('is-invalid');
-        }
-    });
-    
-    // Smart category-based field updates
-    $('[name="Category"]').on('change', function() {
-        const category = $(this).val();
-        const suggestions = getCategorySuggestions(category);
-        if (suggestions.supplier) {
-            $('[name="Supplier"]').attr('placeholder', `e.g., ${suggestions.supplier}`);
-        }
-        if (suggestions.model) {
-            $('[name="Model"]').attr('placeholder', `e.g., ${suggestions.model}`);
-        }
-    });
+    // Purchase price validation
+    const priceField = document.querySelector('[name="PurchasePrice"]');
+    if (priceField) {
+        priceField.addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            if (value < 0) {
+                this.classList.add('is-invalid');
+                showToast('Purchase price cannot be negative', 'error');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
     
     console.log('Asset Create page initialization complete');
 });
@@ -856,9 +799,14 @@ function getCategorySuggestions(categoryValue) {
         '2': { supplier: 'HP, Canon, Epson', model: 'LaserJet Pro, PIXMA' }, // Printer
         '3': { supplier: 'Canon, Epson, Fujitsu', model: 'ScanSnap, WorkForce' }, // Scanner
         '4': { supplier: 'Dell, HP, LG', model: 'UltraSharp U2722DE' }, // Monitor
-        '9': { supplier: 'Cisco, Netgear, HP', model: 'Catalyst 2960, ProCurve' }, // Network
+        '5': { supplier: 'Logitech, Dell, HP', model: 'K380, Wireless Keyboard' }, // Keyboard
+        '6': { supplier: 'Logitech, Dell, HP', model: 'MX Master 3, Wireless Mouse' }, // Mouse
+        '7': { supplier: 'Logitech, JBL, Dell', model: 'Z313, Multimedia Speakers' }, // Speaker
+        '8': { supplier: 'Samsung, LG, Sony', model: 'Smart TV, LED Display' }, // Television
+        '9': { supplier: 'Cisco, Netgear, HP', model: 'Catalyst 2960, ProCurve' }, // NetworkDevice
         '10': { supplier: 'Dell, HP, IBM', model: 'PowerEdge R740, ProLiant' }, // Server
-        '11': { supplier: 'GE, Philips, Siemens', model: 'Various medical devices' } // Medical
+        '11': { supplier: 'GE, Philips, Siemens', model: 'Various medical devices' }, // MedicalDevice
+        '12': { supplier: 'Various', model: 'Miscellaneous equipment' } // Other
     };
     
     return suggestions[categoryValue] || { supplier: '', model: '' };
@@ -952,331 +900,421 @@ function updateFormStatus() {
     }
 }
 
-// Generate asset tag based on category
+// Enhanced Smart Progress Functions
+function updateSmartProgress() {
+    const checkboxes = document.querySelectorAll('.minimal-checklist input[type="checkbox"]');
+    const checkedCount = document.querySelectorAll('.minimal-checklist input[type="checkbox"]:checked').length;
+    const totalCount = checkboxes.length;
+    const percentage = Math.round((checkedCount / totalCount) * 100);
+    
+    // Update progress bar with animation
+    const progressBar = document.getElementById('smartProgressBar');
+    if (progressBar) {
+        progressBar.style.width = percentage + '%';
+        progressBar.setAttribute('aria-valuenow', percentage);
+    }
+    
+    // Update completion badge
+    const completionBadge = document.getElementById('completionBadge');
+    if (completionBadge) {
+        completionBadge.textContent = `${checkedCount}/${totalCount}`;
+        completionBadge.className = percentage === 100 ? 'badge bg-success text-white' : 'badge bg-primary text-white';
+    }
+    
+    // Update progress text
+    const progressText = document.getElementById('progressText');
+    if (progressText) {
+        progressText.textContent = `${percentage}% Complete`;
+        if (percentage === 100) {
+            progressText.className = 'text-success fw-bold';
+        }
+    }
+    
+    // Update completion score
+    const completionScore = document.getElementById('completionScore');
+    if (completionScore) {
+        completionScore.textContent = percentage + '%';
+    }
+    
+    // Update contextual suggestions
+    updateSmartSuggestions();
+    
+    // Achievement notification
+    if (percentage === 100 && checkedCount === totalCount) {
+        setTimeout(() => {
+            showToast('🎉 All sections completed! Your asset is ready for creation.', 'success');
+        }, 500);
+    }
+}
+
+// Focus on specific form section
+function focusSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        section.style.backgroundColor = '#fff3cd';
+        setTimeout(() => {
+            section.style.backgroundColor = '';
+        }, 2000);
+    }
+}
+
+// Auto-validate fields based on data attributes
+function autoValidateFields() {
+    const checklistItems = document.querySelectorAll('.checklist-item[data-fields]');
+    let validatedCount = 0;
+    
+    checklistItems.forEach((item, index) => {
+        const fields = item.getAttribute('data-fields').split(',');
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        let sectionComplete = false;
+        
+        // Check if at least one field in the section has a value
+        const hasRequiredData = fields.some(fieldName => {
+            const field = document.querySelector(`[name="${fieldName}"]`);
+            return field && field.value && field.value.trim() !== '';
+        });
+        
+        setTimeout(() => {
+            if (hasRequiredData) {
+                checkbox.checked = true;
+                item.style.backgroundColor = '#d1edff';
+                validatedCount++;
+            } else {
+                checkbox.checked = false;
+                item.style.backgroundColor = '#fff2cc';
+            }
+            
+            setTimeout(() => {
+                item.style.backgroundColor = '';
+            }, 1000);
+        }, index * 200);
+    });
+    
+    setTimeout(() => {
+        updateSmartProgress();
+        showToast(`Auto-validation complete! ${validatedCount} sections validated.`, 'info');
+    }, checklistItems.length * 200 + 500);
+}
+
+// Show missing fields with visual indicators
+function showMissingFields() {
+    const checklistItems = document.querySelectorAll('.checklist-item[data-fields]');
+    const missingFields = [];
+    
+    checklistItems.forEach(item => {
+        const fields = item.getAttribute('data-fields').split(',');
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        
+        if (!checkbox.checked) {
+            const emptyFields = fields.filter(fieldName => {
+                const field = document.querySelector(`[name="${fieldName}"]`);
+                return !field || !field.value || field.value.trim() === '';
+            });
+            
+            if (emptyFields.length > 0) {
+                missingFields.push({
+                    section: item.querySelector('label strong').textContent,
+                    fields: emptyFields
+                });
+                
+                // Highlight missing section
+                item.style.border = '2px solid #dc3545';
+                setTimeout(() => {
+                    item.style.border = '';
+                }, 3000);
+            }
+        }
+    });
+    
+    if (missingFields.length > 0) {
+        let message = 'Missing information in:\n';
+        missingFields.forEach(section => {
+            message += `• ${section.section}\n`;
+        });
+        alert(message);
+    } else {
+        showToast('All required sections are complete! 🎉', 'success');
+    }
+}
+
+// Smart contextual help
+function showContextualHelp() {
+    const activeElement = document.activeElement;
+    let helpText = 'General Help: Fill out all required fields marked with *';
+    
+    if (activeElement && activeElement.name) {
+        const fieldHelp = {
+            'AssetTag': 'Asset Tag: Use format CATEGORY-NUMBER (e.g., DESK-001). Must be unique.',
+            'Category': 'Category: Select the appropriate asset type. This affects depreciation and maintenance schedules.',
+            'Brand': 'Brand: Enter the exact manufacturer name as shown on the device.',
+            'Model': 'Model: Use the specific model number from the manufacturer specifications.',
+            'SerialNumber': 'Serial Number: Found on device labels or in system information. Used for warranty claims.',
+            'PurchasePrice': 'Purchase Price: Original cost excluding taxes. Used for depreciation calculations.',
+            'WarrantyExpiry': 'Warranty Expiry: Important for maintenance planning and automatic alerts.',
+            'LocationId': 'Location: Select the most specific location where the asset is deployed.',
+            'Department': 'Department: Responsible organizational unit for budgeting and management.'
+        };
+        
+        helpText = fieldHelp[activeElement.name] || helpText;
+    }
+    
+    // Show help modal or tooltip
+    showHelpModal('Contextual Help', helpText);
+}
+
+// Contact support function
+function contactSupport() {
+    const supportInfo = `
+        <div class="text-center">
+            <i class="bi bi-headset fs-1 text-primary mb-3"></i>
+            <h5>IT Asset Management Support</h5>
+            <div class="row mt-4">
+                <div class="col-6">
+                    <div class="border rounded p-3">
+                        <i class="bi bi-telephone-fill text-success"></i>
+                        <div><strong>Phone</strong></div>
+                        <div>ext. 2435</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="border rounded p-3">
+                        <i class="bi bi-envelope-fill text-info"></i>
+                        <div><strong>Email</strong></div>
+                        <div>assets@hospital.com</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <small class="text-muted">Support available Mon-Fri, 8:00 AM - 6:00 PM</small>
+            </div>
+        </div>
+    `;
+    showHelpModal('Contact Support', supportInfo);
+}
+
+// Automatic Asset Tag Generation
 function generateAssetTag() {
-    const categorySelect = document.querySelector('select[name="Category"]');
-    const assetTagInput = document.querySelector('input[name="AssetTag"]');
+    const categorySelect = document.querySelector('select[name="Category"]') || document.getElementById('Category');
+    const assetTagInput = document.querySelector('input[name="AssetTag"]') || document.getElementById('AssetTag');
+    
+    if (!categorySelect || !assetTagInput) {
+        console.error('Elements not found - categorySelect:', categorySelect, 'assetTagInput:', assetTagInput);
+        showToast('Error: Form elements not found', 'error');
+        return;
+    }
     
     if (!categorySelect.value) {
-        showToast('Please select a category first to generate an appropriate asset tag', 'warning');
+        showToast('Please select a category first to generate Asset Tag', 'warning');
         categorySelect.focus();
         return;
     }
     
-    // Enhanced category prefixes mapping
+    // Category-based prefixes (matching AssetCategory enum)
     const categoryPrefixes = {
-        '0': 'DESK',    // Desktop
-        '1': 'LAP',     // Laptop
-        '2': 'PRNT',    // Printer
-        '3': 'SCAN',    // Scanner
-        '4': 'MON',     // Monitor
-        '5': 'KEYB',    // Keyboard
-        '6': 'MOUS',    // Mouse
-        '7': 'SPKR',    // Speaker
-        '8': 'TV',      // Television
-        '9': 'NET',     // NetworkDevice
-        '10': 'SRV',    // Server
-        '11': 'MED',    // MedicalDevice
-        '12': 'OTH'     // Other
+        '0': 'DESK',   // Desktop
+        '1': 'LAP',    // Laptop  
+        '2': 'PRNT',   // Printer
+        '3': 'SCAN',   // Scanner
+        '4': 'MON',    // Monitor
+        '5': 'KEYB',   // Keyboard
+        '6': 'MOUS',   // Mouse
+        '7': 'SPKR',   // Speaker
+        '8': 'TV',     // Television
+        '9': 'NET',    // NetworkDevice
+        '10': 'SRV',   // Server
+        '11': 'MED',   // MedicalDevice
+        '12': 'OTH'    // Other
     };
     
-    const prefix = categoryPrefixes[categorySelect.value] || 'AST';
-    const randomNum = Math.floor(Math.random() * 999) + 1;
-    const paddedNum = randomNum.toString().padStart(3, '0');
-    const newTag = `${prefix}-${paddedNum}`;
+    const prefix = categoryPrefixes[categorySelect.value] || 'ASSET';
     
-    assetTagInput.value = newTag;
-    assetTagInput.focus();
+    // Generate unique 7-digit number
+    const sevenDigitNum = Math.floor(1000000 + Math.random() * 9000000).toString(); // Random 7-digit number (1000000-9999999)
     
-    // Animate the field to show the change
+    const generatedTag = `${prefix}-${sevenDigitNum}`;
+    
+    // Set the generated tag
+    assetTagInput.value = generatedTag;
+    
+    // Add visual feedback
     assetTagInput.style.backgroundColor = '#d4edda';
+    assetTagInput.style.borderColor = '#28a745';
+    
+    // Remove visual feedback after 2 seconds
     setTimeout(() => {
         assetTagInput.style.backgroundColor = '';
-    }, 1000);
+        assetTagInput.style.borderColor = '';
+    }, 2000);
     
-    showToast(`Asset tag "${newTag}" generated successfully!`, 'success');
-    updateFormStatus();
+    showToast(`Asset Tag generated: ${generatedTag}`, 'success');
+    
+    // Trigger validation
+    validateAssetTag();
 }
 
-// Fill sample data for testing
-function fillSampleData() {
-    if (!confirm('This will fill the form with sample data for testing purposes. Continue?')) {
-        return;
+// Validate Asset Tag format
+function validateAssetTag() {
+    const assetTagInput = document.querySelector('[name="AssetTag"]');
+    const assetTag = assetTagInput.value.trim();
+    
+    if (!assetTag) {
+        return true; // Empty is okay, required validation will handle
     }
     
-    // Enhanced sample data
-    const sampleData = {
-        'AssetTag': 'DESK-' + Math.floor(Math.random() * 999 + 1).toString().padStart(3, '0'),
-        'Brand': 'Dell',
-        'Model': 'OptiPlex 7090 Ultra',
-        'SerialNumber': 'DL' + Math.random().toString(36).substr(2, 8).toUpperCase(),
-        'Description': 'High-performance desktop computer for professional office use with dual monitor support',
-        'Department': 'Information Technology',
-        'ResponsiblePerson': 'John Smith - IT Administrator',
-        'Supplier': 'Dell Technologies Inc.',
-        'PurchasePrice': '1250.00',
-        'Notes': 'Standard office desktop configuration with Windows 11 Pro, Microsoft Office Suite, and remote access capabilities. Includes wireless keyboard and mouse.'
-    };
+    // Check format: 2-4 uppercase letters, dash, 7 digits
+    const tagPattern = /^[A-Z]{2,6}-\d{7}$/;
     
-    // Fill form fields with animation
-    Object.keys(sampleData).forEach((key, index) => {
-        const field = document.querySelector(`[name="${key}"]`);
-        if (field) {
-            setTimeout(() => {
-                field.value = sampleData[key];
-                field.style.backgroundColor = '#cff4fc';
-                setTimeout(() => {
-                    field.style.backgroundColor = '';
-                }, 500);
-            }, index * 100);
-        }
-    });
-    
-    // Set dates
-    setTimeout(() => {
-        const today = new Date();
-        const installationDate = new Date(today.getTime() - (15 * 24 * 60 * 60 * 1000)); // 15 days ago
-        const warrantyDate = new Date(today.getTime() + (365 * 3 * 24 * 60 * 60 * 1000)); // 3 years from now
+    if (tagPattern.test(assetTag)) {
+        assetTagInput.classList.remove('is-invalid');
+        assetTagInput.classList.add('is-valid');
         
-        const installationField = document.querySelector('[name="InstallationDate"]');
-        const warrantyField = document.querySelector('[name="WarrantyExpiry"]');
-        
-        if (installationField) {
-            installationField.value = installationDate.toISOString().split('T')[0];
-        }
-        if (warrantyField) {
-            warrantyField.value = warrantyDate.toISOString().split('T')[0];
+        // Remove any existing error message
+        const errorSpan = assetTagInput.parentElement.parentElement.querySelector('.invalid-feedback');
+        if (errorSpan) {
+            errorSpan.remove();
         }
         
-        // Set category and status
-        const categorySelect = document.querySelector('[name="Category"]');
-        const statusSelect = document.querySelector('[name="Status"]');
-        
-        if (categorySelect) {
-            categorySelect.value = '0'; // Desktop
-        }
-        if (statusSelect) {
-            statusSelect.value = '0'; // Active
-        }
-        
-        updateFormStatus();
-    }, 1000);
-    
-    showToast('Sample data filled successfully! Review and modify as needed.', 'info');
-}
-
-// Validate form data
-function validateForm() {
-    const form = document.querySelector('.needs-validation');
-    const requiredFields = form.querySelectorAll('[required]');
-    const errors = [];
-    
-    requiredFields.forEach(field => {
-        if (!field.value.trim()) {
-            errors.push(`${field.labels[0]?.textContent.replace('*', '').trim() || field.name} is required`);
-        }
-    });
-    
-    // Custom validations
-    const assetTag = document.querySelector('[name="AssetTag"]').value;
-    if (assetTag && !/^[A-Z]{2,4}-\d{3}$/.test(assetTag)) {
-        errors.push('Asset tag format should be: PREFIX-000 (e.g., DESK-001)');
-    }
-    
-    const purchasePrice = document.querySelector('[name="PurchasePrice"]').value;
-    if (purchasePrice && parseFloat(purchasePrice) < 0) {
-        errors.push('Purchase price cannot be negative');
-    }
-    
-    if (errors.length === 0) {
-        showToast('Form validation passed! All required fields are complete.', 'success');
         return true;
     } else {
-        const errorMessage = `Validation failed:\n• ${errors.join('\n• ')}`;
-        showToast('Please fix the following issues before submitting', 'error');
-        console.log(errorMessage);
+        assetTagInput.classList.remove('is-valid');
+        assetTagInput.classList.add('is-invalid');
+        
+        // Add error message
+        let errorSpan = assetTagInput.parentElement.parentElement.querySelector('.invalid-feedback');
+        if (!errorSpan) {
+            errorSpan = document.createElement('div');
+            errorSpan.className = 'invalid-feedback';
+            assetTagInput.parentElement.insertAdjacentElement('afterend', errorSpan);
+        }
+        errorSpan.textContent = 'Asset Tag must follow format: PREFIX-0000000 (e.g., DESK-1234567)';
+        
         return false;
     }
 }
 
-// Clear form data
-function clearForm() {
-    if (!confirm('This will clear all form data. Are you sure?')) {
-        return;
-    }
-    
-    const form = document.querySelector('.needs-validation');
-    const inputs = form.querySelectorAll('input, select, textarea');
-    
-    inputs.forEach((input, index) => {
-        setTimeout(() => {
-            if (input.type === 'checkbox') {
-                input.checked = false;
-            } else {
-                input.value = '';
-            }
-            input.style.backgroundColor = '#f8d7da';
-            setTimeout(() => {
-                input.style.backgroundColor = '';
-            }, 300);
-        }, index * 50);
-    });
-    
-    // Reset validation state
-    form.classList.remove('was-validated');
-    
-    // Reset progress
-    setTimeout(() => {
-        updateProgress();
-        updateFormStatus();
-    }, 500);
-    
-    showToast('Form cleared successfully', 'info');
-}
-
-// Expert tips rotation
-const expertTips = [
-    "Complete all sections comprehensively for optimal asset lifecycle management and compliance reporting.",
-    "Use consistent naming conventions across all assets to improve searchability and organization.",
-    "Document warranty information accurately to enable automated maintenance alerts and budget planning.",
-    "Include detailed descriptions and notes to help future technicians understand the asset's purpose and configuration.",
-    "Assign proper locations and responsible persons to enable efficient asset tracking and accountability.",
-    "Keep supplier information current for warranty claims and future procurement decisions.",
-    "Set realistic installation and warranty dates to support accurate depreciation calculations.",
-    "Use the photo documentation feature in Notes section for visual asset identification."
-];
-
-let currentTipIndex = 0;
-
-function rotateExpertTip() {
-    currentTipIndex = (currentTipIndex + 1) % expertTips.length;
-    const tipElement = document.getElementById('expertTip');
-    if (tipElement) {
-        tipElement.style.opacity = '0.5';
-        setTimeout(() => {
-            tipElement.textContent = expertTips[currentTipIndex];
-            tipElement.style.opacity = '1';
-        }, 200);
-    }
-}
-
-// Show keyboard shortcuts
-function showKeyboardShortcuts() {
-    const shortcuts = `
-        <div class="modal fade" id="shortcutsModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title"><i class="bi bi-keyboard"></i> Keyboard Shortcuts</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <strong>Navigation:</strong>
-                                <ul class="list-unstyled small">
-                                    <li><kbd>Tab</kbd> Next field</li>
-                                    <li><kbd>Shift+Tab</kbd> Previous field</li>
-                                    <li><kbd>Enter</kbd> Submit form</li>
-                                    <li><kbd>Esc</kbd> Cancel/Close</li>
-                                </ul>
-                            </div>
-                            <div class="col-6">
-                                <strong>Quick Actions:</strong>
-                                <ul class="list-unstyled small">
-                                    <li><kbd>Ctrl+G</kbd> Generate tag</li>
-                                    <li><kbd>Ctrl+D</kbd> Sample data</li>
-                                    <li><kbd>Ctrl+V</kbd> Validate form</li>
-                                    <li><kbd>Ctrl+R</kbd> Clear form</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Remove existing modal if present
-    const existingModal = document.getElementById('shortcutsModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    document.body.insertAdjacentHTML('beforeend', shortcuts);
-    const modal = new bootstrap.Modal(document.getElementById('shortcutsModal'));
-    modal.show();
-}
-
 // Toast notification function
 function showToast(message, type = 'info') {
-    const toastId = 'toast-' + Date.now();
-    const toastClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
-    
     const toastHtml = `
-        <div class="toast align-items-center text-white ${toastClass} border-0" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'warning' ? 'warning' : type === 'error' ? 'danger' : 'info'} border-0" role="alert">
             <div class="d-flex">
-                <div class="toast-body">
-                    <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : 'info-circle'}"></i>
-                    ${message}
-                </div>
+                <div class="toast-body">${message}</div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
             </div>
         </div>
     `;
     
-    // Create toast container if it doesn't exist
-    let toastContainer = document.getElementById('toastContainer');
+    let toastContainer = document.querySelector('.toast-container');
     if (!toastContainer) {
         toastContainer = document.createElement('div');
-        toastContainer.id = 'toastContainer';
         toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
-        toastContainer.style.zIndex = '9999';
         document.body.appendChild(toastContainer);
     }
     
     toastContainer.insertAdjacentHTML('beforeend', toastHtml);
     
-    const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement);
-    toast.show();
+    const toastElement = toastContainer.lastElementChild;
+    
+    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
+    } else {
+        console.error('Bootstrap Toast not available');
+        // Fallback: show as alert
+        alert(message);
+    }
     
     // Auto remove after hiding
-    toastElement.addEventListener('hidden.bs.toast', function() {
+    toastElement.addEventListener('hidden.bs.toast', () => {
         toastElement.remove();
     });
 }
 
-// Field validation helpers
-function validateAssetTag() {
-    const assetTagInput = document.querySelector('input[name="AssetTag"]');
-    const value = assetTagInput.value.trim();
+// Add Location functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Location functionality
+    const addLocationBtn = document.getElementById('addLocationBtn');
+    const addLocationModal = new bootstrap.Modal(document.getElementById('addLocationModal'));
+    const saveLocationBtn = document.getElementById('saveLocationBtn');
+    const locationSelect = document.getElementById('locationSelect');
+    const newLocationNameInput = document.getElementById('newLocationName');
     
-    if (value) {
-        // Check if it matches the recommended format
-        const pattern = /^[A-Z]{2,4}-\d{3}$/;
-        if (!pattern.test(value)) {
-            showToast('Asset tag format should be: PREFIX-000 (e.g., DESK-001)', 'error');
-            return false;
+    // Open location modal when add button is clicked
+    addLocationBtn.addEventListener('click', function() {
+        addLocationModal.show();
+        setTimeout(() => {
+            newLocationNameInput.focus();
+        }, 500);
+    });
+    
+    // Save new location with AJAX
+    saveLocationBtn.addEventListener('click', function() {
+        const locationName = newLocationNameInput.value.trim();
+        const locationDescription = document.getElementById('newLocationDescription').value.trim();
+        const locationBuilding = document.getElementById('newLocationBuilding').value.trim();
+        const locationFloor = document.getElementById('newLocationFloor').value.trim();
+        const locationRoom = document.getElementById('newLocationRoom').value.trim();
+        
+        if (!locationName) {
+            showToast('Please enter a location name.', 'warning');
+            newLocationNameInput.focus();
+            return;
         }
-    }
-    return true;
-}
-
-// Auto-format asset tag on input
-$(document).on('input', 'input[name="AssetTag"]', function() {
-    let value = $(this).val().toUpperCase();
-    // Remove any characters that aren't letters, numbers, or hyphens
-    value = value.replace(/[^A-Z0-9-]/g, '');
-    $(this).val(value);
-});
-
-// Real-time validation
-$(document).on('blur', 'input[name="AssetTag"]', function() {
-    validateAssetTag();
+        
+        // Send AJAX request to save location
+        fetch('/Assets/AddLocation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                name: locationName,
+                description: locationDescription,
+                building: locationBuilding,
+                floor: locationFloor,
+                room: locationRoom
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add new option to select
+                const newOption = document.createElement('option');
+                newOption.value = data.location.value;
+                newOption.textContent = data.location.text;
+                newOption.selected = true;
+                
+                locationSelect.appendChild(newOption);
+                
+                // Close modal and reset form
+                addLocationModal.hide();
+                document.getElementById('addLocationForm').reset();
+                
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message, 'warning');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred while adding the location.', 'error');
+        });
+    });
+    
+    // Allow Enter key to save in modals
+    newCategoryNameInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveCategoryBtn.click();
+        }
+    });
+    
+    newLocationNameInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveLocationBtn.click();
+        }
+    });
 });
 </script>
-
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
-}

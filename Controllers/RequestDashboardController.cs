@@ -39,6 +39,11 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var userId = _userManager.GetUserId(User);
+                if (userId == null)
+                {
+                    return RedirectToAction("Login", "Account");
+                }
+
                 var dashboardData = await _requestService.GetRequestDashboardDataAsync();
                 
                 var model = new RequestDashboardViewModel
@@ -122,6 +127,11 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var userId = _userManager.GetUserId(User);
+                if (userId == null)
+                {
+                    return Json(new { success = false, message = "User not authenticated" });
+                }
+
                 var result = await _requestBusinessLogicService.RouteRequestIntelligentlyAsync(requestId, userId);
 
                 if (result.Success)
@@ -183,7 +193,13 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var forecast = await _requestBusinessLogicService.GenerateDemandForecastAsync(forecastDays);
-                var resourceOptimization = await _requestBusinessLogicService.OptimizeResourceUtilizationAsync(_userManager.GetUserId(User));
+                var userId = _userManager.GetUserId(User);
+                if (userId == null)
+                {
+                    return Json(new { success = false, message = "User not authenticated" });
+                }
+
+                var resourceOptimization = await _requestBusinessLogicService.OptimizeResourceUtilizationAsync(userId);
 
                 var model = new DemandForecastingViewModel
                 {
@@ -227,6 +243,11 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var userId = _userManager.GetUserId(User);
+                if (userId == null)
+                {
+                    return Json(new { success = false, message = "User not authenticated" });
+                }
+
                 var optimization = await _requestBusinessLogicService.OptimizeResourceUtilizationAsync(userId);
 
                 var model = new ResourceOptimizationViewModel
@@ -324,6 +345,11 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var userId = _userManager.GetUserId(User);
+                if (userId == null)
+                {
+                    return Json(new { success = false, message = "User not authenticated" });
+                }
+
                 var result = await _requestBusinessLogicService.OrchestrateCrossModuleWorkflowAsync(requestId, userId);
 
                 if (result.Success)
@@ -416,6 +442,75 @@ namespace HospitalAssetTracker.Controllers
                 _logger.LogError(ex, "Error exporting request data");
                 TempData["Error"] = "Failed to export data.";
                 return RedirectToAction(nameof(Index));
+            }
+        }
+
+        /// <summary>
+        /// Auto-rebalance workload among team members
+        /// </summary>
+        [HttpPost]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        public async Task<IActionResult> AutoRebalanceWorkload()
+        {
+            try
+            {
+                var result = await _requestBusinessLogicService.AutoRebalanceWorkloadAsync();
+                return Json(new { success = true, message = "Workload rebalanced successfully", data = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error auto-rebalancing workload");
+                return Json(new { success = false, message = "Failed to rebalance workload" });
+            }
+        }
+
+        /// <summary>
+        /// Optimize request assignments
+        /// </summary>
+        [HttpPost]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        public async Task<IActionResult> OptimizeAssignments()
+        {
+            try
+            {
+                var result = await _requestBusinessLogicService.OptimizeAssignmentsAsync();
+                return Json(new { success = true, message = "Assignments optimized successfully", data = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error optimizing assignments");
+                return Json(new { success = false, message = "Failed to optimize assignments" });
+            }
+        }
+
+        /// <summary>
+        /// Generate resource optimization report
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> ResourceOptimizationReport(string format = "html")
+        {
+            try
+            {
+                var data = await _requestBusinessLogicService.GetResourceOptimizationAsync();
+                
+                if (format.ToLower() == "pdf")
+                {
+                    // Return PDF report
+                    return Json(new { success = false, message = "PDF export not implemented yet" });
+                }
+                else if (format.ToLower() == "excel")
+                {
+                    // Return Excel report
+                    return Json(new { success = false, message = "Excel export not implemented yet" });
+                }
+                
+                // Return HTML view
+                return View("ResourceOptimizationReport", data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating resource optimization report");
+                return Json(new { success = false, message = "Failed to generate report" });
             }
         }
     }

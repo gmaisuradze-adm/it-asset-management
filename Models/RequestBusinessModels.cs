@@ -102,6 +102,13 @@ namespace HospitalAssetTracker.Models
         public double AverageResolutionTime => RequestCompliances.Any() 
             ? RequestCompliances.Average(rc => rc.ActualResolutionHours) 
             : 0.0;
+            
+        // Properties for view compatibility
+        public double AverageResponseTimeHours { get; set; }
+        public int AtRiskCount { get; set; }
+        public int BreachedCount { get; set; }
+        public Dictionary<string, double> PriorityBreakdown { get; set; } = new();
+        public List<string> Recommendations { get; set; } = new();
     }
 
     /// <summary>
@@ -215,6 +222,17 @@ namespace HospitalAssetTracker.Models
         public WorkloadRebalancingPlan RebalancingPlan { get; set; } = new WorkloadRebalancingPlan();
         public List<PerformanceImprovement> ProjectedImprovements { get; set; } = new List<PerformanceImprovement>();
         public List<string> ProcessingMessages { get; set; } = new List<string>();
+        
+        // Properties for view compatibility
+        public int SuggestedTeamSize { get; set; }
+        public double CurrentUtilizationRate { get; set; }
+        public List<string> Recommendations { get; set; } = new();
+        public int CurrentTeamSize { get; set; }
+        public double OptimalUtilizationRate { get; set; }
+        public Dictionary<string, int> WorkloadDistribution { get; set; } = new();
+        public double AverageWorkload { get; set; }
+        public double PeakCapacity { get; set; }
+        public double CurrentWorkload { get; set; }
     }
 
     /// <summary>
@@ -354,6 +372,14 @@ namespace HospitalAssetTracker.Models
         public List<string> ImprovementRecommendations { get; set; } = new List<string>();
         public Dictionary<string, double> SatisfactionByCategory { get; set; } = new Dictionary<string, double>();
         public Dictionary<string, double> ResolutionTimeByCategory { get; set; } = new Dictionary<string, double>();
+        
+        // Properties for view compatibility
+        public double OverallQualityScore { get; set; }
+        public double CustomerSatisfactionRate { get; set; }
+        public double ReworkRate { get; set; }
+        public Dictionary<string, double> QualityByCategory { get; set; } = new();
+        public Dictionary<string, int> CommonIssues { get; set; } = new();
+        public List<string> ImprovementAreas { get; set; } = new();
     }
 
     /// <summary>
@@ -691,6 +717,11 @@ namespace HospitalAssetTracker.Models
         public List<string> StrategicInsights { get; set; } = new();
         public List<RequestCategoryForecast> CategoryForecasts { get; set; } = new();
         public List<string> RecommendedActions { get; set; } = new();
+        
+        // Properties for view compatibility
+        public int TotalProjectedRequests { get; set; }
+        public string PeakPeriod { get; set; } = string.Empty;
+        public Dictionary<string, int> CategoryBreakdown { get; set; } = new();
     }
 
     /// <summary>
@@ -852,6 +883,34 @@ namespace HospitalAssetTracker.Models
         public TimeSpan EstimatedImplementationTime { get; set; }
         public List<string> ExpectedImprovements { get; set; } = new List<string>();
         public List<string> RecommendedActions { get; set; } = new List<string>();
+    }
+
+    /// <summary>
+    /// Result of workload rebalancing operation
+    /// </summary>
+    public class WorkloadRebalanceResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int RequestsRebalanced { get; set; }
+        public List<string> Changes { get; set; } = new();
+        public Dictionary<string, int> NewWorkloadDistribution { get; set; } = new();
+        public double ImprovementPercentage { get; set; }
+        public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Result of assignment optimization operation
+    /// </summary>
+    public class AssignmentOptimizationResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int OptimizedAssignments { get; set; }
+        public List<string> OptimizationActions { get; set; } = new();
+        public Dictionary<string, List<string>> SkillBasedMatches { get; set; } = new();
+        public double EfficiencyImprovement { get; set; }
+        public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
     }
 
     /// <summary>

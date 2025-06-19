@@ -53,6 +53,7 @@ namespace HospitalAssetTracker.Services
         Task<bool> GenerateAssetQRCodeAsync(int assetId);
         Task<byte[]> GetAssetQRCodeAsync(int assetId);
         Task<IEnumerable<Location>> GetActiveLocationsAsync();
+        Task<Location> CreateLocationAsync(Location location, string userId);
         Task<IEnumerable<ApplicationUser>> GetActiveUsersAsync();
         
         // Bulk Export

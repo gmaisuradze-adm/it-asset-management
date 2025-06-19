@@ -689,10 +689,56 @@ namespace HospitalAssetTracker.Data
 
         private void UpdateTimestamps()
         {
-            var entries = ChangeTracker.Entries()
+            // Handle ITRequest DateTime properties specifically
+            var requestEntries = ChangeTracker.Entries<ITRequest>()
+                .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+
+            foreach (var entry in requestEntries)
+            {
+                var request = entry.Entity;
+                
+                // Ensure all DateTime values are UTC
+                if (request.RequestDate.Kind != DateTimeKind.Utc)
+                {
+                    request.RequestDate = DateTime.SpecifyKind(request.RequestDate, DateTimeKind.Utc);
+                }
+                
+                if (request.CreatedDate.Kind != DateTimeKind.Utc)
+                {
+                    request.CreatedDate = DateTime.SpecifyKind(request.CreatedDate, DateTimeKind.Utc);
+                }
+                
+                if (request.RequiredByDate.HasValue && request.RequiredByDate.Value.Kind != DateTimeKind.Utc)
+                {
+                    request.RequiredByDate = DateTime.SpecifyKind(request.RequiredByDate.Value, DateTimeKind.Utc);
+                }
+                
+                if (request.DueDate.HasValue && request.DueDate.Value.Kind != DateTimeKind.Utc)
+                {
+                    request.DueDate = DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc);
+                }
+                
+                if (request.ApprovalDate.HasValue && request.ApprovalDate.Value.Kind != DateTimeKind.Utc)
+                {
+                    request.ApprovalDate = DateTime.SpecifyKind(request.ApprovalDate.Value, DateTimeKind.Utc);
+                }
+                
+                if (request.CompletedDate.HasValue && request.CompletedDate.Value.Kind != DateTimeKind.Utc)
+                {
+                    request.CompletedDate = DateTime.SpecifyKind(request.CompletedDate.Value, DateTimeKind.Utc);
+                }
+                
+                if (request.LastModifiedDate.HasValue && request.LastModifiedDate.Value.Kind != DateTimeKind.Utc)
+                {
+                    request.LastModifiedDate = DateTime.SpecifyKind(request.LastModifiedDate.Value, DateTimeKind.Utc);
+                }
+            }
+
+            // Handle Asset entities
+            var assetEntries = ChangeTracker.Entries()
                 .Where(e => e.Entity is Asset && e.State == EntityState.Modified);
 
-            foreach (var entry in entries)
+            foreach (var entry in assetEntries)
             {
                 if (entry.Entity is Asset asset)
                 {

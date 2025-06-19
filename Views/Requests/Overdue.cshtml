@@ -1,0 +1,182 @@
+@model List<ITRequest>
+@{
+    ViewData["Title"] = "Overdue Requests";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-exclamation-triangle text-warning"></i> Overdue Requests</h2>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-list"></i> All Requests
+        </a>
+    </div>
+</div>
+
+@if (Model?.Any() == true)
+{
+    <div class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-triangle"></i>
+        <strong>Warning!</strong> There are @Model.Count overdue requests that require immediate attention.
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Overdue IT Requests</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Request #</th>
+                            <th>Title</th>
+                            <th>Requester</th>
+                            <th>Department</th>
+                            <th>Priority</th>
+                            <th>Required By</th>
+                            <th>Days Overdue</th>
+                            <th>Status</th>
+                            <th>Assigned To</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var request in Model.OrderBy(r => r.RequiredByDate))
+                        {
+                            var daysOverdue = request.RequiredByDate.HasValue ? 
+                                (DateTime.UtcNow - request.RequiredByDate.Value).Days : 0;
+                            var priorityBadge = request.Priority switch
+                            {
+                                RequestPriority.Critical => "bg-danger",
+                                RequestPriority.High => "bg-warning text-dark",
+                                RequestPriority.Medium => "bg-info",
+                                RequestPriority.Low => "bg-success",
+                                _ => "bg-secondary"
+                            };
+                            var statusBadge = request.Status switch
+                            {
+                                RequestStatus.Pending => "bg-warning text-dark",
+                                RequestStatus.InProgress => "bg-info",
+                                RequestStatus.UnderReview => "bg-primary",
+                                RequestStatus.Approved => "bg-success",
+                                RequestStatus.Rejected => "bg-danger",
+                                RequestStatus.OnHold => "bg-secondary",
+                                _ => "bg-light text-dark"
+                            };
+                            
+                            <tr class="@(daysOverdue > 7 ? "table-danger" : daysOverdue > 3 ? "table-warning" : "")">
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@request.Id" class="text-decoration-none">
+                                        @request.RequestNumber
+                                    </a>
+                                </td>
+                                <td>
+                                    <div class="fw-medium">@request.Title</div>
+                                    <small class="text-muted">@request.RequestType.ToString().Replace("_", " ")</small>
+                                </td>
+                                <td>
+                                    @if (request.RequestedByUser != null)
+                                    {
+                                        <div>@request.RequestedByUser.FirstName @request.RequestedByUser.LastName</div>
+                                        <small class="text-muted">@request.RequestedByUser.Email</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Unknown</span>
+                                    }
+                                </td>
+                                <td>@request.Department</td>
+                                <td>
+                                    <span class="badge @priorityBadge">@request.Priority</span>
+                                </td>
+                                <td>
+                                    @if (request.RequiredByDate.HasValue)
+                                    {
+                                        <div>@request.RequiredByDate.Value.ToString("MMM dd, yyyy")</div>
+                                        <small class="text-muted">@request.RequiredByDate.Value.ToString("HH:mm")</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not specified</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">
+                                        @daysOverdue day@(daysOverdue != 1 ? "s" : "")
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge @statusBadge">@request.Status.ToString().Replace("_", " ")</span>
+                                </td>
+                                <td>
+                                    @if (request.AssignedToUser != null)
+                                    {
+                                        <div>@request.AssignedToUser.FirstName @request.AssignedToUser.LastName</div>
+                                        <small class="text-muted">@request.AssignedToUser.Email</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted text-decoration-underline">Unassigned</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a asp-action="Details" asp-route-id="@request.Id" 
+                                           class="btn btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @if (User.IsInRole("Admin") || User.IsInRole("IT Support"))
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@request.Id" 
+                                               class="btn btn-outline-warning" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+            <h4 class="mt-3">No Overdue Requests</h4>
+            <p class="text-muted">All requests are on track! Great job keeping up with the schedule.</p>
+            <a asp-action="Index" class="btn btn-primary">
+                <i class="bi bi-list"></i> View All Requests
+            </a>
+        </div>
+    </div>
+}
+
+@section Styles {
+    <style>
+        .table-danger {
+            background-color: rgba(220, 53, 69, 0.1) !important;
+        }
+        .table-warning {
+            background-color: rgba(255, 193, 7, 0.1) !important;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .btn-group-sm .btn {
+            font-size: 0.75rem;
+        }
+        .text-decoration-underline {
+            text-decoration: underline !important;
+        }
+    </style>
+}

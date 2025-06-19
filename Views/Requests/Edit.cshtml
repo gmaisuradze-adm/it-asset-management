@@ -1,0 +1,293 @@
+@model ITRequest
+
+@{
+    ViewData["Title"] = "Edit Request";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>@ViewData["Title"] - #@Model.Id</h2>
+    <div>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Details
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Edit Request Information</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="RequestedByUserId" />
+                    <input type="hidden" asp-for="CreatedDate" />
+                    <input type="hidden" asp-for="RequestDate" />
+                    <input type="hidden" asp-for="AssignedToUserId" />
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="RequestType" class="form-label">Request Type <span class="text-danger">*</span></label>
+                                <select asp-for="RequestType" class="form-select" asp-items="ViewBag.RequestTypes">
+                                    <option value="">Select request type...</option>
+                                </select>
+                                <span asp-validation-for="RequestType" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Priority" class="form-label">Priority <span class="text-danger">*</span></label>
+                                <select asp-for="Priority" class="form-select" asp-items="ViewBag.Priorities">
+                                    <option value="">Select priority...</option>
+                                </select>
+                                <span asp-validation-for="Priority" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label">Title <span class="text-danger">*</span></label>
+                        <input asp-for="Title" class="form-control" placeholder="Enter request title" />
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label">Description</label>
+                        <textarea asp-for="Description" class="form-control" rows="4" 
+                                placeholder="Provide detailed description of the request..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="DueDate" class="form-label">Due Date</label>
+                                <input asp-for="DueDate" type="date" class="form-control" />
+                                <span asp-validation-for="DueDate" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Status" class="form-label">Status</label>
+                                <select asp-for="Status" class="form-select" asp-items="ViewBag.Statuses">
+                                    <option value="">Select status...</option>
+                                </select>
+                                <span asp-validation-for="Status" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="LocationId" class="form-label">Location</label>
+                                <select id="LocationId" name="LocationId" class="form-select">
+                                    <option value="">Select location...</option>
+                                    @if (ViewBag.Locations != null)
+                                    {
+                                        @foreach (var location in ViewBag.Locations as IEnumerable<SelectListItem>)
+                                        {
+                                            <option value="@location.Value" selected="@(location.Selected)">@location.Text</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="RelatedAssetId" class="form-label">Related Asset</label>
+                                <select asp-for="RelatedAssetId" id="AssetId" class="form-select">
+                                    <option value="">Select related asset (optional)...</option>
+                                    @if (ViewBag.Assets != null)
+                                    {
+                                        @foreach (var asset in ViewBag.Assets as IEnumerable<SelectListItem>)
+                                        {
+                                            <option value="@asset.Value" selected="@(asset.Selected)">@asset.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="RelatedAssetId" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Current Request Info</h5>
+            </div>
+            <div class="card-body">
+                <dl>
+                    <dt>Request ID</dt>
+                    <dd>#@Model.Id</dd>
+
+                    <dt>Current Status</dt>
+                    <dd>
+                        @{
+                            var statusClass = Model.Status switch
+                            {
+                                RequestStatus.Open => "bg-primary",
+                                RequestStatus.InProgress => "bg-info",
+                                RequestStatus.PendingApproval => "bg-warning text-dark",
+                                RequestStatus.Approved => "bg-success",
+                                RequestStatus.Completed => "bg-success",
+                                RequestStatus.Cancelled => "bg-danger",
+                                RequestStatus.Rejected => "bg-danger",
+                                _ => "bg-secondary"
+                            };
+                        }
+                        <span class="badge @statusClass">
+                            @Model.Status.ToString().Replace("_", " ")
+                        </span>
+                    </dd>
+
+                    <dt>Created</dt>
+                    <dd>@Model.CreatedDate.ToString("MM/dd/yyyy HH:mm")</dd>
+
+                    <dt>Requested By</dt>
+                    <dd>
+                        @if (Model.RequestedByUser != null)
+                        {
+                            @Model.RequestedByUser.FirstName @Model.RequestedByUser.LastName
+                        }
+                        else
+                        {
+                            <span class="text-muted">Unknown</span>
+                        }
+                    </dd>
+
+                    @if (Model.AssignedToUser != null)
+                    {
+                        <dt>Assigned To</dt>
+                        <dd>@Model.AssignedToUser.FirstName @Model.AssignedToUser.LastName</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Edit Guidelines</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li><i class="fas fa-info-circle text-info me-2"></i>Only basic details can be edited</li>
+                    <li><i class="fas fa-lock text-warning me-2"></i>Assignment and approval require special permissions</li>
+                    <li><i class="fas fa-exclamation-triangle text-danger me-2"></i>Completed requests cannot be edited</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Load assets based on selected location
+            $('#LocationId').on('change', function() {
+                var locationId = $(this).val();
+                var currentUserId = '@ViewBag.CurrentUserId';
+                var currentUserDepartment = '@ViewBag.CurrentUserDepartment';
+                
+                if (locationId) {
+                    $.ajax({
+                        url: '@Url.Action("GetAssetsByLocation", "Assets")',
+                        type: 'GET',
+                        data: { 
+                            locationId: locationId,
+                            userId: currentUserId,
+                            department: currentUserDepartment
+                        },
+                        success: function(assets) {
+                            var assetSelect = $('#AssetId');
+                            var currentAssetId = '@Model.RelatedAssetId';
+                            
+                            assetSelect.empty();
+                            assetSelect.append('<option value="">Select related asset (optional)...</option>');
+                            
+                            $.each(assets, function(index, asset) {
+                                var selected = asset.value == currentAssetId ? 'selected' : '';
+                                assetSelect.append('<option value="' + asset.value + '" ' + selected + '>' + asset.text + '</option>');
+                            });
+                        },
+                        error: function() {
+                            console.error('Failed to load assets for location');
+                        }
+                    });
+                } else {
+                    $('#AssetId').empty().append('<option value="">Select related asset (optional)...</option>');
+                }
+            });
+
+            // Initialize form validation
+            $('form').on('submit', function(e) {
+                var isValid = true;
+                
+                // Check required fields
+                if (!$('#RequestType').val()) {
+                    isValid = false;
+                    $('#RequestType').addClass('is-invalid');
+                } else {
+                    $('#RequestType').removeClass('is-invalid');
+                }
+                
+                if (!$('#Priority').val()) {
+                    isValid = false;
+                    $('#Priority').addClass('is-invalid');
+                } else {
+                    $('#Priority').removeClass('is-invalid');
+                }
+                
+                if (!$('#Title').val().trim()) {
+                    isValid = false;
+                    $('#Title').addClass('is-invalid');
+                } else {
+                    $('#Title').removeClass('is-invalid');
+                }
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Validation Error',
+                        text: 'Please fill in all required fields.',
+                        icon: 'error'
+                    });
+                }
+            });
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .form-label {
+            font-weight: 600;
+        }
+        
+        .text-danger {
+            font-weight: 600;
+        }
+        
+        .is-invalid {
+            border-color: #dc3545;
+        }
+    </style>
+}

@@ -6,6 +6,16 @@ using HospitalAssetTracker.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel to listen on all interfaces
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(7001); // HTTP
+    options.ListenAnyIP(7002, listenOptions =>
+    {
+        listenOptions.UseHttps();
+    }); // HTTPS
+});
+
 // Configure logging
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Information);

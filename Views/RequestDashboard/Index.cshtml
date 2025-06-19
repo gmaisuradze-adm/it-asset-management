@@ -297,24 +297,34 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-2 mb-2">
                             <button type="button" class="btn btn-outline-primary w-100" onclick="loadRequestAnalysis()">
                                 <i class="fas fa-search me-2"></i>Request Analysis
                             </button>
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-2 mb-2">
                             <button type="button" class="btn btn-outline-info w-100" onclick="loadSlaCompliance()">
                                 <i class="fas fa-stopwatch me-2"></i>SLA Compliance
                             </button>
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-2 mb-2">
                             <button type="button" class="btn btn-outline-success w-100" onclick="loadDemandForecasting()">
                                 <i class="fas fa-chart-line me-2"></i>Demand Forecasting
                             </button>
                         </div>
-                        <div class="col-md-3 mb-2">
+                        <div class="col-md-2 mb-2">
                             <button type="button" class="btn btn-outline-warning w-100" onclick="loadResourceOptimization()">
                                 <i class="fas fa-cogs me-2"></i>Resource Optimization
+                            </button>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <button type="button" class="btn btn-outline-danger w-100" onclick="loadQualityAssurance()">
+                                <i class="fas fa-shield-alt me-2"></i>Quality Assurance
+                            </button>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="loadIntelligentAnalysis()">
+                                <i class="fas fa-brain me-2"></i>AI Analysis
                             </button>
                         </div>
                     </div>
@@ -473,7 +483,7 @@
         // Request Department Chart
         const deptCtx = document.getElementById('requestDepartmentChart').getContext('2d');
         new Chart(deptCtx, {
-            type: 'horizontalBar',
+            type: 'bar',
             data: {
                 labels: @Html.Raw(Json.Serialize(Model.RequestsByDepartment.Select(x => x.Department))),
                 datasets: [{
@@ -488,21 +498,53 @@
             }
         });
 
-        // Analytics functions
         function loadRequestAnalysis() {
-            showAnalyticsModal('Request Analysis', '@Url.Action("RequestAnalysis", "RequestDashboard")');
+            // Option to open in modal or navigate to dedicated page
+            if (event.ctrlKey || event.metaKey) {
+                window.open('@Url.Action("RequestAnalysis", "RequestDashboard")', '_blank');
+            } else {
+                showAnalyticsModal('Request Analysis', '@Url.Action("RequestAnalysis", "RequestDashboard")');
+            }
         }
 
         function loadSlaCompliance() {
-            showAnalyticsModal('SLA Compliance', '@Url.Action("SlaCompliance", "RequestDashboard")');
+            if (event.ctrlKey || event.metaKey) {
+                window.open('@Url.Action("SlaCompliance", "RequestDashboard")', '_blank');
+            } else {
+                window.location.href = '@Url.Action("SlaCompliance", "RequestDashboard")';
+            }
         }
 
         function loadDemandForecasting() {
-            showAnalyticsModal('Demand Forecasting', '@Url.Action("DemandForecasting", "RequestDashboard")');
+            if (event.ctrlKey || event.metaKey) {
+                window.open('@Url.Action("DemandForecasting", "RequestDashboard")', '_blank');
+            } else {
+                window.location.href = '@Url.Action("DemandForecasting", "RequestDashboard")';
+            }
         }
 
         function loadResourceOptimization() {
-            showAnalyticsModal('Resource Optimization', '@Url.Action("ResourceOptimization", "RequestDashboard")');
+            if (event.ctrlKey || event.metaKey) {
+                window.open('@Url.Action("ResourceOptimization", "RequestDashboard")', '_blank');
+            } else {
+                window.location.href = '@Url.Action("ResourceOptimization", "RequestDashboard")';
+            }
+        }
+
+        function loadQualityAssurance() {
+            if (event.ctrlKey || event.metaKey) {
+                window.open('@Url.Action("QualityAssurance", "RequestDashboard")', '_blank');
+            } else {
+                window.location.href = '@Url.Action("QualityAssurance", "RequestDashboard")';
+            }
+        }
+
+        function loadIntelligentAnalysis() {
+            if (event.ctrlKey || event.metaKey) {
+                window.open('@Url.Action("IntelligentAnalysis", "RequestDashboard")', '_blank');
+            } else {
+                showAnalyticsModal('Intelligent Analysis', '@Url.Action("IntelligentAnalysis", "RequestDashboard")');
+            }
         }
 
         function showAnalyticsModal(title, url) {

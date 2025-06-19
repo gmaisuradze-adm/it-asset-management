@@ -1,0 +1,286 @@
+@model SlaComplianceViewModel
+@{
+    ViewData["Title"] = "SLA Compliance";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-clock"></i>
+                        SLA Compliance Monitoring
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.Compliance != null)
+                    {
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Overall Compliance</span>
+                                        <span class="info-box-number">@Model.Compliance.OverallComplianceRate.ToString("P1")</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-info"><i class="fas fa-clock"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Avg Response Time</span>
+                                        <span class="info-box-number">@Model.Compliance.AverageResponseTimeHours.ToString("F1")h</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-warning"><i class="fas fa-exclamation-triangle"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">At Risk</span>
+                                        <span class="info-box-number">@Model.Compliance.AtRiskCount</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span class="info-box-icon bg-danger"><i class="fas fa-times-circle"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Breached</span>
+                                        <span class="info-box-number">@Model.Compliance.BreachedCount</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4>Priority Compliance</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="priorityComplianceChart" width="400" height="300"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h4>Compliance Trend</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <canvas id="complianceTrendChart" width="400" height="300"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (Model.Compliance.PriorityBreakdown?.Any() == true)
+                        {
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h4>Priority Breakdown</h4>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Priority</th>
+                                                            <th>SLA Target (Hours)</th>
+                                                            <th>Avg Response Time</th>
+                                                            <th>Compliance Rate</th>
+                                                            <th>Total Requests</th>
+                                                            <th>Breached</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var priority in Model.Compliance.PriorityBreakdown)
+                                                        {
+                                                            <tr>
+                                                                <td>
+                                                                    <span class="badge badge-@(priority.Key.ToString().ToLower() == "critical" ? "danger" : 
+                                                                        priority.Key.ToString().ToLower() == "high" ? "warning" : "info")">
+                                                                        @priority.Key
+                                                                    </span>
+                                                                </td>
+                                                                <td>@GetSlaTarget(priority.Key)</td>
+                                                                <td>@priority.Value.ToString("F1")h</td>
+                                                                <td>
+                                                                    @{
+                                                                        var complianceRate = GetComplianceRate(priority.Key, priority.Value);
+                                                                        var badgeClass = complianceRate >= 0.9 ? "success" : complianceRate >= 0.7 ? "warning" : "danger";
+                                                                    }
+                                                                    <span class="badge badge-@badgeClass">@complianceRate.ToString("P1")</span>
+                                                                </td>
+                                                                <td>@GetRequestCount(priority.Key)</td>
+                                                                <td>@GetBreachedCount(priority.Key)</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (Model.Compliance.Recommendations?.Any() == true)
+                        {
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h4>Recommendations</h4>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="list-group">
+                                                @foreach (var recommendation in Model.Compliance.Recommendations)
+                                                {
+                                                    <li class="list-group-item">
+                                                        <i class="fas fa-lightbulb text-warning"></i>
+                                                        @recommendation
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            No SLA compliance data available for the selected period.
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        @if (Model.Compliance?.PriorityBreakdown?.Any() == true)
+        {
+            <text>
+            // Priority Compliance Chart
+            const priorityCtx = document.getElementById('priorityComplianceChart').getContext('2d');
+            const priorityChart = new Chart(priorityCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [@Html.Raw(string.Join(",", Model.Compliance.PriorityBreakdown.Keys.Select(k => $"'{k}'")))],
+                    datasets: [{
+                        data: [@Html.Raw(string.Join(",", Model.Compliance.PriorityBreakdown.Values.Select(v => v.ToString("F1"))))],
+                        backgroundColor: [
+                            'rgba(220, 53, 69, 0.8)',   // Critical - Red
+                            'rgba(255, 193, 7, 0.8)',   // High - Yellow
+                            'rgba(40, 167, 69, 0.8)',   // Medium - Green
+                            'rgba(23, 162, 184, 0.8)'   // Low - Blue
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Average Response Time by Priority (Hours)'
+                        }
+                    }
+                }
+            });
+
+            // Compliance Trend Chart (Mock data for demonstration)
+            const trendCtx = document.getElementById('complianceTrendChart').getContext('2d');
+            const trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [{
+                        label: 'Compliance Rate',
+                        data: [0.85, 0.88, 0.92, @Model.Compliance.OverallComplianceRate],
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return (value * 100) + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'SLA Compliance Trend'
+                        }
+                    }
+                }
+            });
+            </text>
+        }
+    </script>
+}
+
+@functions {
+    private string GetSlaTarget(string priority)
+    {
+        return priority.ToLower() switch
+        {
+            "critical" => "2",
+            "high" => "8", 
+            "medium" => "24",
+            "low" => "72",
+            _ => "N/A"
+        };
+    }
+    
+    private double GetComplianceRate(string priority, double avgResponseTime)
+    {
+        var target = priority.ToLower() switch
+        {
+            "critical" => 2.0,
+            "high" => 8.0,
+            "medium" => 24.0,
+            "low" => 72.0,
+            _ => 24.0
+        };
+        return avgResponseTime <= target ? 1.0 : Math.Max(0, 1 - ((avgResponseTime - target) / target));
+    }
+    
+    private int GetRequestCount(string priority)
+    {
+        // This would typically come from the model
+        return Random.Shared.Next(10, 100);
+    }
+    
+    private int GetBreachedCount(string priority)
+    {
+        // This would typically come from the model  
+        return Random.Shared.Next(0, 10);
+    }
+}

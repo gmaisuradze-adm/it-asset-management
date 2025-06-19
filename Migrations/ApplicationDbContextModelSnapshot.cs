@@ -563,354 +563,161 @@ namespace HospitalAssetTracker.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("ActualSpend")
-                        .HasColumnType("numeric")
-                        .HasColumnName("actual_spend");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("AllocatedBudget")
-                        .HasColumnType("numeric")
-                        .HasColumnName("allocated_budget");
+                        .HasColumnType("numeric");
 
-                    b.Property<DateTime>("AnalysisDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("analysis_date");
-
-                    b.Property<double>("BudgetUtilizationRate")
-                        .HasColumnType("double precision")
-                        .HasColumnName("budget_utilization_rate");
+                    b.Property<decimal>("Budget")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("category");
+                        .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                    b.Property<decimal>("Remaining")
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("RemainingBudget")
-                        .HasColumnType("numeric")
-                        .HasColumnName("remaining_budget");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("SpendRate")
-                        .HasColumnType("numeric")
-                        .HasColumnName("spend_rate");
+                        .HasColumnType("numeric");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<decimal>("VarianceAmount")
-                        .HasColumnType("numeric")
-                        .HasColumnName("variance_amount");
-
-                    b.Property<double>("VariancePercentage")
-                        .HasColumnType("double precision")
-                        .HasColumnName("variance_percentage");
+                    b.Property<decimal>("Spent")
+                        .HasColumnType("numeric");
 
                     b.HasKey("Id");
 
-                    b.ToTable("budget_category_analysis");
+                    b.ToTable("BudgetCategoryAnalyses");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.BudgetDepartmentAnalysis", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("ActualSpend")
-                        .HasColumnType("numeric")
-                        .HasColumnName("actual_spend");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("AllocatedBudget")
-                        .HasColumnType("numeric")
-                        .HasColumnName("allocated_budget");
+                        .HasColumnType("numeric");
 
-                    b.Property<DateTime>("AnalysisDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("analysis_date");
-
-                    b.Property<double>("BudgetUtilizationRate")
-                        .HasColumnType("double precision")
-                        .HasColumnName("budget_utilization_rate");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                    b.Property<decimal>("Budget")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Department")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("department");
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Remaining")
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("RemainingBudget")
-                        .HasColumnType("numeric")
-                        .HasColumnName("remaining_budget");
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("SpendRate")
-                        .HasColumnType("numeric")
-                        .HasColumnName("spend_rate");
+                        .HasColumnType("numeric");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<decimal>("VarianceAmount")
-                        .HasColumnType("numeric")
-                        .HasColumnName("variance_amount");
-
-                    b.Property<double>("VariancePercentage")
-                        .HasColumnType("double precision")
-                        .HasColumnName("variance_percentage");
+                    b.Property<decimal>("Spent")
+                        .HasColumnType("numeric");
 
                     b.HasKey("Id");
 
-                    b.ToTable("budget_department_analysis");
+                    b.ToTable("BudgetDepartmentAnalyses");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.BugFixHistory", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("BugId")
-                        .HasColumnType("integer")
-                        .HasColumnName("bug_id");
+                    b.Property<int>("BugTrackingId")
+                        .HasColumnType("integer");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                    b.Property<DateTime>("FixDate")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("FilesChanged")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("files_changed");
-
-                    b.Property<string>("FixDetails")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("fix_details");
+                    b.Property<string>("FixDescription")
+                        .HasColumnType("text");
 
                     b.Property<string>("FixedBy")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("fixed_by");
-
-                    b.Property<DateTime>("FixedDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("fixed_date");
-
-                    b.Property<string>("RollbackReason")
-                        .HasColumnType("text")
-                        .HasColumnName("rollback_reason");
-
-                    b.Property<string>("TestStatus")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("test_status");
-
-                    b.Property<DateTime?>("VerificationDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("verification_date");
-
-                    b.Property<string>("VerifiedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("verified_by");
-
-                    b.Property<int>("VersionId")
-                        .HasColumnType("integer")
-                        .HasColumnName("version_id");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BugId");
-
-                    b.HasIndex("VersionId");
-
-                    b.ToTable("bug_fix_histories");
+                    b.ToTable("BugFixHistories");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.BugTracking", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("AssignedTo")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("assigned_to");
-
-                    b.Property<string>("BugDescription")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("bug_description");
-
-                    b.Property<string>("BugTitle")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("bug_title");
-
-                    b.Property<DateTime?>("ClosedDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("closed_date");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("ErrorMessage")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("error_message");
-
-                    b.Property<string>("FixDescription")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("fix_description");
-
-                    b.Property<DateTime?>("FixedDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("fixed_date");
-
-                    b.Property<string>("ModuleName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("module_name");
-
-                    b.Property<string>("ReportedBy")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("reported_by");
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("ReportedDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("reported_date");
-
-                    b.Property<string>("ReproductionSteps")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("reproduction_steps");
-
-                    b.Property<string>("Severity")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("severity");
-
-                    b.Property<string>("StackTrace")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("stack_trace");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("status");
+                        .HasColumnType("text");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("VersionFixed")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("version_fixed");
-
-                    b.Property<string>("VersionFound")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("version_found");
+                    b.Property<string>("Title")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("bug_tracking");
+                    b.ToTable("BugTrackings");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.CategoryForecast", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("AnalysisDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("analysis_date");
-
                     b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("category");
+                        .HasColumnType("text");
 
                     b.Property<double>("Confidence")
-                        .HasColumnType("double precision")
-                        .HasColumnName("confidence");
+                        .HasColumnType("double precision");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                    b.Property<decimal>("ForecastAmount")
+                        .HasColumnType("numeric");
 
                     b.Property<decimal>("ForecastedValue")
-                        .HasColumnType("numeric")
-                        .HasColumnName("forecasted_value");
+                        .HasColumnType("numeric");
 
-                    b.Property<double>("GrowthRate")
-                        .HasColumnType("double precision")
-                        .HasColumnName("growth_rate");
+                    b.Property<DateTime>("PeriodEnd")
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("HistoricalAverage")
-                        .HasColumnType("numeric")
-                        .HasColumnName("historical_average");
+                    b.Property<DateTime>("PeriodStart")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("PredictedSpend")
-                        .HasColumnType("numeric")
-                        .HasColumnName("predicted_spend");
+                        .HasColumnType("numeric");
 
                     b.Property<string>("TrendDirection")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("trend_direction");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("category_forecasts");
+                    b.ToTable("CategoryForecasts");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.ITRequest", b =>
@@ -2426,162 +2233,84 @@ namespace HospitalAssetTracker.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("numeric")
-                        .HasColumnName("amount");
+                        .HasColumnType("numeric");
 
                     b.Property<string>("AnomalyType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("anomaly_type");
+                        .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<DateTime>("DetectedDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("detected_date");
+                        .HasColumnType("text");
 
                     b.Property<int>("RequestId")
-                        .HasColumnType("integer")
-                        .HasColumnName("request_id");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Severity")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("severity");
+                        .HasColumnType("text");
 
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                    b.Property<string>("Type")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("spend_anomalies");
+                    b.ToTable("SpendAnomalies");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.SpendTrend", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("numeric")
-                        .HasColumnName("amount");
-
-                    b.Property<DateTime>("AnalysisDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("analysis_date");
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("category");
+                        .HasColumnType("text");
 
-                    b.Property<double>("ChangePercentage")
-                        .HasColumnType("double precision")
-                        .HasColumnName("change_percentage");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Period")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("period");
+                        .HasColumnType("text");
 
                     b.Property<int>("RequestCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("request_count");
-
-                    b.Property<string>("Trend")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("trend");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.ToTable("spend_trends");
+                    b.ToTable("SpendTrends");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.SystemVersion", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("BugsFixed")
-                        .HasColumnType("integer")
-                        .HasColumnName("bugs_fixed");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("created_by");
-
-                    b.Property<int>("FeaturesAdded")
-                        .HasColumnType("integer")
-                        .HasColumnName("features_added");
-
-                    b.Property<bool>("IsCurrent")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_current");
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("ReleaseDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("release_date");
+                        .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("ReleaseNotes")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("release_notes");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("VersionNumber")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("version_number");
+                    b.Property<string>("Version")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("system_versions");
+                    b.ToTable("SystemVersions");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.Vendor", b =>
@@ -3179,25 +2908,6 @@ namespace HospitalAssetTracker.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedByUser");
-                });
-
-            modelBuilder.Entity("HospitalAssetTracker.Models.BugFixHistory", b =>
-                {
-                    b.HasOne("HospitalAssetTracker.Models.BugTracking", "Bug")
-                        .WithMany()
-                        .HasForeignKey("BugId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HospitalAssetTracker.Models.SystemVersion", "SystemVersion")
-                        .WithMany("BugFixHistories")
-                        .HasForeignKey("VersionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Bug");
-
-                    b.Navigation("SystemVersion");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.ITRequest", b =>
@@ -3912,11 +3622,6 @@ namespace HospitalAssetTracker.Migrations
                     b.Navigation("Items");
 
                     b.Navigation("Quotes");
-                });
-
-            modelBuilder.Entity("HospitalAssetTracker.Models.SystemVersion", b =>
-                {
-                    b.Navigation("BugFixHistories");
                 });
 
             modelBuilder.Entity("HospitalAssetTracker.Models.Vendor", b =>

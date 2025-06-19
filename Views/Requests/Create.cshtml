@@ -18,17 +18,28 @@
             </div>
             <div class="card-body">
                 <form asp-action="Create" method="post">
-                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    @Html.AntiForgeryToken()
+                    
+                    @* Hidden fields for server-populated values *@
+                    <input type="hidden" asp-for="RequestNumber" />
+                    <input type="hidden" asp-for="RequestedByUserId" />
+                    <input type="hidden" asp-for="Department" />
+                    <input type="hidden" asp-for="RequestDate" />
+                    <input type="hidden" asp-for="Status" />
+                    
+                    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                    
+
                     
                     <div class="row mb-3">
                         <div class="col-md-8">
                             <label asp-for="Title" class="form-label">Title <span class="text-danger">*</span></label>
-                            <input asp-for="Title" class="form-control" placeholder="Brief description of your request">
+                            <input asp-for="Title" class="form-control" id="titleInput" placeholder="Brief description of your request">
                             <span asp-validation-for="Title" class="text-danger"></span>
                         </div>
                         <div class="col-md-4">
-                            <label asp-for="Priority" class="form-label">Priority</label>
-                            <select asp-for="Priority" class="form-select" asp-items="@ViewBag.Priorities">
+                            <label asp-for="Priority" class="form-label">Priority <span class="text-danger">*</span></label>
+                            <select asp-for="Priority" class="form-select" asp-items="@ViewBag.Priorities" id="prioritySelect">
                                 <option value="">Select Priority</option>
                             </select>
                             <span asp-validation-for="Priority" class="text-danger"></span>
@@ -37,7 +48,7 @@
 
                     <div class="mb-3">
                         <label asp-for="Description" class="form-label">Description <span class="text-danger">*</span></label>
-                        <textarea asp-for="Description" class="form-control" rows="4" placeholder="Detailed description of your request"></textarea>
+                        <textarea asp-for="Description" class="form-control" id="descriptionInput" rows="4" placeholder="Detailed description of your request"></textarea>
                         <span asp-validation-for="Description" class="text-danger"></span>
                     </div>
 
@@ -109,7 +120,7 @@
 
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a asp-action="MyRequests" class="btn btn-secondary me-md-2">Cancel</a>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
                             <i class="bi bi-check-circle"></i> Submit Request
                         </button>
                     </div>
@@ -161,47 +172,135 @@
 @section Scripts {
     <script>
         $(document).ready(function() {
-            // Handle request type change
-            $('#requestTypeSelect').change(function() {
-                var selectedType = $(this).val();
+            try {
+                // Handle request type change
+                $('#requestTypeSelect').change(function() {
+                    var selectedType = $(this).val();
+                    
+                    // Hide all conditional sections
+                    $('#assetSection').hide();
+                    $('#equipmentSection').hide();
+                    
+                    // Show relevant sections based on request type
+                    if (selectedType === '1' || selectedType === '9') { // HardwareReplacement or MaintenanceService
+                        $('#assetSection').show();
+                    } else if (selectedType === '3') { // NewEquipment
+                        $('#equipmentSection').show();
+                    }
+                });
                 
-                // Hide all conditional sections
-                $('#assetSection').hide();
-                $('#equipmentSection').hide();
-                
-                // Show relevant sections based on request type
-                if (selectedType === 'HardwareReplacement' || selectedType === 'MaintenanceService') {
-                    $('#assetSection').show();
-                } else if (selectedType === 'NewEquipmentProvisioning') {
-                    $('#equipmentSection').show();
-                }
-            });
-            
-            // Handle location change to load assets
-            $('#locationSelect').change(function() {
-                var locationId = $(this).val();
-                var department = '@ViewBag.CurrentUserDepartment';
-                
-                if (locationId) {
-                    $.get('@Url.Action("GetAssetsByLocation", "Requests")', {
-                        locationId: locationId,
-                        department: department
-                    }, function(data) {
+                // Handle location change to load assets
+                $('#locationSelect').change(function() {
+                    var locationId = $(this).val();
+                    var department = '@ViewBag.CurrentUserDepartment';
+                    
+                    if (locationId) {
                         var assetSelect = $('#assetSelect');
-                        assetSelect.empty();
-                        assetSelect.append('<option value="">Select Asset</option>');
+                        assetSelect.empty().append('<option value="">Loading assets...</option>');
                         
-                        $.each(data, function(index, asset) {
-                            assetSelect.append('<option value="' + asset.id + '">' + asset.name + ' (' + asset.status + ')</option>');
+                        $.get('@Url.Action("GetAssetsByLocation", "Requests")', {
+                            locationId: locationId,
+                            department: department
+                        })
+                        .done(function(data) {
+                            assetSelect.empty();
+                            assetSelect.append('<option value="">Select Asset</option>');
+                            
+                            if (data && data.length > 0) {
+                                $.each(data, function(index, asset) {
+                                    assetSelect.append('<option value="' + asset.id + '">' + asset.name + ' (' + asset.status + ')</option>');
+                                });
+                            } else {
+                                assetSelect.append('<option value="">No assets found</option>');
+                            }
+                        })
+                        .fail(function(xhr, status, error) {
+                            console.error('Error loading assets:', error);
+                            assetSelect.empty();
+                            assetSelect.append('<option value="">Error loading assets</option>');
                         });
-                    });
-                } else {
-                    $('#assetSelect').empty().append('<option value="">Select Asset</option>');
-                }
-            });
-            
-            // Trigger change event if request type is already selected
-            $('#requestTypeSelect').trigger('change');
+                    } else {
+                        $('#assetSelect').empty().append('<option value="">Select Asset</option>');
+                    }
+                });
+                
+                // Trigger change event if request type is already selected
+                $('#requestTypeSelect').trigger('change');
+                
+                // Form validation before submit
+                $('form').on('submit', function(e) {
+                    try {
+                        var isValid = true;
+                        var errors = [];
+                        
+                        // Remove existing validation states
+                        $('.is-invalid').removeClass('is-invalid');
+                        
+                        // Check required fields
+                        if (!$('#titleInput').val() || !$('#titleInput').val().trim()) {
+                            isValid = false;
+                            errors.push('Title is required');
+                            $('#titleInput').addClass('is-invalid');
+                        }
+                        
+                        if (!$('#descriptionInput').val() || !$('#descriptionInput').val().trim()) {
+                            isValid = false;
+                            errors.push('Description is required');
+                            $('#descriptionInput').addClass('is-invalid');
+                        }
+                        
+                        if (!$('#requestTypeSelect').val()) {
+                            isValid = false;
+                            errors.push('Request Type is required');
+                            $('#requestTypeSelect').addClass('is-invalid');
+                        }
+                        
+                        if (!$('#prioritySelect').val()) {
+                            isValid = false;
+                            errors.push('Priority is required');
+                            $('#prioritySelect').addClass('is-invalid');
+                        }
+                        
+                        if (!isValid) {
+                            e.preventDefault();
+                            
+                            // Show errors in a more user-friendly way
+                            var errorHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">';
+                            errorHtml += '<strong>Please fix the following errors:</strong><ul class="mb-0 mt-2">';
+                            errors.forEach(function(error) {
+                                errorHtml += '<li>' + error + '</li>';
+                            });
+                            errorHtml += '</ul>';
+                            errorHtml += '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                            errorHtml += '</div>';
+                            
+                            // Remove any existing error alerts
+                            $('.alert-danger').remove();
+                            
+                            // Add the error alert at the top of the form
+                            $('form').prepend(errorHtml);
+                            
+                            // Scroll to top of form
+                            $('form')[0].scrollIntoView({ behavior: 'smooth' });
+                            
+                            return false;
+                        }
+                        
+                        // Show loading state
+                        var submitBtn = $('#submitBtn');
+                        if (submitBtn.length) {
+                            submitBtn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-2"></i>Submitting...');
+                        }
+                        
+                    } catch (error) {
+                        console.error('Form validation error:', error);
+                        // Don't prevent form submission if there's a JavaScript error
+                    }
+                });
+                
+            } catch (error) {
+                console.error('JavaScript initialization error:', error);
+            }
         });
     </script>
 }

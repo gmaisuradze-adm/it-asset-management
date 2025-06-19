@@ -102,10 +102,9 @@ namespace HospitalAssetTracker.Services
         public async Task<ITRequest?> GetRequestByIdAsync(int requestId)
         {
             return await _context.ITRequests
-                .Include(r => r.Requester)
-                .Include(r => r.Asset)
-                .Include(r => r.AssignedTo)
-                .Include(r => r.Approvals)
+                .Include(r => r.RequestedByUser)
+                .Include(r => r.RelatedAsset)
+                .Include(r => r.AssignedToUser)
                 .FirstOrDefaultAsync(r => r.Id == requestId);
         }
 
@@ -130,8 +129,35 @@ namespace HospitalAssetTracker.Services
 
             request.RequestNumber = $"REQ-{datePrefix}-{sequence:D4}";
             request.RequestedByUserId = userId;
+            request.RequestDate = DateTime.UtcNow;
             request.CreatedDate = DateTime.UtcNow;
             request.Status = RequestStatus.Submitted;
+
+            // Ensure all DateTime fields are UTC
+            if (request.RequiredByDate.HasValue && request.RequiredByDate.Value.Kind != DateTimeKind.Utc)
+            {
+                request.RequiredByDate = DateTime.SpecifyKind(request.RequiredByDate.Value, DateTimeKind.Utc);
+            }
+            
+            if (request.DueDate.HasValue && request.DueDate.Value.Kind != DateTimeKind.Utc)
+            {
+                request.DueDate = DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc);
+            }
+            
+            if (request.ApprovalDate.HasValue && request.ApprovalDate.Value.Kind != DateTimeKind.Utc)
+            {
+                request.ApprovalDate = DateTime.SpecifyKind(request.ApprovalDate.Value, DateTimeKind.Utc);
+            }
+            
+            if (request.CompletedDate.HasValue && request.CompletedDate.Value.Kind != DateTimeKind.Utc)
+            {
+                request.CompletedDate = DateTime.SpecifyKind(request.CompletedDate.Value, DateTimeKind.Utc);
+            }
+            
+            if (request.LastModifiedDate.HasValue && request.LastModifiedDate.Value.Kind != DateTimeKind.Utc)
+            {
+                request.LastModifiedDate = DateTime.SpecifyKind(request.LastModifiedDate.Value, DateTimeKind.Utc);
+            }
 
             // Set automatic priority based on request type and asset criticality
             await SetAutomaticPriorityAsync(request);
@@ -233,6 +259,37 @@ namespace HospitalAssetTracker.Services
             return true;
         }
 
+        public async Task<bool> RejectRequestAsync(int requestId, string rejectionReason)
+        {
+            var request = await GetRequestByIdAsync(requestId);
+            if (request == null) return false;
+
+            // Create rejection record
+            var rejection = new RequestApproval
+            {
+                ITRequestId = requestId,
+                ApproverId = "system", // System rejection
+                DecisionDate = DateTime.UtcNow,
+                Status = ApprovalStatus.Rejected,
+                Comments = rejectionReason,
+                CreatedDate = DateTime.UtcNow,
+                ApprovalLevel = ApprovalLevel.Supervisor,
+                Sequence = 1
+            };
+            _context.RequestApprovals.Add(rejection);
+
+            // Update request status
+            request.Status = RequestStatus.Rejected;
+            request.LastUpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync(AuditAction.Update, "ITRequest", requestId, "system", 
+                $"Request {request.RequestNumber} rejected: {rejectionReason}");
+
+            return true;
+        }
+
         public async Task<bool> CompleteRequestAsync(int requestId, string completedById, string? completionNotes = null)
         {
             var request = await GetRequestByIdAsync(requestId);
@@ -320,8 +377,8 @@ namespace HospitalAssetTracker.Services
         public async Task<List<ITRequest>> GetOverdueRequestsAsync()
         {
             return await _context.ITRequests
-                .Include(r => r.Requester)
-                .Include(r => r.AssignedTo)
+                .Include(r => r.RequestedByUser)
+                .Include(r => r.AssignedToUser)
                 .Where(r => r.RequiredByDate.HasValue && 
                            r.RequiredByDate.Value < DateTime.UtcNow && 
                            r.Status != RequestStatus.Completed && 
@@ -333,9 +390,9 @@ namespace HospitalAssetTracker.Services
         public async Task<List<ITRequest>> GetMyRequestsAsync(string userId)
         {
             return await _context.ITRequests
-                .Include(r => r.Asset)
-                .Include(r => r.AssignedTo)
-                .Where(r => r.RequesterId == userId)
+                .Include(r => r.RelatedAsset)
+                .Include(r => r.AssignedToUser)
+                .Where(r => r.RequestedByUserId == userId)
                 .OrderByDescending(r => r.CreatedDate)
                 .ToListAsync();
         }
@@ -343,9 +400,9 @@ namespace HospitalAssetTracker.Services
         public async Task<List<ITRequest>> GetAssignedRequestsAsync(string userId)
         {
             return await _context.ITRequests
-                .Include(r => r.Requester)
-                .Include(r => r.Asset)
-                .Where(r => r.AssignedToId == userId && 
+                .Include(r => r.RequestedByUser)
+                .Include(r => r.RelatedAsset)
+                .Where(r => r.AssignedToUserId == userId && 
                            r.Status != RequestStatus.Completed && 
                            r.Status != RequestStatus.Cancelled)
                 .OrderBy(r => r.Priority)
@@ -358,9 +415,9 @@ namespace HospitalAssetTracker.Services
         private async Task SetAutomaticPriorityAsync(ITRequest request)
         {
             // Set priority based on request type and asset criticality
-            if (request.AssetId.HasValue)
+            if (request.RelatedAssetId.HasValue)
             {
-                var asset = await _assetService.GetAssetByIdAsync(request.AssetId.Value);
+                var asset = await _assetService.GetAssetByIdAsync(request.RelatedAssetId.Value);
                 if (asset != null && asset.IsCritical)
                 {
                     request.Priority = RequestPriority.Critical;
@@ -374,7 +431,7 @@ namespace HospitalAssetTracker.Services
                 RequestType.HardwareReplacement => RequestPriority.High,
                 RequestType.NetworkConnectivity => RequestPriority.High,
                 RequestType.MaintenanceService => RequestPriority.Medium,
-                RequestType.NewEquipmentProvisioning => RequestPriority.Medium,
+                RequestType.NewEquipment => RequestPriority.Medium,
                 RequestType.SoftwareInstallation => RequestPriority.Low,
                 RequestType.UserAccessRights => RequestPriority.Low,
                 RequestType.ITConsultation => RequestPriority.Low,
@@ -392,16 +449,16 @@ namespace HospitalAssetTracker.Services
 
             // Auto-approve like-for-like replacements for critical systems
             if (request.RequestType == RequestType.HardwareReplacement && 
-                request.AssetId.HasValue)
+                request.RelatedAssetId.HasValue)
             {
-                var asset = await _assetService.GetAssetByIdAsync(request.AssetId.Value);
+                var asset = await _assetService.GetAssetByIdAsync(request.RelatedAssetId.Value);
                 return asset?.IsCritical == true;
             }
 
             return false;
         }
 
-        private async Task ProcessAutoApprovalAsync(ITRequest request, string userId)
+        private Task ProcessAutoApprovalAsync(ITRequest request, string userId)
         {
             request.Status = RequestStatus.Approved;
             request.ApprovedByUserId = userId;
@@ -419,6 +476,8 @@ namespace HospitalAssetTracker.Services
                 Sequence = 1
             };
             _context.RequestApprovals.Add(approval);
+            
+            return Task.CompletedTask;
         }
 
         private async Task<bool> IsFullyApprovedAsync(int requestId)
@@ -428,7 +487,7 @@ namespace HospitalAssetTracker.Services
 
             // Check if all required approvals are received based on request value and type
             var approvals = await _context.RequestApprovals
-                .Where(a => a.RequestId == requestId && a.ApprovalStatus == ApprovalStatus.Approved)
+                .Where(a => a.ITRequestId == requestId && a.Status == ApprovalStatus.Approved)
                 .CountAsync();
 
             // Simple approval logic - can be enhanced based on complex business rules
@@ -449,7 +508,7 @@ namespace HospitalAssetTracker.Services
                 case RequestType.HardwareReplacement:
                     await ProcessHardwareReplacementAsync(request, approverId);
                     break;
-                case RequestType.NewEquipmentProvisioning:
+                case RequestType.NewEquipment:
                     await ProcessNewEquipmentAsync(request, approverId);
                     break;
                 // Add other request type processing logic

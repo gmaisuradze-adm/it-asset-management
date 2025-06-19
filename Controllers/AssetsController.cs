@@ -794,5 +794,64 @@ namespace HospitalAssetTracker.Controllers
                 ViewBag.Users = new SelectList(new List<object>(), "Id", "Name");
             }
         }
+        
+
+        
+        // AJAX: Add new location
+        [HttpPost]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        public async Task<IActionResult> AddLocation([FromBody] AddLocationRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Name))
+                {
+                    return Json(new { success = false, message = "Location name is required." });
+                }
+
+                var userId = _userManager.GetUserId(User);
+                if (userId == null)
+                {
+                    return Json(new { success = false, message = "User not authenticated." });
+                }
+
+                var location = new Location
+                {
+                    Room = request.Name.Trim(),
+                    Description = request.Description?.Trim(),
+                    Building = request.Building?.Trim() ?? "Main Building",
+                    Floor = request.Floor?.Trim() ?? "Ground Floor",
+                    IsActive = true,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                var createdLocation = await _assetService.CreateLocationAsync(location, userId);
+                
+                return Json(new { 
+                    success = true, 
+                    message = "Location added successfully.",
+                    location = new { 
+                        id = createdLocation.Id, 
+                        name = createdLocation.FullLocation,
+                        value = createdLocation.Id,
+                        text = createdLocation.FullLocation
+                    }
+                });
+            }
+            catch (Exception)
+            {
+                return Json(new { success = false, message = "An error occurred while adding the location." });
+            }
+        }
+
+        // Helper class for AJAX requests
+        public class AddLocationRequest
+        {
+            public string Name { get; set; } = string.Empty;
+            public string? Description { get; set; }
+            public string? Building { get; set; }
+            public string? Floor { get; set; }
+            public string? Room { get; set; }
+        }
     }
 }

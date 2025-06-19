@@ -88,6 +88,26 @@ namespace HospitalAssetTracker.Controllers
                 return Forbid();
             }
 
+            // Set ViewBag properties for the view
+            ViewBag.CanEdit = request.RequestedByUserId == userId || userRoles.Any(r => r == "Admin" || r == "IT Support");
+            ViewBag.CanAssign = userRoles.Any(r => r == "Admin" || r == "IT Support" || r == "Asset Manager");
+            ViewBag.CanApprove = userRoles.Any(r => r == "Admin" || r == "Asset Manager");
+            ViewBag.CurrentUserId = userId;
+
+            // Get IT users for assignment dropdown
+            if (ViewBag.CanAssign)
+            {
+                var itUsers = await _userManager.GetUsersInRoleAsync("IT Support");
+                var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
+                var allITUsers = itUsers.Concat(adminUsers).Distinct().ToList();
+                
+                ViewBag.ITUsers = allITUsers.Select(u => new SelectListItem
+                {
+                    Value = u.Id,
+                    Text = $"{u.FirstName} {u.LastName} ({u.Email})"
+                });
+            }
+
             return View(request);
         }
 
@@ -103,14 +123,53 @@ namespace HospitalAssetTracker.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ITRequest request)
         {
+            // Populate required fields before validation
+            var userId = _userManager.GetUserId(User);
+            var user = await _userManager.GetUserAsync(User);
+            
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+            
+            request.RequestedByUserId = userId ?? string.Empty;
+            request.RequestedByUser = user; // Populate the navigation property
+            request.Department = user.Department ?? "Unknown";
+            request.RequestDate = DateTime.UtcNow;
+            request.CreatedDate = DateTime.UtcNow;
+            request.Status = RequestStatus.Pending;
+            
+            // Ensure all DateTime fields are UTC
+            if (request.RequiredByDate.HasValue)
+            {
+                request.RequiredByDate = DateTime.SpecifyKind(request.RequiredByDate.Value, DateTimeKind.Utc);
+            }
+            
+            if (request.DueDate.HasValue)
+            {
+                request.DueDate = DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc);
+            }
+            
+            // Generate RequestNumber if not set
+            if (string.IsNullOrEmpty(request.RequestNumber))
+            {
+                request.RequestNumber = $"REQ-{DateTime.UtcNow:yyyyMMdd}-{DateTime.UtcNow.Ticks % 10000:D4}";
+            }
+            
+            // Remove validation errors for fields we just populated
+            ModelState.Remove(nameof(request.RequestNumber));
+            ModelState.Remove(nameof(request.RequestedByUserId));
+            ModelState.Remove(nameof(request.RequestedByUser));
+            ModelState.Remove(nameof(request.Department));
+            ModelState.Remove(nameof(request.Requester));
+            ModelState.Remove(nameof(request.RequestDate));
+            ModelState.Remove(nameof(request.CreatedDate));
+            ModelState.Remove(nameof(request.Status));
+            
             if (ModelState.IsValid)
             {
                 try
                 {
-                    var userId = _userManager.GetUserId(User);
-                    var user = await _userManager.GetUserAsync(User);
-                    request.Department = user?.Department ?? "Unknown";
-                    
                     await _requestService.CreateRequestAsync(request, userId);
                     
                     TempData["SuccessMessage"] = $"Request {request.RequestNumber} has been created successfully.";
@@ -118,7 +177,17 @@ namespace HospitalAssetTracker.Controllers
                 }
                 catch (Exception ex)
                 {
-                    ModelState.AddModelError("", $"Error creating request: {ex.Message}");
+                    // Log detailed error information
+                    var errorMessage = $"Error creating request: {ex.Message}";
+                    if (ex.InnerException != null)
+                    {
+                        errorMessage += $" Inner Exception: {ex.InnerException.Message}";
+                    }
+                    
+                    ModelState.AddModelError("", errorMessage);
+                    
+                    // Also set TempData for user feedback
+                    TempData["ErrorMessage"] = errorMessage;
                 }
             }
 
@@ -314,12 +383,261 @@ namespace HospitalAssetTracker.Controllers
             return Json(assets);
         }
 
+        // POST: Requests/Reject/5
+        [HttpPost]
+        [Authorize(Roles = "Admin,Asset Manager")]
+        public async Task<IActionResult> Reject(int id, string rejectionReason)
+        {
+            try
+            {
+                var success = await _requestService.RejectRequestAsync(id, rejectionReason);
+                
+                if (success)
+                {
+                    return Json(new { success = true, message = "Request has been rejected." });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Failed to reject request." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: Requests/TakeOwnership/5
+        [HttpPost]
+        [Authorize(Roles = "Admin,IT Support")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TakeOwnership(int id)
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    TempData["ErrorMessage"] = "User not found. Please log in again.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                var success = await _requestService.AssignRequestAsync(id, userId, userId);
+                
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Request assigned to you successfully.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Failed to take ownership of request.";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Error taking ownership: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        // POST: Requests/ChangePriority/5
+        [HttpPost]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePriority(int id, RequestPriority newPriority, string reason)
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                var request = await _requestService.GetRequestByIdAsync(id);
+                
+                if (request == null)
+                {
+                    return Json(new { success = false, message = "Request not found." });
+                }
+
+                if (request.Priority == newPriority)
+                {
+                    return Json(new { success = false, message = "Priority is already set to the requested level." });
+                }
+
+                var oldPriority = request.Priority;
+                request.Priority = newPriority;
+                request.LastModifiedDate = DateTime.UtcNow;
+
+                var updatedRequest = await _requestService.UpdateRequestAsync(request, userId!);
+                
+                if (updatedRequest != null)
+                {
+                    // Note: AddRequestNoteAsync would be added to service if audit trail notes are needed
+                    
+                    return Json(new { success = true, message = "Priority changed successfully." });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Failed to change priority." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: Requests/Escalate/5
+        [HttpPost]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Escalate(int id, string escalateToUserId, string reason)
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                var request = await _requestService.GetRequestByIdAsync(id);
+                
+                if (request == null)
+                {
+                    return Json(new { success = false, message = "Request not found." });
+                }
+
+                if (string.IsNullOrEmpty(escalateToUserId))
+                {
+                    return Json(new { success = false, message = "Please select a user to escalate to." });
+                }
+
+                var escalateToUser = await _userManager.FindByIdAsync(escalateToUserId);
+                if (escalateToUser == null)
+                {
+                    return Json(new { success = false, message = "Target user not found." });
+                }
+
+                // Escalate typically means raising priority and reassigning
+                if (request.Priority != RequestPriority.Critical)
+                {
+                    var oldPriority = request.Priority;
+                    request.Priority = request.Priority == RequestPriority.High ? RequestPriority.Critical : RequestPriority.High;
+                    
+                    // Update request with new priority
+                    await _requestService.UpdateRequestAsync(request, userId!);
+                    
+                    // Note: Audit message would be logged here if audit service is available
+                }
+
+                // Reassign to escalation target
+                var success = await _requestService.AssignRequestAsync(id, escalateToUserId, userId!);
+                
+                if (success)
+                {
+                    // Note: Escalation note would be logged here if audit service is available
+                    return Json(new { success = true, message = $"Request escalated to {escalateToUser.Email} successfully." });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Failed to escalate request." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: Requests/Transfer/5
+        [HttpPost]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Transfer(int id, string transferToUserId, string reason)
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+                var request = await _requestService.GetRequestByIdAsync(id);
+                
+                if (request == null)
+                {
+                    return Json(new { success = false, message = "Request not found." });
+                }
+
+                if (string.IsNullOrEmpty(transferToUserId))
+                {
+                    return Json(new { success = false, message = "Please select a user to transfer to." });
+                }
+
+                var transferToUser = await _userManager.FindByIdAsync(transferToUserId);
+                if (transferToUser == null)
+                {
+                    return Json(new { success = false, message = "Target user not found." });
+                }
+
+                var success = await _requestService.AssignRequestAsync(id, transferToUserId, userId!);
+                
+                if (success)
+                {
+                    // Note: Transfer note would be logged here if audit service is available
+                    return Json(new { success = true, message = $"Request transferred to {transferToUser.Email} successfully." });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Failed to transfer request." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // GET: Requests/GetAvailableUsers
+        [HttpGet]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        public async Task<IActionResult> GetAvailableUsers(string? role = null)
+        {
+            try
+            {
+                var users = _userManager.Users.AsQueryable();
+                
+                if (!string.IsNullOrEmpty(role))
+                {
+                    var roles = role.Split(',').Select(r => r.Trim()).ToArray();
+                    var usersInRoles = new List<ApplicationUser>();
+                    
+                    foreach (var r in roles)
+                    {
+                        var roleUsers = await _userManager.GetUsersInRoleAsync(r);
+                        usersInRoles.AddRange(roleUsers);
+                    }
+                    
+                    users = usersInRoles.AsQueryable();
+                }
+
+                var userList = users
+                    .Select(u => new
+                    {
+                        id = u.Id,
+                        firstName = u.FirstName,
+                        lastName = u.LastName,
+                        email = u.Email,
+                        department = u.Department
+                    })
+                    .OrderBy(u => u.firstName)
+                    .ThenBy(u => u.lastName)
+                    .ToList();
+
+                return Json(userList);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
         private async Task PopulateViewBags(ITRequest? request = null)
         {
             ViewBag.RequestTypes = Enum.GetValues<RequestType>()
                 .Select(e => new SelectListItem 
                 { 
-                    Value = e.ToString(), 
+                    Value = ((int)e).ToString(), 
                     Text = e.ToString().Replace("_", " "),
                     Selected = request?.RequestType == e
                 });
@@ -327,7 +645,7 @@ namespace HospitalAssetTracker.Controllers
             ViewBag.Priorities = Enum.GetValues<RequestPriority>()
                 .Select(e => new SelectListItem 
                 { 
-                    Value = e.ToString(), 
+                    Value = ((int)e).ToString(), 
                     Text = e.ToString(),
                     Selected = request?.Priority == e
                 });
@@ -338,7 +656,7 @@ namespace HospitalAssetTracker.Controllers
             {
                 Value = l.Id.ToString(),
                 Text = $"{l.Building} - {l.Floor} - {l.Room}",
-                Selected = request?.Asset?.LocationId == l.Id
+                Selected = request?.RelatedAsset?.LocationId == l.Id
             });
 
             // Get departments
@@ -369,6 +687,10 @@ namespace HospitalAssetTracker.Controllers
                 new() { Value = "Software", Text = "Software" },
                 new() { Value = "Other", Text = "Other" }
             };
+
+            // Set current user department for JavaScript
+            var currentUser = await _userManager.GetUserAsync(User);
+            ViewBag.CurrentUserDepartment = currentUser?.Department ?? "Unknown";
         }
     }
 }

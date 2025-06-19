@@ -13,6 +13,7 @@ namespace HospitalAssetTracker.Services
         // Assignment and approval
         Task<bool> AssignRequestAsync(int requestId, string assignedToUserId, string currentUserId);
         Task<bool> ApproveRequestAsync(int requestId, string approverId, string? comments = null);
+        Task<bool> RejectRequestAsync(int requestId, string rejectionReason);
         Task<bool> CompleteRequestAsync(int requestId, string completedById, string? completionNotes = null);
 
         // Dashboard and reporting

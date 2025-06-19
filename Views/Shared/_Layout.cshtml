@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -123,6 +124,26 @@
                                     <li><a class="dropdown-item" asp-controller="Requests" asp-action="Overdue">
                                         <i class="bi bi-exclamation-triangle"></i> Overdue
                                     </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li class="dropdown-submenu">
+                                        <a class="dropdown-item dropdown-toggle" href="#">
+                                            <i class="bi bi-gear"></i> Advanced Analysis
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" asp-controller="RequestDashboard" asp-action="SlaCompliance">
+                                                <i class="bi bi-stopwatch"></i> SLA Compliance
+                                            </a></li>
+                                            <li><a class="dropdown-item" asp-controller="RequestDashboard" asp-action="DemandForecasting">
+                                                <i class="bi bi-graph-up"></i> Demand Forecasting
+                                            </a></li>
+                                            <li><a class="dropdown-item" asp-controller="RequestDashboard" asp-action="ResourceOptimization">
+                                                <i class="bi bi-people"></i> Resource Optimization
+                                            </a></li>
+                                            <li><a class="dropdown-item" asp-controller="RequestDashboard" asp-action="QualityAssurance">
+                                                <i class="bi bi-shield-check"></i> Quality Assurance
+                                            </a></li>
+                                        </ul>
+                                    </li>
                                 }
                             </ul>
                         </li>
@@ -238,6 +259,7 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

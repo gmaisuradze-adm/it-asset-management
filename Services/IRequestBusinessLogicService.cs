@@ -50,6 +50,23 @@ namespace HospitalAssetTracker.Services
         /// </summary>
         Task<QualityAssuranceResult> MonitorServiceQualityAsync(int analysisMonths = 3);
 
+        // === WORKLOAD OPTIMIZATION & AUTOMATION ===
+
+        /// <summary>
+        /// Auto-rebalance workload among team members
+        /// </summary>
+        Task<WorkloadRebalanceResult> AutoRebalanceWorkloadAsync();
+
+        /// <summary>
+        /// Optimize request assignments based on skills and availability
+        /// </summary>
+        Task<AssignmentOptimizationResult> OptimizeAssignmentsAsync();
+
+        /// <summary>
+        /// Get comprehensive resource optimization data
+        /// </summary>
+        Task<ResourceOptimizationResult> GetResourceOptimizationAsync();
+
         // === INTEGRATION & CROSS-MODULE ORCHESTRATION ===
 
         /// <summary>

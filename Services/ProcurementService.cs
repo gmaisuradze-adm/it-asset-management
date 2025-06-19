@@ -503,7 +503,7 @@ namespace HospitalAssetTracker.Services
         {
             return requestType switch
             {
-                RequestType.NewEquipmentProvisioning => ProcurementType.NewEquipment,
+                RequestType.NewEquipment => ProcurementType.NewEquipment,
                 RequestType.HardwareReplacement => ProcurementType.Replacement,
                 RequestType.SoftwareInstallation => ProcurementType.Software,
                 RequestType.MaintenanceService => ProcurementType.Services,
