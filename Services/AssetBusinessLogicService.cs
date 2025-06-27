@@ -178,7 +178,7 @@ namespace HospitalAssetTracker.Services
 
                 var recentAlerts = await GetAssetAlertsAsync(userId);
                 var upcomingMaintenance = await _context.MaintenanceRecords
-                    .Where(m => m.ScheduledDate >= DateTime.Today && m.ScheduledDate <= DateTime.Today.AddDays(30))
+                    .Where(m => m.ScheduledDate >= DateTime.UtcNow.Date && m.ScheduledDate <= DateTime.UtcNow.Date.AddDays(30))
                     .OrderBy(m => m.ScheduledDate)
                     .Take(10)
                     .ToListAsync();
