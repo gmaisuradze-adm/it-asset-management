@@ -191,15 +191,15 @@ namespace HospitalAssetTracker.Services
                 {
                     activities.Add(new RecentActivity
                     {
-                        Type = GetActivityTypeFromAudit(audit.Action),
-                        Action = audit.Action,
+                        Type = GetActivityTypeFromAudit(audit.Action.ToString()),
+                        Action = audit.Action.ToString(),
                         Description = $"{audit.Action} {audit.EntityName}",
                         UserName = audit.UserName,
                         Timestamp = audit.Timestamp,
                         EntityId = audit.EntityId,
                         EntityType = audit.EntityName,
-                        Icon = GetIconForActivity(audit.Action),
-                        ColorClass = GetColorForActivity(audit.Action)
+                        Icon = GetIconForActivity(audit.Action.ToString()),
+                        ColorClass = GetColorForActivity(audit.Action.ToString())
                     });
                 }
 
@@ -220,8 +220,8 @@ namespace HospitalAssetTracker.Services
 
                 // Warranty expiration alerts
                 var expiringWarranties = await _context.Assets
-                    .Where(a => a.WarrantyExpirationDate.HasValue && 
-                               a.WarrantyExpirationDate.Value <= DateTime.UtcNow.AddDays(30))
+                    .Where(a => a.WarrantyExpiry.HasValue && 
+                               a.WarrantyExpiry.Value <= DateTime.UtcNow.AddDays(30))
                     .CountAsync();
 
                 if (expiringWarranties > 0)
@@ -513,7 +513,7 @@ namespace HospitalAssetTracker.Services
                 TotalItems = items.Count,
                 LowStockItems = items.Count(i => i.Quantity <= i.MinimumStock),
                 OutOfStockItems = items.Count(i => i.Quantity == 0),
-                TotalInventoryValue = items.Sum(i => i.Quantity * i.UnitCost),
+                TotalInventoryValue = items.Where(i => i.UnitCost.HasValue).Sum(i => i.Quantity * i.UnitCost.Value),
                 LowStockAlerts = items.Where(i => i.Quantity <= i.MinimumStock).Take(5).ToList()
             };
         }
@@ -632,7 +632,7 @@ namespace HospitalAssetTracker.Services
                     Title = request.Title,
                     DueDate = request.DueDate.Value,
                     DaysOverdue = (DateTime.UtcNow - request.DueDate.Value).Days,
-                    AssignedTo = request.AssignedTo ?? "Unassigned",
+                    AssignedTo = request.AssignedTo?.UserName ?? "Unassigned",
                     Priority = request.Priority,
                     ActionUrl = $"/Requests/Details/{request.Id}"
                 });
@@ -647,7 +647,9 @@ namespace HospitalAssetTracker.Services
 
             // Get unassigned requests
             var unassignedRequests = await _context.ITRequests
-                .Where(r => r.Status == RequestStatus.Approved && string.IsNullOrEmpty(r.AssignedTo))
+                .Where(r => r.Status == RequestStatus.Approved && string.IsNullOrEmpty(r.AssignedToUserId))
+                .Include(r => r.RequestedByUser)
+                .Include(r => r.AssignedToUser)
                 .ToListAsync();
 
             foreach (var request in unassignedRequests)
@@ -657,6 +659,8 @@ namespace HospitalAssetTracker.Services
                     Id = request.Id,
                     Type = "IT Request",
                     Title = request.Title,
+                    AssignedTo = request.AssignedToUser?.UserName ?? "Unassigned",
+                    AssignedBy = request.RequestedByUser?.UserName ?? "Unknown",
                     AssignedDate = request.RequestDate,
                     Priority = request.Priority,
                     Status = "Pending Assignment",
