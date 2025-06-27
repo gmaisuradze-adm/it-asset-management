@@ -544,7 +544,7 @@ namespace HospitalAssetTracker.Services
                 CompletedRequests = requests.Count(r => r.Status == RequestStatus.Completed),
                 RejectedRequests = requests.Count(r => r.Status == RequestStatus.Rejected),
                 RecentRequests = requests.OrderByDescending(r => r.CreatedDate).Take(5).ToList(),
-                HighPriorityRequests = requests.Where(r => r.Priority == Priority.High || r.Priority == Priority.Critical)
+                HighPriorityRequests = requests.Where(r => r.Priority == RequestPriority.High || r.Priority == RequestPriority.Critical)
                                              .OrderByDescending(r => r.Priority).Take(5).ToList(),
                 RequestsByType = requests.GroupBy(r => r.RequestType).ToDictionary(g => g.Key, g => g.Count()),
                 RequestsByPriority = requests.GroupBy(r => r.Priority).ToDictionary(g => g.Key, g => g.Count())
@@ -558,7 +558,7 @@ namespace HospitalAssetTracker.Services
             // Get pending IT requests
             var pendingRequests = await _context.ITRequests
                 .Where(r => r.Status == RequestStatus.Pending)
-                .Include(r => r.Requestor)
+                .Include(r => r.RequestedByUser)
                 .ToListAsync();
 
             foreach (var request in pendingRequests)
@@ -568,13 +568,13 @@ namespace HospitalAssetTracker.Services
                     Id = request.Id,
                     Type = "IT Request",
                     Title = request.Title,
-                    Requestor = request.Requestor?.UserName ?? "Unknown",
-                    SubmittedDate = request.CreatedDate,
+                    Requestor = request.RequestedByUser?.UserName ?? "Unknown",
+                    SubmittedDate = request.RequestDate,
                     Priority = request.Priority,
                     Amount = request.EstimatedCost,
                     Status = request.Status.ToString(),
                     ActionUrl = $"/Requests/Details/{request.Id}",
-                    DaysWaiting = (DateTime.UtcNow - request.CreatedDate).Days
+                    DaysWaiting = (DateTime.UtcNow - request.RequestDate).Days
                 });
             }
 
@@ -603,8 +603,8 @@ namespace HospitalAssetTracker.Services
                     Description = $"Scheduled maintenance for {asset.Name}",
                     ScheduledDate = asset.LastMaintenanceDate?.AddMonths(6) ?? DateTime.UtcNow,
                     AssignedTo = "IT Support",
-                    Status = TaskStatus.Pending,
-                    Priority = Priority.Medium,
+                    Status = HospitalAssetTracker.Models.TaskStatus.Pending,
+                    Priority = RequestPriority.Medium,
                     ActionUrl = $"/Assets/Details/{asset.Id}"
                 });
             }
@@ -619,8 +619,8 @@ namespace HospitalAssetTracker.Services
             // Get overdue requests
             var overdueRequests = await _context.ITRequests
                 .Where(r => r.Status == RequestStatus.InProgress && 
-                           r.ExpectedCompletionDate.HasValue && 
-                           r.ExpectedCompletionDate.Value < DateTime.UtcNow)
+                           r.DueDate.HasValue && 
+                           r.DueDate.Value < DateTime.UtcNow)
                 .ToListAsync();
 
             foreach (var request in overdueRequests)
@@ -630,8 +630,8 @@ namespace HospitalAssetTracker.Services
                     Id = request.Id,
                     Type = "IT Request",
                     Title = request.Title,
-                    DueDate = request.ExpectedCompletionDate.Value,
-                    DaysOverdue = (DateTime.UtcNow - request.ExpectedCompletionDate.Value).Days,
+                    DueDate = request.DueDate.Value,
+                    DaysOverdue = (DateTime.UtcNow - request.DueDate.Value).Days,
                     AssignedTo = request.AssignedTo ?? "Unassigned",
                     Priority = request.Priority,
                     ActionUrl = $"/Requests/Details/{request.Id}"
@@ -657,7 +657,7 @@ namespace HospitalAssetTracker.Services
                     Id = request.Id,
                     Type = "IT Request",
                     Title = request.Title,
-                    AssignedDate = request.CreatedDate,
+                    AssignedDate = request.RequestDate,
                     Priority = request.Priority,
                     Status = "Pending Assignment",
                     ActionUrl = $"/Requests/Assign/{request.Id}"
