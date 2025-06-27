@@ -112,7 +112,7 @@
                                 <td>
                                     @if (request.RequiredByDate.HasValue)
                                     {
-                                        <span class="@(request.RequiredByDate.Value < DateTime.Now && request.Status != RequestStatus.Completed ? "text-danger" : "")">
+                                        <span class="@(request.RequiredByDate.Value < DateTime.UtcNow && request.Status != RequestStatus.Completed ? "text-danger" : "")">
                                             @request.RequiredByDate.Value.ToString("MM/dd/yyyy")
                                         </span>
                                     }

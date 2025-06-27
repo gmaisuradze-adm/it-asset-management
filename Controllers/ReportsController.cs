@@ -71,7 +71,7 @@ namespace HospitalAssetTracker.Controllers
             }
 
             var excelData = await _reportService.GenerateAssetReportExcelAsync(assets);
-            var fileName = $"Assets_Report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            var fileName = $"Assets_Report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
 
             return File(excelData, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
@@ -99,7 +99,7 @@ namespace HospitalAssetTracker.Controllers
             }
 
             var pdfData = await _reportService.GenerateAssetReportPdfAsync(assets);
-            var fileName = $"Assets_Report_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+            var fileName = $"Assets_Report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
 
             return File(pdfData, "application/pdf", fileName);
         }
@@ -139,7 +139,7 @@ namespace HospitalAssetTracker.Controllers
             }
 
             var pdfData = await _reportService.GenerateAuditReportPdfAsync(auditLogs);
-            var fileName = $"Audit_Log_Report_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+            var fileName = $"Audit_Log_Report_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
 
             return File(pdfData, "application/pdf", fileName);
         }
@@ -165,7 +165,7 @@ namespace HospitalAssetTracker.Controllers
                 {
                     if (asset.WarrantyExpiry.HasValue)
                     {
-                        var isExpired = asset.WarrantyExpiry.Value <= DateTime.Now;
+                        var isExpired = asset.WarrantyExpiry.Value <= DateTime.UtcNow;
                         Console.WriteLine($"Asset {asset.AssetTag}: Warranty {asset.WarrantyExpiry.Value.ToString("yyyy-MM-dd")} - Expired: {isExpired}");
                     }
                 }

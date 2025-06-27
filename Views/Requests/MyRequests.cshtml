@@ -54,7 +54,7 @@
                                 <small class="text-muted">
                                     <i class="bi bi-calendar-check"></i> Due: 
                                 </small>
-                                <small class="@(request.RequiredByDate.Value < DateTime.Now && request.Status != RequestStatus.Completed ? "text-danger" : "")">
+                                <small class="@(request.RequiredByDate.Value < DateTime.UtcNow && request.Status != RequestStatus.Completed ? "text-danger" : "")">
                                     @request.RequiredByDate.Value.ToString("MM/dd/yyyy")
                                 </small>
                             </div>

@@ -486,7 +486,7 @@
                                 <td>
                                     @if (asset.WarrantyExpiry.HasValue)
                                     {
-                                        var daysToExpiry = (asset.WarrantyExpiry.Value - DateTime.Today).Days;
+                                        var daysToExpiry = (asset.WarrantyExpiry.Value - DateTime.UtcNow.Date).Days;
                                         if (daysToExpiry < 0)
                                         {
                                             <span class="badge bg-danger">Expired</span>

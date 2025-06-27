@@ -1179,7 +1179,7 @@ namespace HospitalAssetTracker.Services
                 _ => "IT"
             };
 
-            var currentYear = DateTime.Now.Year.ToString()[2..];
+            var currentYear = DateTime.UtcNow.Year.ToString()[2..];
             var latestItem = await _context.InventoryItems
                 .Where(i => i.ItemCode.StartsWith($"{prefix}{currentYear}"))
                 .OrderByDescending(i => i.ItemCode)
@@ -1567,8 +1567,8 @@ namespace HospitalAssetTracker.Services
                 FilterCriteria = new AdvancedInventorySearchModel { ShowExpiringWarrantyOnly = true },
                 ItemCount = await _context.InventoryItems.CountAsync(i => 
                     i.WarrantyExpiry.HasValue && 
-                    i.WarrantyExpiry.Value >= DateTime.Now && 
-                    i.WarrantyExpiry.Value <= DateTime.Now.AddDays(30)),
+                    i.WarrantyExpiry.Value >= DateTime.UtcNow &&
+                    i.WarrantyExpiry.Value <= DateTime.UtcNow.AddDays(30)),
                 IsSystemFilter = true
             });
 

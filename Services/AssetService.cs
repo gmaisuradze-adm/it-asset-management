@@ -1703,7 +1703,7 @@ namespace HospitalAssetTracker.Services
             // Warranty filters
             if (searchModel.WarrantyExpired.HasValue)
             {
-                var today = DateTime.Today;
+                var today = DateTime.UtcNow.Date;
                 if (searchModel.WarrantyExpired.Value)
                 {
                     query = query.Where(a => a.WarrantyExpiry.HasValue && a.WarrantyExpiry.Value < today);
@@ -1746,9 +1746,9 @@ namespace HospitalAssetTracker.Services
                 StatusCounts = statusCounts,
                 LocationCounts = locationCounts,
                 TotalValue = assets.Where(a => a.PurchasePrice.HasValue).Sum(a => a.PurchasePrice!.Value),
-                WarrantyExpiringCount = allAssets.Count(a => a.WarrantyExpiry.HasValue && 
-                    a.WarrantyExpiry.Value >= DateTime.Today && 
-                    a.WarrantyExpiry.Value <= DateTime.Today.AddDays(90)),
+                WarrantyExpiringCount = allAssets.Count(a => a.WarrantyExpiry.HasValue &&
+                    a.WarrantyExpiry.Value >= DateTime.UtcNow.Date &&
+                    a.WarrantyExpiry.Value <= DateTime.UtcNow.Date.AddDays(90)),
                 UnassignedCount = allAssets.Count(a => string.IsNullOrEmpty(a.AssignedToUserId))
             };
         }
@@ -2207,7 +2207,7 @@ namespace HospitalAssetTracker.Services
             }
 
             var fileBytes = package.GetAsByteArray();
-            var fileName = $"assets_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            var fileName = $"assets_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
             
             return new Microsoft.AspNetCore.Mvc.FileContentResult(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             {
@@ -2233,7 +2233,7 @@ namespace HospitalAssetTracker.Services
             }
 
             var fileBytes = Encoding.UTF8.GetBytes(csv.ToString());
-            var fileName = $"assets_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            var fileName = $"assets_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv";
             
             return new Microsoft.AspNetCore.Mvc.FileContentResult(fileBytes, "text/csv")
             {
