@@ -527,8 +527,8 @@ namespace HospitalAssetTracker.Services
                 PendingPOs = pos.Count(p => p.Status == ProcurementStatus.Pending),
                 ApprovedPOs = pos.Count(p => p.Status == ProcurementStatus.Approved),
                 ReceivedPOs = pos.Count(p => p.Status == ProcurementStatus.Delivered),
-                TotalPOValue = pos.Sum(p => p.TotalCost),
-                PendingPOValue = pos.Where(p => p.Status == ProcurementStatus.Pending).Sum(p => p.TotalCost),
+                TotalPOValue = pos.Where(p => p.TotalAmount.HasValue).Sum(p => p.TotalAmount.Value),
+                PendingPOValue = pos.Where(p => p.Status == ProcurementStatus.Pending && p.TotalAmount.HasValue).Sum(p => p.TotalAmount.Value),
                 RecentPOs = pos.OrderByDescending(p => p.RequestDate).Take(5).ToList()
             };
         }
