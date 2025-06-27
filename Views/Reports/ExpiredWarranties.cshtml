@@ -24,7 +24,7 @@
                                 <div class="card bg-danger text-white">
                                     <div class="card-body">
                                         <h5>Critical</h5>
-                                        <h3>@Model.Where(a => a.WarrantyExpiry.HasValue && a.WarrantyExpiry < DateTime.Now.AddMonths(-6)).Count()</h3>
+                                        <h3>@Model.Where(a => a.WarrantyExpiry.HasValue && a.WarrantyExpiry < DateTime.UtcNow.AddMonths(-6)).Count()</h3>
                                         <p>Expired > 6 months</p>
                                     </div>
                                 </div>
@@ -33,7 +33,7 @@
                                 <div class="card bg-warning text-dark">
                                     <div class="card-body">
                                         <h5>Warning</h5>
-                                        <h3>@Model.Where(a => a.WarrantyExpiry.HasValue && a.WarrantyExpiry < DateTime.Now && a.WarrantyExpiry >= DateTime.Now.AddMonths(-6)).Count()</h3>
+                                        <h3>@Model.Where(a => a.WarrantyExpiry.HasValue && a.WarrantyExpiry < DateTime.UtcNow && a.WarrantyExpiry >= DateTime.UtcNow.AddMonths(-6)).Count()</h3>
                                         <p>Expired &lt; 6 months</p>
                                     </div>
                                 </div>
@@ -42,7 +42,7 @@
                                 <div class="card bg-info text-white">
                                     <div class="card-body">
                                         <h5>Expiring Soon</h5>
-                                        <h3>@Model.Where(a => a.WarrantyExpiry.HasValue && a.WarrantyExpiry >= DateTime.Now && a.WarrantyExpiry <= DateTime.Now.AddMonths(3)).Count()</h3>
+                                        <h3>@Model.Where(a => a.WarrantyExpiry.HasValue && a.WarrantyExpiry >= DateTime.UtcNow && a.WarrantyExpiry <= DateTime.UtcNow.AddMonths(3)).Count()</h3>
                                         <p>Expires in 3 months</p>
                                     </div>
                                 </div>
@@ -67,7 +67,7 @@
                                 <tbody>
                                     @foreach (var asset in Model.OrderBy(a => a.WarrantyExpiry))
                                     {
-                                        var daysOverdue = asset.WarrantyExpiry.HasValue ? (DateTime.Now - asset.WarrantyExpiry.Value).Days : 0;
+                                        var daysOverdue = asset.WarrantyExpiry.HasValue ? (DateTime.UtcNow - asset.WarrantyExpiry.Value).Days : 0;
                                         <tr class="@(daysOverdue > 180 ? "table-danger" : daysOverdue > 0 ? "table-warning" : "table-info")">
                                             <td>
                                                 @if (daysOverdue > 180)

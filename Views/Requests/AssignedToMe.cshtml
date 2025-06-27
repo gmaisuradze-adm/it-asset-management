@@ -88,7 +88,7 @@ else
                                 <td>
                                     @if (request.DueDate.HasValue)
                                     {
-                                        var isOverdue = request.DueDate.Value < DateTime.Now && request.Status != RequestStatus.Completed;
+                                        var isOverdue = request.DueDate.Value < DateTime.UtcNow && request.Status != RequestStatus.Completed;
                                         <span class="@(isOverdue ? "text-danger fw-bold" : "")">
                                             @request.DueDate.Value.ToString("MM/dd/yyyy")
                                         </span>

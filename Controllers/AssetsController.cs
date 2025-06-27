@@ -321,7 +321,7 @@ namespace HospitalAssetTracker.Controllers
             if (!warrantyExpiry.HasValue)
                 return "No Warranty";
             
-            var daysUntilExpiry = (warrantyExpiry.Value - DateTime.Now).Days;
+            var daysUntilExpiry = (warrantyExpiry.Value - DateTime.UtcNow.Date).Days;
             
             if (daysUntilExpiry < 0)
                 return "Expired";
@@ -364,7 +364,7 @@ namespace HospitalAssetTracker.Controllers
             
             var asset = new Asset
             {
-                InstallationDate = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Utc),
+                InstallationDate = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc),
                 Status = AssetStatus.Available
             };
 
@@ -978,7 +978,7 @@ namespace HospitalAssetTracker.Controllers
                     Supplier = sourceAsset.Supplier,
                     PurchasePrice = sourceAsset.PurchasePrice,
                     Notes = sourceAsset.Notes,
-                    InstallationDate = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Utc),
+                    InstallationDate = DateTime.SpecifyKind(DateTime.UtcNow.Date, DateTimeKind.Utc),
                     Status = AssetStatus.Available,
                     // Clear unique fields that need to be filled manually
                     AssetTag = "",

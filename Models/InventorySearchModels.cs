@@ -194,13 +194,13 @@ namespace HospitalAssetTracker.Models
                 }
             }
 
-            public bool IsExpired => WarrantyExpiry.HasValue && WarrantyExpiry.Value < DateTime.Now;
-            public bool IsExpiringWarranty => WarrantyExpiry.HasValue && 
-                WarrantyExpiry.Value >= DateTime.Now && 
-                WarrantyExpiry.Value <= DateTime.Now.AddDays(30);
+            public bool IsExpired => WarrantyExpiry.HasValue && WarrantyExpiry.Value < DateTime.UtcNow;
+            public bool IsExpiringWarranty => WarrantyExpiry.HasValue &&
+                WarrantyExpiry.Value >= DateTime.UtcNow &&
+                WarrantyExpiry.Value <= DateTime.UtcNow.AddDays(30);
 
-            public int DaysUntilWarrantyExpiry => WarrantyExpiry.HasValue 
-                ? (int)(WarrantyExpiry.Value - DateTime.Now).TotalDays 
+            public int DaysUntilWarrantyExpiry => WarrantyExpiry.HasValue
+                ? (int)(WarrantyExpiry.Value - DateTime.UtcNow).TotalDays
                 : int.MaxValue;
 
             public string ValueDisplayString => TotalValue?.ToString("C") ?? "N/A";

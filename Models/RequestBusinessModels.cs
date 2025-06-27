@@ -494,7 +494,7 @@ namespace HospitalAssetTracker.Models
         public QualityAssuranceResult QualityMetrics { get; set; } = new QualityAssuranceResult();
         public List<ITRequest> OverdueRequestsList { get; set; } = new List<ITRequest>();
         public string CurrentUserId { get; set; } = string.Empty;
-        public DateTime LastRefreshed { get; set; } = DateTime.Now;
+        public DateTime LastRefreshed { get; set; } = DateTime.UtcNow;
     }
 
     /// <summary>

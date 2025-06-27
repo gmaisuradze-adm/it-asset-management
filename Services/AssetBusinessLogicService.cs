@@ -178,7 +178,7 @@ namespace HospitalAssetTracker.Services
 
                 var recentAlerts = await GetAssetAlertsAsync(userId);
                 var upcomingMaintenance = await _context.MaintenanceRecords
-                    .Where(m => m.ScheduledDate >= DateTime.Today && m.ScheduledDate <= DateTime.Today.AddDays(30))
+                    .Where(m => m.ScheduledDate >= DateTime.UtcNow.Date && m.ScheduledDate <= DateTime.UtcNow.Date.AddDays(30))
                     .OrderBy(m => m.ScheduledDate)
                     .Take(10)
                     .ToListAsync();
@@ -220,7 +220,7 @@ namespace HospitalAssetTracker.Services
                         AssetId = a.Id,
                         AssetName = a.Name,
                         PerformanceScore = 85.0, // Placeholder - would calculate from actual usage data
-                        MeasurementDate = DateTime.Now
+                        MeasurementDate = DateTime.UtcNow
                     })
                     .ToListAsync();
 
@@ -228,8 +228,8 @@ namespace HospitalAssetTracker.Services
                     .Select(a => new AssetUtilizationData
                     {
                         AssetId = a.Id,
-                        UtilizationRate = 0.75, // Placeholder - would calculate from actual usage data  
-                        MeasurementDate = DateTime.Now
+                        UtilizationRate = 0.75, // Placeholder - would calculate from actual usage data
+                        MeasurementDate = DateTime.UtcNow
                     })
                     .ToListAsync();
 
@@ -286,7 +286,7 @@ namespace HospitalAssetTracker.Services
                         "Consider upgrading legacy assets with performance < 70%",
                         "Implement asset monitoring for critical infrastructure"
                     },
-                    AnalysisDate = DateTime.Now
+                    AnalysisDate = DateTime.UtcNow
                 };
             }
             catch (Exception ex)
@@ -357,7 +357,7 @@ namespace HospitalAssetTracker.Services
                         AlertType = "Maintenance Due",
                         Message = $"Asset {asset.Name} requires maintenance",
                         Severity = "Medium",
-                        CreatedDate = DateTime.Now,
+                        CreatedDate = DateTime.UtcNow,
                         IsAcknowledged = false
                     });
                 }

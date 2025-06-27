@@ -125,7 +125,7 @@ namespace HospitalAssetTracker.Services
         public async Task<ProcurementRequest> CreateProcurementRequestAsync(ProcurementRequest procurement, string userId)
         {
             // Generate procurement number
-            var datePrefix = DateTime.Now.ToString("yyyyMM");
+            var datePrefix = DateTime.UtcNow.ToString("yyyyMM");
             var lastProcurement = await _context.ProcurementRequests
                 .Where(p => p.ProcurementNumber.StartsWith($"PROC-{datePrefix}"))
                 .OrderByDescending(p => p.ProcurementNumber)

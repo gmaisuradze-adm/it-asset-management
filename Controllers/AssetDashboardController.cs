@@ -241,21 +241,21 @@ namespace HospitalAssetTracker.Controllers
                     case "dashboard":
                         var dashboardData = await _assetBusinessLogicService.GetAssetDashboardAsync(userId);
                         data = _assetBusinessLogicService.ExportDashboardData("excel", userId);
-                        fileName = $"Asset_Dashboard_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                        fileName = $"Asset_Dashboard_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
                         contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
                         break;
                     
                     case "analytics":
                         var analyticsData = await _assetBusinessLogicService.GetAssetAnalyticsAsync(userId);
                         data = _assetBusinessLogicService.ExportAnalyticsData("excel", userId);
-                        fileName = $"Asset_Analytics_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                        fileName = $"Asset_Analytics_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
                         contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
                         break;
                     
                     case "performance":
                         var performanceData = _assetBusinessLogicService.GetAssetPerformanceReport(userId);
                         data = _assetBusinessLogicService.ExportPerformanceData("excel", userId);
-                        fileName = $"Asset_Performance_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                        fileName = $"Asset_Performance_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
                         contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
                         break;
                     
