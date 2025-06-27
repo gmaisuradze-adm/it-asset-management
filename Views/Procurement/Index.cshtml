@@ -174,7 +174,7 @@
                                 <td>
                                     @if (procurement.RequiredByDate.HasValue)
                                     {
-                                        <span class="@(procurement.RequiredByDate.Value < DateTime.Now && procurement.Status != ProcurementStatus.Received ? "text-danger" : "")">
+                                        <span class="@(procurement.RequiredByDate.Value < DateTime.UtcNow && procurement.Status != ProcurementStatus.Received ? "text-danger" : "")">
                                             @procurement.RequiredByDate.Value.ToString("MM/dd/yyyy")
                                         </span>
                                     }

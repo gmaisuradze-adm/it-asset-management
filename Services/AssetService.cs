@@ -2207,7 +2207,7 @@ namespace HospitalAssetTracker.Services
             }
 
             var fileBytes = package.GetAsByteArray();
-            var fileName = $"assets_export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            var fileName = $"assets_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}.xlsx";
             
             return new Microsoft.AspNetCore.Mvc.FileContentResult(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             {
@@ -2233,7 +2233,7 @@ namespace HospitalAssetTracker.Services
             }
 
             var fileBytes = Encoding.UTF8.GetBytes(csv.ToString());
-            var fileName = $"assets_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            var fileName = $"assets_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv";
             
             return new Microsoft.AspNetCore.Mvc.FileContentResult(fileBytes, "text/csv")
             {

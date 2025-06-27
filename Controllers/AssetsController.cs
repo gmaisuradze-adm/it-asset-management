@@ -321,7 +321,7 @@ namespace HospitalAssetTracker.Controllers
             if (!warrantyExpiry.HasValue)
                 return "No Warranty";
             
-            var daysUntilExpiry = (warrantyExpiry.Value - DateTime.Now).Days;
+            var daysUntilExpiry = (warrantyExpiry.Value - DateTime.UtcNow.Date).Days;
             
             if (daysUntilExpiry < 0)
                 return "Expired";
