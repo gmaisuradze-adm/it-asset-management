@@ -298,7 +298,7 @@ namespace HospitalAssetTracker.Services
             await Task.Delay(10); // Simulate async operation
 
             var activeCount = _activeWorkflows.Count;
-            var completedToday = _completedWorkflows.Count(w => w.LastUpdated.Date == DateTime.Today);
+            var completedToday = _completedWorkflows.Count(w => w.LastUpdated.Date == DateTime.UtcNow.Date);
             var totalWorkflows = activeCount + _completedWorkflows.Count;
 
             return new WorkflowAnalytics
@@ -445,7 +445,7 @@ namespace HospitalAssetTracker.Services
         private List<WorkflowPerformancePoint> GenerateMockPerformanceData()
         {
             var data = new List<WorkflowPerformancePoint>();
-            var startDate = DateTime.Today.AddDays(-30);
+            var startDate = DateTime.UtcNow.Date.AddDays(-30);
 
             for (int i = 0; i < 30; i++)
             {

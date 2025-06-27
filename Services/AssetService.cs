@@ -1703,7 +1703,7 @@ namespace HospitalAssetTracker.Services
             // Warranty filters
             if (searchModel.WarrantyExpired.HasValue)
             {
-                var today = DateTime.Today;
+                var today = DateTime.UtcNow.Date;
                 if (searchModel.WarrantyExpired.Value)
                 {
                     query = query.Where(a => a.WarrantyExpiry.HasValue && a.WarrantyExpiry.Value < today);
@@ -1746,9 +1746,9 @@ namespace HospitalAssetTracker.Services
                 StatusCounts = statusCounts,
                 LocationCounts = locationCounts,
                 TotalValue = assets.Where(a => a.PurchasePrice.HasValue).Sum(a => a.PurchasePrice!.Value),
-                WarrantyExpiringCount = allAssets.Count(a => a.WarrantyExpiry.HasValue && 
-                    a.WarrantyExpiry.Value >= DateTime.Today && 
-                    a.WarrantyExpiry.Value <= DateTime.Today.AddDays(90)),
+                WarrantyExpiringCount = allAssets.Count(a => a.WarrantyExpiry.HasValue &&
+                    a.WarrantyExpiry.Value >= DateTime.UtcNow.Date &&
+                    a.WarrantyExpiry.Value <= DateTime.UtcNow.Date.AddDays(90)),
                 UnassignedCount = allAssets.Count(a => string.IsNullOrEmpty(a.AssignedToUserId))
             };
         }
