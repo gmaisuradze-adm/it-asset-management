@@ -57,7 +57,7 @@ namespace HospitalAssetTracker.Controllers
                     RecentApprovals = await _procurementService.GetRecentApprovalsAsync(5),
                     
                     // Current user context
-                    CurrentUserId = userId,
+                    CurrentUserId = userId ?? string.Empty,
                     LastRefreshed = DateTime.UtcNow
                 };
 
@@ -109,6 +109,13 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var userId = _userManager.GetUserId(User);
+                if (userId == null)
+                {
+                    _logger.LogWarning("User ID not found for cost optimization.");
+                    TempData["Error"] = "Could not identify user. Please log in again.";
+                    return RedirectToAction(nameof(Index));
+                }
+
                 var optimizationResult = await _procurementBusinessLogicService.ExecuteCostOptimizationAsync(userId);
                 
                 var spendAnalysisParams = new SpendAnalysisParameters
@@ -205,6 +212,13 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var userId = _userManager.GetUserId(User);
+                if (userId == null)
+                {
+                    _logger.LogWarning("User ID not found for emergency procurement.");
+                    TempData["Error"] = "Could not identify user. Please log in again.";
+                    return View("EmergencyProcurement", model);
+                }
+
                 var result = await _procurementBusinessLogicService.ProcessEmergencyProcurementAsync(model.Request, userId);
 
                 if (result.Success)

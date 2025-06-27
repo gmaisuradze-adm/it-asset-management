@@ -1,4 +1,4 @@
-@model HospitalAssetTracker.Controllers.ProcurementDashboardViewModel
+@model HospitalAssetTracker.Models.ProcurementDashboardViewModel
 @{
     ViewData["Title"] = "Procurement Intelligence Dashboard";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -385,7 +385,7 @@
         setInterval(() => {
             fetch('@Url.Action("GetDashboardMetrics")')
                 .then(response => response.json())
-                .then(data => {
+                .then data => {
                     if (!data.error) {
                         console.log('Background refresh completed');
                     }

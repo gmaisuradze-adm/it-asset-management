@@ -1,20 +1,46 @@
 using HospitalAssetTracker.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace HospitalAssetTracker.Services
 {
+    /// <summary>
+    /// Central orchestrator for unified business logic that coordinates existing services
+    /// according to Georgian requirements (Manager/IT Support roles)
+    /// </summary>
     public interface IUnifiedBusinessLogicService
     {
-        Task<UnifiedDashboardViewModel> GetDashboardDataAsync(string userId, List<string> userRoles);
-        Task<UnifiedActionViewModel> GetActionItemsAsync(string userId, List<string> userRoles);
-        Task<List<SmartInsight>> GetSmartInsightsAsync(string userId, List<string> userRoles);
-        Task<List<RecentActivity>> GetRecentActivitiesAsync(string userId, List<string> userRoles, int count = 10);
-        Task<List<Alert>> GetAlertsAsync(string userId, List<string> userRoles, bool unreadOnly = false);
-        Task<List<QuickAction>> GetQuickActionsAsync(string userId, List<string> userRoles);
-        Task<bool> MarkAlertAsReadAsync(int alertId, string userId);
-        Task<bool> DismissAlertAsync(int alertId, string userId);
-        Task<PerformanceMetrics> GetPerformanceMetricsAsync(string userId, List<string> userRoles);
-        Task<WorkflowSummary> GetWorkflowSummaryAsync(string userId, List<string> userRoles);
-        Task<bool> ExecuteQuickActionAsync(string actionId, string userId, Dictionary<string, object>? parameters = null);
-        Task RefreshCacheAsync();
+        // Request processing using existing services
+        Task<UnifiedRequestProcessingResult> ProcessRequestAsync(ITRequest request, string userId);
+        Task<AssetLifecycleDecisionResult> MakeAssetLifecycleDecisionAsync(int assetId, string userId);
+        Task<CrossModuleWorkflowResult> ExecuteCrossModuleWorkflowAsync(string workflowType, object context, string userId);
+        
+        // Role-based operations (Georgian requirements)
+        Task<RoleBasedActionResult> ExecuteManagerActionAsync(string action, object parameters, string userId);
+        Task<RoleBasedActionResult> ExecuteITSupportActionAsync(string action, object parameters, string userId);
+        Task<PermissionCheckResult> CheckRolePermissionAsync(string userId, string action, object context);
+        
+        // Asset lifecycle intelligence
+        Task<AssetConditionAssessment> AssessAssetConditionAsync(int assetId, string assessorUserId);
+        Task<List<AssetLifecycleDecisionResult>> GetAssetRecommendationsAsync(string userId);
+        
+        // Automation and auto-fulfillment
+        Task<AutoFulfillmentResult> AttemptAutoFulfillmentAsync(int requestId, string userId);
+        Task<List<string>> GetAutomationSuggestionsAsync(string userId);
+        
+        // Dashboard and reporting
+        Task<UnifiedDashboardData> GetUnifiedDashboardDataAsync(string userId);
+        Task<List<PendingApprovalItem>> GetPendingApprovalsAsync(string userId);
+        
+        // Actions management
+        Task<ManagerActionsData> GetManagerActionsAsync(string userId);
+        Task<ITSupportActionsData> GetITSupportActionsAsync(string userId);
+        Task<ActionResult> ProcessManagerActionAsync(string actionType, int targetId, string userId, string? reason);
+        Task<ActionResult> ProcessITSupportActionAsync(string actionType, int targetId, string userId, string? notes);
+        
+        // Automation rules
+        Task<List<AutomationRule>> GetAutomationRulesAsync();
+        Task<AutomationRuleResult> CreateAutomationRuleAsync(AutomationRule rule);
+        Task<AutomationRuleResult> ToggleAutomationRuleAsync(int ruleId, string userId);
     }
 }

@@ -145,15 +145,15 @@
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label asp-for="MinimumStock" class="form-label">Minimum Stock</label>
-                                    <input asp-for="MinimumStock" type="number" class="form-control" min="0" value="0" />
+                                    <label asp-for="MinimumStock" class="form-label">Minimum Stock <span class="text-danger">*</span></label>
+                                    <input asp-for="MinimumStock" type="number" class="form-control" min="0" value="0" required />
                                     <span asp-validation-for="MinimumStock" class="text-danger"></span>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label asp-for="MaximumStock" class="form-label">Maximum Stock</label>
-                                    <input asp-for="MaximumStock" type="number" class="form-control" min="0" />
+                                    <label asp-for="MaximumStock" class="form-label">Maximum Stock <span class="text-danger">*</span></label>
+                                    <input asp-for="MaximumStock" type="number" class="form-control" min="0" required />
                                     <span asp-validation-for="MaximumStock" class="text-danger"></span>
                                 </div>
                             </div>
@@ -233,8 +233,8 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label asp-for="LocationId" class="form-label">Location</label>
-                                    <select asp-for="LocationId" class="form-control" asp-items="ViewBag.Locations">
+                                    <label asp-for="LocationId" class="form-label">Location <span class="text-danger">*</span></label>
+                                    <select asp-for="LocationId" class="form-control" asp-items="ViewBag.Locations" required>
                                         <option value="">Select Location</option>
                                     </select>
                                     <span asp-validation-for="LocationId" class="text-danger"></span>

@@ -27,7 +27,7 @@ namespace HospitalAssetTracker.Models
         public RequestPriority Priority { get; set; }
 
         [Required]
-        public RequestStatus Status { get; set; } = RequestStatus.Pending;
+        public RequestStatus Status { get; set; } = RequestStatus.Submitted; // Default to Submitted
 
         // Requester information
         [Required]
@@ -80,12 +80,6 @@ namespace HospitalAssetTracker.Models
         public string? AssignedToUserId { get; set; }
         public virtual ApplicationUser? AssignedToUser { get; set; }
 
-        [StringLength(450)]
-        public string? ApprovedByUserId { get; set; }
-        public virtual ApplicationUser? ApprovedByUser { get; set; }
-
-        public DateTime? ApprovalDate { get; set; }
-
         public DateTime? CompletedDate { get; set; }
 
         [StringLength(450)]
@@ -96,172 +90,113 @@ namespace HospitalAssetTracker.Models
         [StringLength(1000)]
         public string? BusinessJustification { get; set; }
 
-        [Column(TypeName = "decimal(10,2)")]
+        [StringLength(1000)]
+        public string? Justification { get; set; } // Added based on build errors
+
+        public DateTime? ModifiedAt { get; set; }
+        public string? ModifiedBy { get; set; }
+
+        [StringLength(2000)]
+        public string? AssignmentNotes { get; set; }
+
+        [Column(TypeName = "decimal(18, 2)")]
         public decimal? EstimatedCost { get; set; }
 
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal? ActualCost { get; set; }
+        [StringLength(2000)]
+        public string? CompletionNotes { get; set; }
 
-        [StringLength(100)]
-        public string? PurchaseOrderNumber { get; set; }
+        public DateTime? ResolutionDate { get; set; }
+        
+        [StringLength(2000)]
+        public string? ResolutionDetails { get; set; }
 
-        // Integration with Warehouse Module
         public int? RequiredInventoryItemId { get; set; }
         public virtual InventoryItem? RequiredInventoryItem { get; set; }
 
         public int? ProvidedInventoryItemId { get; set; }
         public virtual InventoryItem? ProvidedInventoryItem { get; set; }
 
-        // Workflow tracking
-        [StringLength(2000)]
-        public string? InternalNotes { get; set; }
+        // New fields for asset replacement workflow
+        public int? DamagedAssetId { get; set; } // To link to the existing, damaged asset being replaced
+        public virtual Asset? DamagedAsset { get; set; }
 
-        [StringLength(2000)]
-        public string? CompletionNotes { get; set; }
+        [StringLength(1000)]
+        public string? DisposalNotesForUnmanagedAsset { get; set; } // Notes if the damaged item isn't a tracked asset
 
-        [StringLength(500)]
-        public string? AttachmentPath { get; set; }
-
-        // Added based on previous analysis and common requirements
-        public DateTime? DueDate { get; set; } // Often requested for IT support tickets
-
-        // Lifecycle dates
-        public DateTime CreatedDate { get; set; }
-        public DateTime? LastModifiedDate { get; set; }
-        
-        // Alias property for services that expect LastUpdatedDate
+        // --- ALIASES FOR BACKWARDS COMPATIBILITY ---
         [NotMapped]
-        public DateTime? LastUpdatedDate 
-        { 
-            get => LastModifiedDate; 
-            set => LastModifiedDate = value; 
-        }
-        
-        // Alias property for services that expect UpdatedDate
-        [NotMapped]
-        public DateTime? UpdatedDate 
-        { 
-            get => LastModifiedDate; 
-            set => LastModifiedDate = value; 
-        }
-        
-        // CreatedByUserId is already present as RequestedByUserId
-        // public string? CreatedByUserId { get; set; } 
-        // public virtual ApplicationUser? CreatedByUser { get; set; }
-        public string? LastModifiedByUserId { get; set; }
-        public virtual ApplicationUser? LastModifiedByUser { get; set; }
-        
-        // Alias property for services that expect LastUpdatedByUserId
-        [NotMapped]
-        public string? LastUpdatedByUserId 
-        { 
-            get => LastModifiedByUserId; 
-            set => LastModifiedByUserId = value; 
-        }
-        
-        // Alias property for services that expect Requester
-        [NotMapped]
-        public virtual ApplicationUser Requester 
-        { 
-            get => RequestedByUser!; 
-            set => RequestedByUser = value; 
-        }
-
-        // Alias properties for backward compatibility with services
-        [NotMapped]
-        public virtual ApplicationUser? AssignedTo
-        {
-            get => AssignedToUser;
-            set => AssignedToUser = value;
-        }
+        public DateTime CreatedDate { get => RequestDate; set => RequestDate = value; }
 
         [NotMapped]
-        public string? AssignedToId
-        {
-            get => AssignedToUserId;
-            set => AssignedToUserId = value;
-        }
+        public DateTime? DueDate { get => RequiredByDate; set => RequiredByDate = value; }
 
         [NotMapped]
-        public virtual ApplicationUser? LastUpdatedByUser
-        {
-            get => LastModifiedByUser;
-            set => LastModifiedByUser = value;
-        }
+        public ApplicationUser Requester { get => RequestedByUser; set => RequestedByUser = value; }
 
         [NotMapped]
-        public string? RequesterId
-        {
-            get => RequestedByUserId;
-            set => RequestedByUserId = value!;
-        }
+        public ApplicationUser? AssignedTo { get => AssignedToUser; set => AssignedToUser = value; }
+        
+        [NotMapped]
+        public string? AssignedToId { get => AssignedToUserId; set => AssignedToUserId = value; }
 
-        // Additional tracking properties
-        [StringLength(2000)]
-        public string? AssignmentNotes { get; set; }
+        [NotMapped]
+        public DateTime? LastModifiedDate { get => ModifiedAt; set => ModifiedAt = value; }
+
+        [NotMapped]
+        public DateTime? LastUpdatedDate { get => ModifiedAt; set => ModifiedAt = value; }
         
-        public DateTime? ModifiedAt { get; set; }
+        [NotMapped]
+        public string? LastUpdatedByUserId { get => ModifiedBy; set => ModifiedBy = value; }
         
-        [StringLength(450)]
-        public string? ModifiedBy { get; set; }
-        
-        // Navigation properties
-        public virtual ICollection<RequestApproval> Approvals { get; set; } = new List<RequestApproval>();
+        [NotMapped]
+        public ApplicationUser? LastUpdatedByUser { get; set; }
+
+
+        // Navigation properties for related data
         public virtual ICollection<RequestComment> Comments { get; set; } = new List<RequestComment>();
         public virtual ICollection<RequestAttachment> Attachments { get; set; } = new List<RequestAttachment>();
-        public virtual ICollection<ProcurementActivity> ProcurementActivities { get; set; } = new List<ProcurementActivity>();
         public virtual ICollection<ProcurementRequest> ProcurementRequests { get; set; } = new List<ProcurementRequest>();
-        public virtual ICollection<RequestAction> RequestActions { get; set; } = new List<RequestAction>();
-
-        // Additional fields that might be useful
-        // public RequestCategory? Category { get; set; } // e.g., Hardware, Software, Access, Repair
-        // public string? ResolutionDetails { get; set; }
-        // public TimeSpan? TimeToResolution { get; set; } // Calculated field
-        // public int? RelatedTicketId { get; set; } // For linking related tickets
-        // public virtual ITRequest? RelatedTicket { get; set; }
-        // public bool IsEscalated { get; set; } = false;
-        // public DateTime? EscalationDate { get; set; }
-        // public string? FeedbackRating { get; set; } // e.g., 1-5 stars
-        // public string? FeedbackComments { get; set; }
+        public virtual ICollection<RequestActivity> Activities { get; set; } = new List<RequestActivity>();
     }
+
+    // Enum definitions
 
     public enum RequestType
     {
-        HardwareReplacement = 1,
-        HardwareRepair = 2,
-        NewEquipment = 3,
-        SoftwareInstallation = 4,
-        SoftwareUpgrade = 5,
-        NetworkConnectivity = 6,
-        UserAccessRights = 7,
-        ITConsultation = 8,
-        MaintenanceService = 9,
-        Training = 10,
+        NewHardware = 1,
+        SoftwareInstallation = 2,
+        AccessRequest = 3,
+        Maintenance = 4,
+        Repair = 5, // Added
+        NewEquipment = 6, // Added
+        HardwareReplacement = 7, // Added
+        HardwareRepair = 8, // Added
+        UserAccessRights = 9, // Added
+        SoftwareUpgrade = 10, // Added
+        MaintenanceService = 11, // Added
+        NetworkConnectivity = 12, // Added
+        ITConsultation = 13, // Added
+        Training = 14, // Added
+        NewSoftware = 15, // Added
+        Service = 16, // Added for ProcurementService
         Other = 99
     }
 
     public enum RequestPriority
     {
-        Critical = 1,
-        High = 2,
-        Medium = 3,
-        Low = 4
+        Low = 1,
+        Medium = 2,
+        High = 3, // Added
+        Critical = 4
     }
 
     public enum RequestStatus
     {
-        Pending = 1,
-        Open = 1, // Alias for Pending
-        Submitted = 2,
-        UnderReview = 3,
-        PendingApproval = 4,
-        Approved = 5,
-        Rejected = 6,
-        InProgress = 7,
-        ReadyForCompletion = 8,
-        OnHold = 9,
-        Completed = 10,
-        Cancelled = 11
+        Submitted = 1,
+        InProgress = 2,
+        OnHold = 3,
+        Completed = 4,
+        Cancelled = 5
     }
 
     public class RequestAction

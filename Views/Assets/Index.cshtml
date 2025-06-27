@@ -26,9 +26,12 @@
                 <label for="category" class="form-label">Category</label>
                 <select class="form-select" id="category" name="category">
                     <option value="">All Categories</option>
-                    @foreach (var item in ViewBag.Categories as SelectList)
+                    @if (ViewBag.Categories is SelectList categories)
                     {
-                        <option value="@item.Value" selected="@(item.Value == ViewBag.SelectedCategory?.ToString())">@item.Text</option>
+                        @foreach (var item in categories)
+                        {
+                            <option value="@item.Value" selected="@(item.Value == ViewBag.SelectedCategory?.ToString())">@item.Text</option>
+                        }
                     }
                 </select>
             </div>
@@ -36,9 +39,12 @@
                 <label for="status" class="form-label">Status</label>
                 <select class="form-select" id="status" name="status">
                     <option value="">All Statuses</option>
-                    @foreach (var item in ViewBag.Statuses as SelectList)
+                    @if (ViewBag.Statuses is SelectList statuses)
                     {
-                        <option value="@item.Value" selected="@(item.Value == ViewBag.SelectedStatus?.ToString())">@item.Text</option>
+                        @foreach (var item in statuses)
+                        {
+                            <option value="@item.Value" selected="@(item.Value == ViewBag.SelectedStatus?.ToString())">@item.Text</option>
+                        }
                     }
                 </select>
             </div>
@@ -46,9 +52,12 @@
                 <label for="locationId" class="form-label">Location</label>
                 <select class="form-select" id="locationId" name="locationId">
                     <option value="">All Locations</option>
-                    @foreach (var item in ViewBag.Locations as SelectList)
+                    @if (ViewBag.Locations is SelectList locations)
                     {
-                        <option value="@item.Value" selected="@(item.Value == ViewBag.SelectedLocationId?.ToString())">@item.Text</option>
+                        @foreach (var item in locations)
+                        {
+                            <option value="@item.Value" selected="@(item.Value == ViewBag.SelectedLocationId?.ToString())">@item.Text</option>
+                        }
                     }
                 </select>
             </div>
@@ -139,30 +148,6 @@
     </div>
 </div>
 
-<!-- Quick Actions Panel (Hidden by default) -->
-<div id="bulkActionsDiv" style="display: none;" class="alert alert-info">
-    <div class="d-flex justify-content-between align-items-center">
-        <span>
-            <i class="bi bi-check-circle"></i> 
-            <span id="selectedCount">0</span> asset(s) selected
-        </span>
-        <div class="btn-group" role="group">
-            <button type="button" class="btn btn-sm btn-outline-success" onclick="executeBulkAction('export')">
-                <i class="bi bi-download"></i> Export Selected
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-warning" onclick="executeBulkAction('move')">
-                <i class="bi bi-arrow-right"></i> Move
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-primary" onclick="executeBulkAction('assign')">
-                <i class="bi bi-person-plus"></i> Assign
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="executeBulkAction('status')">
-                <i class="bi bi-gear"></i> Change Status
-            </button>
-        </div>
-    </div>
-</div>
-
 <!-- Assets Table -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -181,9 +166,6 @@
             <table class="table table-striped table-hover" id="assetsTable">
                 <thead class="table-dark">
                     <tr>
-                        <th width="50">
-                            <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onchange="selectAllAssets(this)" title="Select All">
-                        </th>
                         <th>Asset Tag</th>
                         <th>Category</th>
                         <th>Brand</th>
@@ -200,9 +182,6 @@
                     {
                         <tr>
                             <td>
-                                <input class="form-check-input" type="checkbox" name="selectedAssets" value="@item.Id" onchange="markAsSelected(this)">
-                            </td>
-                            <td>
                                 <strong>@item.AssetTag</strong>
                             </td>
                             <td>
@@ -214,19 +193,37 @@
                                 @switch (item.Status)
                                 {
                                     case HospitalAssetTracker.Models.AssetStatus.InUse:
-                                        <span class="badge bg-success">In Use</span>
+                                        <span class="badge badge-asset-status-inuse">In Use</span>
                                         break;
                                     case HospitalAssetTracker.Models.AssetStatus.Available:
-                                        <span class="badge bg-primary">Available</span>
+                                        <span class="badge badge-asset-status-available">Available</span>
                                         break;
-                                    case HospitalAssetTracker.Models.AssetStatus.UnderRepair:
-                                        <span class="badge bg-warning">Under Repair</span>
+                                    case HospitalAssetTracker.Models.AssetStatus.UnderMaintenance:
+                                        <span class="badge badge-asset-status-maintenance">Under Maintenance</span>
+                                        break;
+                                    case HospitalAssetTracker.Models.AssetStatus.MaintenancePending:
+                                        <span class="badge badge-asset-status-maintenance-pending">Maintenance Pending</span>
+                                        break;
+                                    case HospitalAssetTracker.Models.AssetStatus.InTransit:
+                                        <span class="badge badge-asset-status-in-transit">In Transit</span>
+                                        break;
+                                    case HospitalAssetTracker.Models.AssetStatus.Reserved:
+                                        <span class="badge badge-asset-status-reserved">Reserved</span>
+                                        break;
+                                    case HospitalAssetTracker.Models.AssetStatus.Lost:
+                                        <span class="badge badge-asset-status-lost">Lost</span>
+                                        break;
+                                    case HospitalAssetTracker.Models.AssetStatus.Stolen:
+                                        <span class="badge badge-asset-status-stolen">Stolen</span>
                                         break;
                                     case HospitalAssetTracker.Models.AssetStatus.Decommissioned:
-                                        <span class="badge bg-danger">Decommissioned</span>
+                                        <span class="badge badge-asset-status-decommissioned">Decommissioned</span>
+                                        break;
+                                    case HospitalAssetTracker.Models.AssetStatus.PendingApproval:
+                                        <span class="badge badge-asset-status-pending">Pending Approval</span>
                                         break;
                                     default:
-                                        <span class="badge bg-secondary">@item.Status</span>
+                                        <span class="badge badge-asset-status-unknown">Unknown (@item.Status)</span>
                                         break;
                                 }
                             </td>
@@ -389,75 +386,6 @@
         function clearAdvancedSearch() {
             $('#advancedSearchModal input').val('');
             $('#advancedSearchModal select').val('');
-        }
-
-        // Quick Actions
-        function markAsSelected(checkbox) {
-            const row = checkbox.closest('tr');
-            if (checkbox.checked) {
-                row.classList.add('table-primary');
-            } else {
-                row.classList.remove('table-primary');
-            }
-            updateBulkActionsVisibility();
-        }
-
-        function selectAllAssets(selectAll) {
-            const checkboxes = document.querySelectorAll('input[name="selectedAssets"]');
-            checkboxes.forEach(cb => {
-                cb.checked = selectAll.checked;
-                markAsSelected(cb);
-            });
-        }
-
-        function updateBulkActionsVisibility() {
-            const selectedCount = document.querySelectorAll('input[name="selectedAssets"]:checked').length;
-            const bulkActionsDiv = document.getElementById('bulkActionsDiv');
-            
-            if (selectedCount > 0) {
-                bulkActionsDiv.style.display = 'block';
-                document.getElementById('selectedCount').textContent = selectedCount;
-            } else {
-                bulkActionsDiv.style.display = 'none';
-            }
-        }
-
-        function executeBulkAction(action) {
-            const selectedAssets = Array.from(document.querySelectorAll('input[name="selectedAssets"]:checked')).map(cb => cb.value);
-            
-            if (selectedAssets.length === 0) {
-                alert('Please select at least one asset.');
-                return;
-            }
-
-            if (confirm(`Are you sure you want to ${action} ${selectedAssets.length} asset(s)?`)) {
-                // Redirect to bulk actions page with selected assets
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '@Url.Action("BulkActions", "Assets")';
-                
-                selectedAssets.forEach(id => {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'selectedAssets';
-                    input.value = id;
-                    form.appendChild(input);
-                });
-
-                const actionInput = document.createElement('input');
-                actionInput.type = 'hidden';
-                actionInput.name = 'action';
-                actionInput.value = action;
-                form.appendChild(actionInput);
-
-                const token = document.querySelector('input[name="__RequestVerificationToken"]');
-                if (token) {
-                    form.appendChild(token.cloneNode());
-                }
-
-                document.body.appendChild(form);
-                form.submit();
-            }
         }
     </script>
 }

@@ -1,12 +1,12 @@
-@model ITRequest
+@model HospitalAssetTracker.Models.RequestViewModels.CreateRequestViewModel
 @{
     ViewData["Title"] = "New IT Request";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="bi bi-plus-circle"></i> New IT Request</h2>
-    <a asp-action="MyRequests" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Back to My Requests
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to List
     </a>
 </div>
 
@@ -20,42 +20,59 @@
                 <form asp-action="Create" method="post">
                     @Html.AntiForgeryToken()
                     
-                    @* Hidden fields for server-populated values *@
-                    <input type="hidden" asp-for="RequestNumber" />
-                    <input type="hidden" asp-for="RequestedByUserId" />
-                    <input type="hidden" asp-for="Department" />
-                    <input type="hidden" asp-for="RequestDate" />
-                    <input type="hidden" asp-for="Status" />
-                    
-                    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
-                    
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-                    
                     <div class="row mb-3">
                         <div class="col-md-8">
                             <label asp-for="Title" class="form-label">Title <span class="text-danger">*</span></label>
-                            <input asp-for="Title" class="form-control" id="titleInput" placeholder="Brief description of your request">
+                            <input asp-for="Title" class="form-control" placeholder="Brief description of your request">
                             <span asp-validation-for="Title" class="text-danger"></span>
                         </div>
                         <div class="col-md-4">
                             <label asp-for="Priority" class="form-label">Priority <span class="text-danger">*</span></label>
-                            <select asp-for="Priority" class="form-select" asp-items="@ViewBag.Priorities" id="prioritySelect">
-                                <option value="">Select Priority</option>
-                            </select>
+                            <div class="input-group">
+                                <select asp-for="Priority" class="form-select" asp-items="Model.Priorities" id="prioritySelect">
+                                    <option value="">Select Priority</option>
+                                </select>
+                                <button type="button" class="btn btn-outline-info" id="suggestPriorityBtn" title="Get AI Priority Suggestion">
+                                    <i class="fas fa-lightbulb"></i>
+                                </button>
+                            </div>
                             <span asp-validation-for="Priority" class="text-danger"></span>
+                            <div id="prioritySuggestion" class="mt-1"></div>
                         </div>
                     </div>
 
+                    @if (User.IsInRole("Admin") || User.IsInRole("IT Support"))
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="AssignedToUserId" class="form-label">Assign to Staff</label>
+                                <select asp-for="AssignedToUserId" class="form-select" asp-items="Model.AssignableUsers">
+                                    <option value="">Assign later</option>
+                                </select>
+                                <span asp-validation-for="AssignedToUserId" class="text-danger"></span>
+                            </div>
+                        </div>
+                    }
+
                     <div class="mb-3">
                         <label asp-for="Description" class="form-label">Description <span class="text-danger">*</span></label>
-                        <textarea asp-for="Description" class="form-control" id="descriptionInput" rows="4" placeholder="Detailed description of your request"></textarea>
+                        <textarea asp-for="Description" class="form-control" rows="4" placeholder="Detailed description of your request"></textarea>
                         <span asp-validation-for="Description" class="text-danger"></span>
+                        <div id="effortEstimation" class="mt-2"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="BusinessJustification" class="form-label">Business Justification <span class="text-danger">*</span></label>
+                        <textarea asp-for="BusinessJustification" class="form-control" rows="3" placeholder="Explain why this request is needed"></textarea>
+                        <span asp-validation-for="BusinessJustification" class="text-danger"></span>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label asp-for="RequestType" class="form-label">Request Type <span class="text-danger">*</span></label>
-                            <select asp-for="RequestType" class="form-select" asp-items="@ViewBag.RequestTypes" id="requestTypeSelect">
+                            <select asp-for="RequestType" class="form-select" asp-items="Model.RequestTypes" id="requestTypeSelect">
                                 <option value="">Select Request Type</option>
                             </select>
                             <span asp-validation-for="RequestType" class="text-danger"></span>
@@ -67,241 +84,344 @@
                         </div>
                     </div>
 
+                    <!-- Business Rules Validation Panel -->
+                    <div id="businessRulesPanel" class="alert alert-info d-none mb-3">
+                        <h6><i class="fas fa-check-circle"></i> Business Rules Validation</h6>
+                        <div id="businessRulesContent"></div>
+                    </div>
+
+                    <!-- Inventory Availability Panel -->
+                    <div id="inventoryPanel" class="alert alert-success d-none mb-3">
+                        <h6><i class="fas fa-boxes"></i> Inventory Availability</h6>
+                        <div id="inventoryContent"></div>
+                    </div>
+
                     <!-- Asset-related fields -->
-                    <div id="assetSection" class="mb-3" style="display: none;">
+                    <div id="assetSection" class="mb-3 p-3 bg-light rounded" style="display: none;">
+                        <h5>Asset for Service/Repair</h5>
                         <div class="row">
                             <div class="col-md-6">
-                                <label class="form-label">Location</label>
-                                <select class="form-select" id="locationSelect" asp-items="@ViewBag.Locations">
+                                <label asp-for="LocationId" class="form-label">Location</label>
+                                <select asp-for="LocationId" class="form-select" id="locationSelect" asp-items="Model.Locations">
                                     <option value="">Select Location</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="AssetId" class="form-label">Related Asset</label>
-                                <select asp-for="AssetId" class="form-select" id="assetSelect">
+                                <label asp-for="DamagedAssetId" class="form-label">Related Damaged Asset</label>
+                                <select asp-for="DamagedAssetId" class="form-select" asp-items="Model.Assets" id="assetSelect">
                                     <option value="">Select Asset</option>
                                 </select>
-                                <span asp-validation-for="AssetId" class="text-danger"></span>
+                                <span asp-validation-for="DamagedAssetId" class="text-danger"></span>
                             </div>
+                        </div>
+                        <div class="mt-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="unmanagedAssetCheck">
+                                <label class="form-check-label" for="unmanagedAssetCheck">
+                                    Asset is not in the system (unmanaged)
+                                </label>
+                            </div>
+                        </div>
+                        <div id="unmanagedAssetNotes" class="mt-3" style="display: none;">
+                            <label asp-for="DisposalNotesForUnmanagedAsset" class="form-label">Notes for Unmanaged Asset (e.g., for disposal)</label>
+                            <textarea asp-for="DisposalNotesForUnmanagedAsset" class="form-control" rows="3" placeholder="Provide details about the unmanaged asset, its condition, and reason for disposal/replacement."></textarea>
+                            <span asp-validation-for="DisposalNotesForUnmanagedAsset" class="text-danger"></span>
                         </div>
                     </div>
 
                     <!-- Equipment request fields -->
-                    <div id="equipmentSection" class="mb-3" style="display: none;">
+                    <div id="equipmentSection" class="mb-3 p-3 bg-light rounded" style="display: none;">
+                        <h5>Equipment/Replacement Details</h5>
                         <div class="row">
-                            <div class="col-md-6">
-                                <label asp-for="RequestedItemCategory" class="form-label">Equipment Category</label>
-                                <select asp-for="RequestedItemCategory" class="form-select" asp-items="@ViewBag.ItemCategories">
-                                    <option value="">Select Category</option>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="RequiredInventoryItemId" class="form-label">Required Item (from Inventory)</label>
+                                <select asp-for="RequiredInventoryItemId" class="form-select" asp-items="Model.InventoryItems">
+                                    <option value="">Select a replacement item if available</option>
+                                </select>
+                                <span asp-validation-for="RequiredInventoryItemId" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <hr>
+                        <h6>Or, request new (non-inventory) item:</h6>
+                        <div class="row">
+                             <div class="col-md-6 mb-3">
+                                <label asp-for="RequestedItemCategory" class="form-label">Item Category</label>
+                                <select asp-for="RequestedItemCategory" class="form-select" asp-items="Model.ItemCategories">
+                                    <option value="">Select category...</option>
                                 </select>
                                 <span asp-validation-for="RequestedItemCategory" class="text-danger"></span>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 mb-3">
                                 <label asp-for="EstimatedCost" class="form-label">Estimated Cost</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input asp-for="EstimatedCost" type="number" class="form-control" step="0.01" min="0">
-                                </div>
+                                <input asp-for="EstimatedCost" type="number" step="0.01" class="form-control" placeholder="Enter estimated cost">
                                 <span asp-validation-for="EstimatedCost" class="text-danger"></span>
                             </div>
                         </div>
-                        <div class="mt-3">
-                            <label asp-for="RequestedItemSpecifications" class="form-label">Specifications</label>
-                            <textarea asp-for="RequestedItemSpecifications" class="form-control" rows="3" placeholder="Detailed specifications of the requested equipment"></textarea>
+                        <div class="mb-3">
+                            <label asp-for="RequestedItemSpecifications" class="form-label">Item Specifications</label>
+                            <textarea asp-for="RequestedItemSpecifications" class="form-control" rows="3" placeholder="Describe the specifications for the new item"></textarea>
                             <span asp-validation-for="RequestedItemSpecifications" class="text-danger"></span>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label asp-for="BusinessJustification" class="form-label">Business Justification</label>
-                        <textarea asp-for="BusinessJustification" class="form-control" rows="3" placeholder="Justify why this request is needed for business operations"></textarea>
-                        <span asp-validation-for="BusinessJustification" class="text-danger"></span>
-                    </div>
-
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a asp-action="MyRequests" class="btn btn-secondary me-md-2">Cancel</a>
-                        <button type="submit" class="btn btn-primary" id="submitBtn">
-                            <i class="bi bi-check-circle"></i> Submit Request
-                        </button>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> Submit Request</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Request Guidelines</h6>
+                <h5 class="mb-0">Requesting For</h5>
             </div>
             <div class="card-body">
-                <h6>Priority Levels:</h6>
-                <ul class="list-unstyled">
-                    <li><span class="badge bg-danger">Critical</span> - System down, blocking work</li>
-                    <li><span class="badge bg-warning text-dark">High</span> - Significant impact on productivity</li>
-                    <li><span class="badge bg-info">Medium</span> - Moderate impact</li>
-                    <li><span class="badge bg-success">Low</span> - Minor impact or enhancement</li>
-                </ul>
-                
-                <hr>
-                
-                <h6>Request Types:</h6>
-                <ul class="small">
-                    <li><strong>Hardware Replacement:</strong> Replace faulty equipment</li>
-                    <li><strong>New Equipment:</strong> Request new IT equipment</li>
-                    <li><strong>Software Installation:</strong> Install or update software</li>
-                    <li><strong>Network Connectivity:</strong> Network issues or access</li>
-                    <li><strong>Maintenance Service:</strong> Preventive maintenance</li>
-                    <li><strong>User Access Rights:</strong> Account or permission changes</li>
-                </ul>
-                
-                <hr>
-                
-                <h6>Tips for Better Requests:</h6>
-                <ul class="small">
-                    <li>Be specific in your description</li>
-                    <li>Include error messages if applicable</li>
-                    <li>Provide business justification</li>
-                    <li>Set realistic required dates</li>
-                </ul>
+                <p><strong>User:</strong> @Model.RequestorName</p>
+                <p><strong>Department:</strong> @Model.RequestorDepartment</p>
+                <p><strong>Email:</strong> @Model.RequestorEmail</p>
+                <p><strong>Phone:</strong> @Model.RequestorPhone</p>
+            </div>
+        </div>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Requests</h5>
+            </div>
+            <div class="card-body">
+                <div id="recentRequestsContainer">
+                    <div class="text-center">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="ms-2">Loading recent requests...</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <script>
-        $(document).ready(function() {
-            try {
-                // Handle request type change
-                $('#requestTypeSelect').change(function() {
-                    var selectedType = $(this).val();
-                    
-                    // Hide all conditional sections
-                    $('#assetSection').hide();
-                    $('#equipmentSection').hide();
-                    
-                    // Show relevant sections based on request type
-                    if (selectedType === '1' || selectedType === '9') { // HardwareReplacement or MaintenanceService
+        $(document).ready(function () {
+            // Enhanced form functionality with better UX
+            
+            function toggleSections() {
+                var requestType = $('#requestTypeSelect').val();
+                console.log('Request Type Changed:', requestType);
+                
+                // Reset all sections
+                $('#assetSection, #equipmentSection').hide();
+                
+                // Show sections based on request type (using integer values)
+                switch(requestType) {
+                    case '2': // HardwareRepair 
+                    case '3': // MaintenanceService
+                    case '4': // HardwareReplacement
+                    case '7': // Incident
                         $('#assetSection').show();
-                    } else if (selectedType === '3') { // NewEquipment
+                        break;
+                }
+
+                switch(requestType) {
+                    case '1': // NewEquipment
+                    case '4': // HardwareReplacement
                         $('#equipmentSection').show();
-                    }
-                });
-                
-                // Handle location change to load assets
-                $('#locationSelect').change(function() {
-                    var locationId = $(this).val();
-                    var department = '@ViewBag.CurrentUserDepartment';
-                    
-                    if (locationId) {
-                        var assetSelect = $('#assetSelect');
-                        assetSelect.empty().append('<option value="">Loading assets...</option>');
-                        
-                        $.get('@Url.Action("GetAssetsByLocation", "Requests")', {
-                            locationId: locationId,
-                            department: department
-                        })
-                        .done(function(data) {
-                            assetSelect.empty();
-                            assetSelect.append('<option value="">Select Asset</option>');
-                            
-                            if (data && data.length > 0) {
-                                $.each(data, function(index, asset) {
-                                    assetSelect.append('<option value="' + asset.id + '">' + asset.name + ' (' + asset.status + ')</option>');
-                                });
-                            } else {
-                                assetSelect.append('<option value="">No assets found</option>');
-                            }
-                        })
-                        .fail(function(xhr, status, error) {
-                            console.error('Error loading assets:', error);
-                            assetSelect.empty();
-                            assetSelect.append('<option value="">Error loading assets</option>');
-                        });
-                    } else {
-                        $('#assetSelect').empty().append('<option value="">Select Asset</option>');
-                    }
-                });
-                
-                // Trigger change event if request type is already selected
-                $('#requestTypeSelect').trigger('change');
-                
-                // Form validation before submit
-                $('form').on('submit', function(e) {
-                    try {
-                        var isValid = true;
-                        var errors = [];
-                        
-                        // Remove existing validation states
-                        $('.is-invalid').removeClass('is-invalid');
-                        
-                        // Check required fields
-                        if (!$('#titleInput').val() || !$('#titleInput').val().trim()) {
-                            isValid = false;
-                            errors.push('Title is required');
-                            $('#titleInput').addClass('is-invalid');
-                        }
-                        
-                        if (!$('#descriptionInput').val() || !$('#descriptionInput').val().trim()) {
-                            isValid = false;
-                            errors.push('Description is required');
-                            $('#descriptionInput').addClass('is-invalid');
-                        }
-                        
-                        if (!$('#requestTypeSelect').val()) {
-                            isValid = false;
-                            errors.push('Request Type is required');
-                            $('#requestTypeSelect').addClass('is-invalid');
-                        }
-                        
-                        if (!$('#prioritySelect').val()) {
-                            isValid = false;
-                            errors.push('Priority is required');
-                            $('#prioritySelect').addClass('is-invalid');
-                        }
-                        
-                        if (!isValid) {
-                            e.preventDefault();
-                            
-                            // Show errors in a more user-friendly way
-                            var errorHtml = '<div class="alert alert-danger alert-dismissible fade show" role="alert">';
-                            errorHtml += '<strong>Please fix the following errors:</strong><ul class="mb-0 mt-2">';
-                            errors.forEach(function(error) {
-                                errorHtml += '<li>' + error + '</li>';
-                            });
-                            errorHtml += '</ul>';
-                            errorHtml += '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
-                            errorHtml += '</div>';
-                            
-                            // Remove any existing error alerts
-                            $('.alert-danger').remove();
-                            
-                            // Add the error alert at the top of the form
-                            $('form').prepend(errorHtml);
-                            
-                            // Scroll to top of form
-                            $('form')[0].scrollIntoView({ behavior: 'smooth' });
-                            
-                            return false;
-                        }
-                        
-                        // Show loading state
-                        var submitBtn = $('#submitBtn');
-                        if (submitBtn.length) {
-                            submitBtn.prop('disabled', true).html('<i class="spinner-border spinner-border-sm me-2"></i>Submitting...');
-                        }
-                        
-                    } catch (error) {
-                        console.error('Form validation error:', error);
-                        // Don't prevent form submission if there's a JavaScript error
-                    }
-                });
-                
-            } catch (error) {
-                console.error('JavaScript initialization error:', error);
+                        break;
+                }
             }
+
+            function toggleUnmanagedNotes() {
+                if ($('#unmanagedAssetCheck').is(':checked')) {
+                    $('#unmanagedAssetNotes').show();
+                    $('#assetSelect').val('').prop('disabled', true);
+                    // Clear validation for asset selection since it's unmanaged
+                    $('#assetSelect').removeClass('input-validation-error');
+                } else {
+                    $('#unmanagedAssetNotes').hide();
+                    $('#assetSelect').prop('disabled', false);
+                }
+            }
+
+            function validateBusinessRules() {
+                var requestType = $('#requestTypeSelect').val();
+                var assetId = $('#assetSelect').val();
+                var isUnmanaged = $('#unmanagedAssetCheck').is(':checked');
+                
+                // Business rule: Asset-related requests must have either an asset or unmanaged notes
+                if (['2', '3', '4', '7'].includes(requestType)) {
+                    if (!assetId && !isUnmanaged) {
+                        showValidationMessage('businessRulesPanel', 
+                            'Asset-related requests require either selecting an asset or marking as unmanaged.', 'warning');
+                        return false;
+                    }
+                }
+                
+                hideValidationMessage('businessRulesPanel');
+                return true;
+            }
+
+            function showValidationMessage(panelId, message, type) {
+                var panel = $('#' + panelId);
+                panel.removeClass('d-none alert-info alert-warning alert-danger')
+                     .addClass('alert-' + type)
+                     .find('div').html('<i class="fas fa-exclamation-triangle"></i> ' + message);
+            }
+
+            function hideValidationMessage(panelId) {
+                $('#' + panelId).addClass('d-none');
+            }
+
+            // Event handlers
+            $('#requestTypeSelect').change(function() {
+                toggleSections();
+                validateBusinessRules();
+            });
+            
+            $('#unmanagedAssetCheck').change(toggleUnmanagedNotes);
+            $('#assetSelect').change(validateBusinessRules);
+
+            // Form submission validation
+            $('form').on('submit', function(e) {
+                if (!validateBusinessRules()) {
+                    e.preventDefault();
+                    showToast('warning', 'Please resolve validation issues before submitting.');
+                    return false;
+                }
+            });
+
+            // Priority suggestion (enhanced)
+            $('#suggestPriorityBtn').click(function() {
+                var btn = $(this);
+                var title = $('#Title').val();
+                var description = $('#Description').val();
+                
+                if (!title && !description) {
+                    showToast('info', 'Please enter a title and description for better priority suggestions.');
+                    return;
+                }
+
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Analyzing...');
+                
+                // Simple priority suggestion logic (can be enhanced with AI)
+                setTimeout(function() {
+                    var suggestedPriority = 'Medium'; // Default
+                    
+                    // Simple keyword-based priority suggestion
+                    var urgentKeywords = ['urgent', 'critical', 'emergency', 'down', 'broken', 'not working'];
+                    var lowKeywords = ['cosmetic', 'enhancement', 'nice to have', 'when convenient'];
+                    var text = (title + ' ' + description).toLowerCase();
+                    
+                    if (urgentKeywords.some(keyword => text.includes(keyword))) {
+                        suggestedPriority = 'High';
+                    } else if (lowKeywords.some(keyword => text.includes(keyword))) {
+                        suggestedPriority = 'Low';
+                    }
+                    
+                    // Update priority and show suggestion
+                    $('#Priority').val(suggestedPriority);
+                    $('#prioritySuggestion').html('<small class="text-success"><i class="fas fa-check"></i> Suggested: ' + suggestedPriority + '</small>');
+                    
+                    btn.prop('disabled', false).html('<i class="fas fa-lightbulb"></i>');
+                    showToast('success', 'Priority suggestion applied: ' + suggestedPriority);
+                }, 1000);
+            });
+
+            // Initialize on page load
+            toggleSections();
+            toggleUnmanagedNotes();
+            loadRecentRequests();
+            
+            console.log('Create Request form initialized successfully');
         });
+
+        // Load recent requests for current user
+        function loadRecentRequests() {
+            $.ajax({
+                url: '/Requests/GetRecentRequests',
+                type: 'GET',
+                success: function(data) {
+                    var container = $('#recentRequestsContainer');
+                    if (data && data.length > 0) {
+                        var html = '<div class="list-group list-group-flush">';
+                        data.slice(0, 5).forEach(function(request) {
+                            var statusClass = getStatusBadgeClass(request.status);
+                            var priorityClass = getPriorityBadgeClass(request.priority);
+                            
+                            html += '<div class="list-group-item list-group-item-action p-2">';
+                            html += '<div class="d-flex w-100 justify-content-between">';
+                            html += '<h6 class="mb-1"><a href="/Requests/Details/' + request.id + '" class="text-decoration-none">' + request.requestNumber + '</a></h6>';
+                            html += '<small>' + formatDate(request.requestDate) + '</small>';
+                            html += '</div>';
+                            html += '<p class="mb-1 small">' + (request.title.length > 50 ? request.title.substring(0, 50) + '...' : request.title) + '</p>';
+                            html += '<div class="d-flex justify-content-between">';
+                            html += '<small><span class="badge ' + statusClass + '">' + request.status + '</span></small>';
+                            html += '<small><span class="badge ' + priorityClass + '">' + request.priority + '</span></small>';
+                            html += '</div>';
+                            html += '</div>';
+                        });
+                        html += '</div>';
+                        
+                        if (data.length > 5) {
+                            html += '<div class="text-center mt-2">';
+                            html += '<a href="/Requests/MyRequests" class="btn btn-sm btn-outline-primary">View All (' + data.length + ')</a>';
+                            html += '</div>';
+                        }
+                        
+                        container.html(html);
+                    } else {
+                        container.html('<div class="text-center text-muted"><i class="bi bi-clipboard-x"></i><br><small>No recent requests found</small></div>');
+                    }
+                },
+                error: function() {
+                    $('#recentRequestsContainer').html('<div class="text-center text-muted"><i class="bi bi-exclamation-triangle"></i><br><small>Failed to load recent requests</small></div>');
+                }
+            });
+        }
+
+        // Helper functions for status and priority badges
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'Submitted': return 'bg-info text-white';
+                case 'InProgress': return 'bg-warning text-dark';
+                case 'OnHold': return 'bg-secondary text-white';
+                case 'Completed': return 'bg-success text-white';
+                case 'Cancelled': return 'bg-danger text-white';
+                default: return 'bg-light text-dark';
+            }
+        }
+
+        function getPriorityBadgeClass(priority) {
+            switch(priority) {
+                case 'Critical': return 'bg-danger text-white';
+                case 'High': return 'bg-warning text-dark';
+                case 'Medium': return 'bg-info text-white';
+                case 'Low': return 'bg-success text-white';
+                default: return 'bg-secondary text-white';
+            }
+        }
+
+        function formatDate(dateString) {
+            var date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        // Global toast function (if not available elsewhere)
+        function showToast(type, message) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    icon: type,
+                    title: message
+                });
+            } else {
+                console.log(type + ': ' + message);
+            }
+        }
     </script>
 }
 
@@ -323,6 +443,21 @@
         
         .list-unstyled li {
             padding: 0.25rem 0;
+        }
+
+        .input-validation-error {
+            border-color: #dc3545;
+        }
+
+        .field-validation-error {
+            color: #dc3545;
+        }
+
+        /* Spinner style for loading indication */
+        .spinner-border {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.2em;
         }
     </style>
 }

@@ -1,0 +1,247 @@
+Using launch settings from /home/gadmin/it_system_new_gen/Properties/launchSettings.json...
+Building...
+{
+  "Timestamp": "2025-06-26 13:43:35",
+  "EventId": 20405,
+  "LogLevel": "Information",
+  "Category": "Microsoft.EntityFrameworkCore.Migrations",
+  "Message": "No migrations were applied. The database is already up to date.",
+  "State": {
+    "Message": "No migrations were applied. The database is already up to date.",
+    "{OriginalFormat}": "No migrations were applied. The database is already up to date."
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-26 13:43:36",
+  "EventId": 14,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Now listening on: http://localhost:5000",
+  "State": {
+    "Message": "Now listening on: http://localhost:5000",
+    "address": "http://localhost:5000",
+    "{OriginalFormat}": "Now listening on: {address}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-26 13:43:36",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Application started. Press Ctrl\u002BC to shut down.",
+  "State": {
+    "Message": "Application started. Press Ctrl\u002BC to shut down.",
+    "{OriginalFormat}": "Application started. Press Ctrl\u002BC to shut down."
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-26 13:43:36",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Hosting environment: Development",
+  "State": {
+    "Message": "Hosting environment: Development",
+    "EnvName": "Development",
+    "{OriginalFormat}": "Hosting environment: {EnvName}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-26 13:43:36",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Content root path: /home/gadmin/it_system_new_gen",
+  "State": {
+    "Message": "Content root path: /home/gadmin/it_system_new_gen",
+    "ContentRoot": "/home/gadmin/it_system_new_gen",
+    "{OriginalFormat}": "Content root path: {ContentRoot}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-26 14:52:59",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "HospitalAssetTracker.Controllers.AssetDashboardController",
+  "Message": "Loading Asset Dashboard for user febc96a7-8e84-4698-bb15-69e8fdbb6e8d with role Admin",
+  "State": {
+    "Message": "Loading Asset Dashboard for user febc96a7-8e84-4698-bb15-69e8fdbb6e8d with role Admin",
+    "UserId": "febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+    "UserRole": "Admin",
+    "{OriginalFormat}": "Loading Asset Dashboard for user {UserId} with role {UserRole}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:151b2b18fedde240, TraceId:f9bf014a6600c9971d5aab49cde5fc73, ParentId:0000000000000000",
+      "SpanId": "151b2b18fedde240",
+      "TraceId": "f9bf014a6600c9971d5aab49cde5fc73",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDKMUAVI203",
+      "ConnectionId": "0HNDKMUAVI203"
+    },
+    {
+      "Message": "RequestPath:/AssetDashboard/Index RequestId:0HNDKMUAVI203:00000002",
+      "RequestId": "0HNDKMUAVI203:00000002",
+      "RequestPath": "/AssetDashboard/Index"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)",
+      "ActionId": "fd15a214-cbdd-4e47-858b-67020395afe1",
+      "ActionName": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-26 14:52:59",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "HospitalAssetTracker.Services.AssetBusinessLogicService",
+  "Message": "Getting asset dashboard data for user: febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+  "State": {
+    "Message": "Getting asset dashboard data for user: febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+    "UserId": "febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+    "{OriginalFormat}": "Getting asset dashboard data for user: {UserId}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:151b2b18fedde240, TraceId:f9bf014a6600c9971d5aab49cde5fc73, ParentId:0000000000000000",
+      "SpanId": "151b2b18fedde240",
+      "TraceId": "f9bf014a6600c9971d5aab49cde5fc73",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDKMUAVI203",
+      "ConnectionId": "0HNDKMUAVI203"
+    },
+    {
+      "Message": "RequestPath:/AssetDashboard/Index RequestId:0HNDKMUAVI203:00000002",
+      "RequestId": "0HNDKMUAVI203:00000002",
+      "RequestPath": "/AssetDashboard/Index"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)",
+      "ActionId": "fd15a214-cbdd-4e47-858b-67020395afe1",
+      "ActionName": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-26 14:52:59",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "HospitalAssetTracker.Services.AssetBusinessLogicService",
+  "Message": "Getting asset alerts for user: febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+  "State": {
+    "Message": "Getting asset alerts for user: febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+    "UserId": "febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+    "{OriginalFormat}": "Getting asset alerts for user: {UserId}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:151b2b18fedde240, TraceId:f9bf014a6600c9971d5aab49cde5fc73, ParentId:0000000000000000",
+      "SpanId": "151b2b18fedde240",
+      "TraceId": "f9bf014a6600c9971d5aab49cde5fc73",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDKMUAVI203",
+      "ConnectionId": "0HNDKMUAVI203"
+    },
+    {
+      "Message": "RequestPath:/AssetDashboard/Index RequestId:0HNDKMUAVI203:00000002",
+      "RequestId": "0HNDKMUAVI203:00000002",
+      "RequestPath": "/AssetDashboard/Index"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)",
+      "ActionId": "fd15a214-cbdd-4e47-858b-67020395afe1",
+      "ActionName": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-26 14:52:59",
+  "EventId": 10102,
+  "LogLevel": "Warning",
+  "Category": "Microsoft.EntityFrameworkCore.Query",
+  "Message": "The query uses a row limiting operator (\u0027Skip\u0027/\u0027Take\u0027) without an \u0027OrderBy\u0027 operator. This may lead to unpredictable results. If the \u0027Distinct\u0027 operator is used after \u0027OrderBy\u0027, then make sure to use the \u0027OrderBy\u0027 operator after \u0027Distinct\u0027 as the ordering would otherwise get erased.",
+  "State": {
+    "Message": "The query uses a row limiting operator (\u0027Skip\u0027/\u0027Take\u0027) without an \u0027OrderBy\u0027 operator. This may lead to unpredictable results. If the \u0027Distinct\u0027 operator is used after \u0027OrderBy\u0027, then make sure to use the \u0027OrderBy\u0027 operator after \u0027Distinct\u0027 as the ordering would otherwise get erased.",
+    "{OriginalFormat}": "The query uses a row limiting operator (\u0027Skip\u0027/\u0027Take\u0027) without an \u0027OrderBy\u0027 operator. This may lead to unpredictable results. If the \u0027Distinct\u0027 operator is used after \u0027OrderBy\u0027, then make sure to use the \u0027OrderBy\u0027 operator after \u0027Distinct\u0027 as the ordering would otherwise get erased."
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:151b2b18fedde240, TraceId:f9bf014a6600c9971d5aab49cde5fc73, ParentId:0000000000000000",
+      "SpanId": "151b2b18fedde240",
+      "TraceId": "f9bf014a6600c9971d5aab49cde5fc73",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDKMUAVI203",
+      "ConnectionId": "0HNDKMUAVI203"
+    },
+    {
+      "Message": "RequestPath:/AssetDashboard/Index RequestId:0HNDKMUAVI203:00000002",
+      "RequestId": "0HNDKMUAVI203:00000002",
+      "RequestPath": "/AssetDashboard/Index"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)",
+      "ActionId": "fd15a214-cbdd-4e47-858b-67020395afe1",
+      "ActionName": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-26 14:52:59",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "HospitalAssetTracker.Controllers.AssetDashboardController",
+  "Message": "Asset Dashboard loaded successfully. Total assets: 15",
+  "State": {
+    "Message": "Asset Dashboard loaded successfully. Total assets: 15",
+    "TotalAssets": 15,
+    "{OriginalFormat}": "Asset Dashboard loaded successfully. Total assets: {TotalAssets}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:151b2b18fedde240, TraceId:f9bf014a6600c9971d5aab49cde5fc73, ParentId:0000000000000000",
+      "SpanId": "151b2b18fedde240",
+      "TraceId": "f9bf014a6600c9971d5aab49cde5fc73",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDKMUAVI203",
+      "ConnectionId": "0HNDKMUAVI203"
+    },
+    {
+      "Message": "RequestPath:/AssetDashboard/Index RequestId:0HNDKMUAVI203:00000002",
+      "RequestId": "0HNDKMUAVI203:00000002",
+      "RequestPath": "/AssetDashboard/Index"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)",
+      "ActionId": "fd15a214-cbdd-4e47-858b-67020395afe1",
+      "ActionName": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-26 15:12:39",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Application is shutting down...",
+  "State": {
+    "Message": "Application is shutting down...",
+    "{OriginalFormat}": "Application is shutting down..."
+  },
+  "Scopes": []
+}

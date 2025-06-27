@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -24,16 +25,17 @@
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
+                        @await Component.InvokeAsync("Notification")
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Home" asp-action="Index">
                                 <i class="bi bi-speedometer2"></i> Dashboard
                             </a>
                         </li>
-                        @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                        @if (User.IsInRole("Admin") || User.IsInRole("Asset Manager") || User.IsInRole("IT Support"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="UnifiedBusinessLogic" asp-action="Dashboard">
-                                    <i class="bi bi-diagram-3"></i> Unified Dashboard
+                                    <i class="bi bi-cpu"></i> Smart Operations
                                 </a>
                             </li>
                         }
@@ -53,20 +55,10 @@
                                     <i class="bi bi-plus-circle"></i> Add New Asset
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" asp-controller="AssetImport" asp-action="Index">
-                                    <i class="bi bi-upload"></i> Bulk Import
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" asp-controller="Assets" asp-action="Maintenance">
                                     <i class="bi bi-tools"></i> Maintenance Schedule
                                 </a></li>
-                                <li><a class="dropdown-item" asp-controller="Assets" asp-action="ExpiredWarranty">
-                                    <i class="bi bi-calendar-x"></i> Expired Warranties
-                                </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" asp-controller="Assets" asp-action="BulkActions">
-                                    <i class="bi bi-gear-wide-connected"></i> Bulk Operations
-                                </a></li>
                                 @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
                                 {
                                     <li><a class="dropdown-item" asp-controller="WriteOff" asp-action="Index">
@@ -93,9 +85,6 @@
                                         <i class="bi bi-plus-circle"></i> Add New Item
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" asp-controller="Inventory" asp-action="Dashboard">
-                                        <i class="bi bi-graph-up"></i> Old Dashboard
-                                    </a></li>
                                     <li><a class="dropdown-item" asp-controller="Inventory" asp-action="Alerts">
                                         <i class="bi bi-exclamation-triangle"></i> Stock Alerts
                                     </a></li>
@@ -126,32 +115,9 @@
                                     <li><a class="dropdown-item" asp-controller="Requests" asp-action="AssignedToMe">
                                         <i class="bi bi-person-gear"></i> Assigned to Me
                                     </a></li>
-                                    <li><a class="dropdown-item" asp-controller="Requests" asp-action="Dashboard">
-                                        <i class="bi bi-graph-up"></i> Old Dashboard
-                                    </a></li>
                                     <li><a class="dropdown-item" asp-controller="Requests" asp-action="Overdue">
                                         <i class="bi bi-exclamation-triangle"></i> Overdue
                                     </a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li class="dropdown-submenu">
-                                        <a class="dropdown-item dropdown-toggle" href="#">
-                                            <i class="bi bi-gear"></i> Advanced Analysis
-                                        </a>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" asp-controller="RequestDashboard" asp-action="SlaCompliance">
-                                                <i class="bi bi-stopwatch"></i> SLA Compliance
-                                            </a></li>
-                                            <li><a class="dropdown-item" asp-controller="RequestDashboard" asp-action="DemandForecasting">
-                                                <i class="bi bi-graph-up"></i> Demand Forecasting
-                                            </a></li>
-                                            <li><a class="dropdown-item" asp-controller="RequestDashboard" asp-action="ResourceOptimization">
-                                                <i class="bi bi-people"></i> Resource Optimization
-                                            </a></li>
-                                            <li><a class="dropdown-item" asp-controller="RequestDashboard" asp-action="QualityAssurance">
-                                                <i class="bi bi-shield-check"></i> Quality Assurance
-                                            </a></li>
-                                        </ul>
-                                    </li>
                                 }
                             </ul>
                         </li>
@@ -173,9 +139,6 @@
                                         <i class="bi bi-plus-circle"></i> New Procurement
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" asp-controller="Procurement" asp-action="Dashboard">
-                                        <i class="bi bi-graph-up"></i> Old Dashboard
-                                    </a></li>
                                     <li><a class="dropdown-item" asp-controller="Procurement" asp-action="Overdue">
                                         <i class="bi bi-exclamation-triangle"></i> Overdue
                                     </a></li>
@@ -222,27 +185,6 @@
         </nav>
     </header>
     <div class="container-fluid">
-        @if (TempData["SuccessMessage"] != null)
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
-        @if (TempData["ErrorMessage"] != null)
-        {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
-        @if (ViewBag.ErrorMessage != null)
-        {
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill"></i> @ViewBag.ErrorMessage
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
@@ -268,7 +210,10 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/app-helpers.js" asp-append-version="true"></script>
+    <partial name="_Notification" />
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

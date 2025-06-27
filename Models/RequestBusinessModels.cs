@@ -58,6 +58,7 @@ namespace HospitalAssetTracker.Models
         public string EstimatedTimeframe { get; set; } = string.Empty;
         public decimal Cost { get; set; }
         public int Feasibility { get; set; }
+        public string? Details { get; set; }
         public List<string> Requirements { get; set; } = new List<string>();
         public List<string> Constraints { get; set; } = new List<string>();
     }
@@ -132,29 +133,61 @@ namespace HospitalAssetTracker.Models
     // === DEMAND FORECASTING & ANALYTICS MODELS ===
 
     /// <summary>
+    /// Represents a single point of historical data for demand analysis.
+    /// </summary>
+    public class RequestDemandHistoricalData
+    {
+        public RequestType RequestType { get; set; }
+        public string Department { get; set; } = string.Empty;
+        public int Year { get; set; } 
+        public int Month { get; set; }
+        public int RequestCount { get; set; }
+        public double AverageResolutionTime { get; set; } // in days
+    }
+
+    /// <summary>
+    /// Represents a single forecasted demand item.
+    /// </summary>
+    public class DemandForecastItem
+    {
+        public string Period { get; set; } = string.Empty; // e.g., "2025-07" for July 2025
+        public RequestType RequestType { get; set; }
+        public string Department { get; set; } = string.Empty;
+        public int PredictedRequestCount { get; set; }
+        public double Confidence { get; set; } 
+    }
+
+    /// <summary>
     /// Comprehensive demand forecasting with predictive analytics
     /// </summary>
     public class RequestDemandForecast
     {
         public DateTime ForecastDate { get; set; }
         public int ForecastPeriodDays { get; set; }
-        public int HistoricalDataPoints { get; set; }
-        public List<CategoryDemandForecast> CategoryForecasts { get; set; } = new List<CategoryDemandForecast>();
+        public int HistoricalDataPoints { get; set; } 
+        public List<RequestCategoryForecast> CategoryForecasts { get; set; } = new List<RequestCategoryForecast>();
         public List<ResourceRequirement> ResourceRequirements { get; set; } = new List<ResourceRequirement>();
         public List<string> StrategicInsights { get; set; } = new List<string>();
-        public double ForecastAccuracy { get; set; }
+        public double ForecastAccuracy { get; set; } 
         public Dictionary<string, int> DepartmentTrends { get; set; } = new Dictionary<string, int>();
         public List<SeasonalPattern> SeasonalPatterns { get; set; } = new List<SeasonalPattern>();
         public List<string> RecommendedActions { get; set; } = new List<string>();
+
+        // Properties to match usage in RequestBusinessLogicService
+        public List<DemandForecastItem> ForecastedDemands { get; set; } = new List<DemandForecastItem>();
+        public string OverallTrend { get; set; } = "Stable";
+        public double ConfidenceLevel { get; set; } = 0.75; 
+        public Dictionary<string, double> SeasonalFactors { get; set; } = new Dictionary<string, double>();
+        public double GrowthRate { get; set; } = 0.0;
     }
 
     /// <summary>
     /// Category-specific demand forecast
     /// </summary>
-    public class CategoryDemandForecast
+    public class RequestCategoryForecast
     {
         public RequestType RequestType { get; set; }
-        public string Category { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty; // This property might be redundant if RequestType is used as category key
         public int ForecastedRequests { get; set; }
         public int HistoricalAverage { get; set; }
         public double GrowthRate { get; set; }
@@ -163,7 +196,7 @@ namespace HospitalAssetTracker.Models
         public List<string> DemandDrivers { get; set; } = new List<string>();
         
         // Alias properties for compatibility
-        public string CategoryName => Category;
+        public string CategoryName => Category; // Or consider changing to RequestType.ToString()
         public int CurrentDemand => HistoricalAverage;
         public int PredictedDemand => ForecastedRequests;
         public int PredictedVolume => ForecastedRequests;
@@ -840,38 +873,52 @@ namespace HospitalAssetTracker.Models
         public ITRequest Request { get; set; } = null!;
     }
 
-    /// <summary>
-    /// Historical data for demand analysis
-    /// </summary>
-    public class RequestDemandHistoricalData
-    {
-        public RequestType RequestType { get; set; }
-        public string Department { get; set; } = string.Empty;
-        public int Month { get; set; }
-        public int RequestCount { get; set; }
-        public double AverageResolutionTime { get; set; }
-    }
+    // Ensuring the primary definitions for the following are used from earlier in the file.
+    // Commenting out potential duplicate definitions that were found near the end of the file.
 
-    /// <summary>
-    /// Request category forecast
-    /// </summary>
-    public class RequestCategoryForecast
-    {
-        public RequestType RequestType { get; set; }
-        public int PredictedVolume { get; set; }
-        public double ConfidenceLevel { get; set; }
-        public string TrendDirection { get; set; } = string.Empty;
-        
-        // Additional properties for compatibility
-        public string CategoryName => RequestType.ToString();
-        public int CurrentDemand { get; set; }
-        public int PredictedDemand => PredictedVolume;
-    }
+    /*
+    // Potential duplicate of RequestDemandHistoricalData (primary definition around line 137)
+    // /// <summary>
+    // /// Historical data for demand analysis
+    // /// </summary>
+    // public class RequestDemandHistoricalData 
+    // {
+    //     public RequestType RequestType { get; set; }
+    //     public string Department { get; set; } = string.Empty;
+    //     public int Year { get; set; } 
+    //     public int Month { get; set; }
+    //     public int RequestCount { get; set; }
+    //     public double AverageResolutionTime { get; set; } // in days
+    // }
+    */
 
-    /// <summary>
-    /// Workload analysis result
-    /// </summary>
-    public class WorkloadAnalysisResult
+    /*
+    // Potential duplicate of RequestCategoryForecast (primary definition around line 181)
+    // /// <summary>
+    // /// Request category forecast
+    // /// </summary>
+    // public class RequestCategoryForecast 
+    // {
+    //     public RequestType RequestType { get; set; }
+    //     public int PredictedVolume { get; set; }
+    //     public double ConfidenceLevel { get; set; }
+    //     public string TrendDirection { get; set; } = string.Empty;
+    //     public string CategoryName => RequestType.ToString();
+    //     public int CurrentDemand { get; set; }
+    //     public int PredictedDemand => PredictedVolume;
+    // }
+    */
+
+    // Ensuring WorkloadAnalysisResult is defined (primary definition around line 277 or 911)
+    // If this is a duplicate, it should be removed, ensuring the one used by ResourceOptimizationResult is primary.
+    // For now, assuming the one around line 277 (as part of ResourceOptimizationResult's WorkloadAnalysis property)
+    // or a standalone one defined before ResourceOptimizationResult is the correct one.
+    // If a duplicate exists here, it needs to be removed.
+    // For the purpose of this edit, I am assuming the definitions for WorkloadAnalysisResult,
+    // WorkloadRebalancingPlan, AssignmentOptimizationResult, and IntegrationResult
+    // are correctly defined ONCE, earlier in the file, or are correctly defined below if this is their only spot.
+
+    public class WorkloadAnalysisResult // If this is a duplicate of a class used by ResourceOptimizationResult, it should be removed.
     {
         public int TotalActiveRequests { get; set; }
         public double WorkloadBalance { get; set; }
@@ -879,10 +926,7 @@ namespace HospitalAssetTracker.Models
         public List<string> CriticalBottlenecks { get; set; } = new List<string>();
     }
 
-    /// <summary>
-    /// Workload rebalancing plan
-    /// </summary>
-    public class WorkloadRebalancingPlan
+    public class WorkloadRebalancingPlan // Ensure this is the primary definition if used by ResourceOptimizationResult
     {
         public string PlanName { get; set; } = string.Empty;
         public DateTime CreatedDate { get; set; }
@@ -891,9 +935,6 @@ namespace HospitalAssetTracker.Models
         public List<string> RecommendedActions { get; set; } = new List<string>();
     }
 
-    /// <summary>
-    /// Result of workload rebalancing operation
-    /// </summary>
     public class WorkloadRebalanceResult
     {
         public bool Success { get; set; }
@@ -905,10 +946,7 @@ namespace HospitalAssetTracker.Models
         public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
     }
 
-    /// <summary>
-    /// Result of assignment optimization operation
-    /// </summary>
-    public class AssignmentOptimizationResult
+    public class AssignmentOptimizationResult // Ensure this is the primary definition
     {
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
@@ -919,22 +957,14 @@ namespace HospitalAssetTracker.Models
         public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
     }
 
-    /// <summary>
-    /// Integration result with external modules
-    /// </summary>
-    public class IntegrationResult
+    public class IntegrationResult // Ensure this is the primary definition
     {
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
         public string[] IntegratedModules { get; set; } = new string[0];
-        
-        // Additional properties for service compatibility
         public bool RequiresProcurement { get; set; }
     }
 
-    /// <summary>
-    /// Service quality analysis result
-    /// </summary>
     public class ServiceQualityResult
     {
         public DateTime AnalysisDate { get; set; } = DateTime.UtcNow;

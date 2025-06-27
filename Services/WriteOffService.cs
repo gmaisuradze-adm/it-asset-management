@@ -136,10 +136,10 @@ namespace HospitalAssetTracker.Services
             writeOffRecord.ApprovalNotes = approvalNotes;
             writeOffRecord.LastUpdated = DateTime.UtcNow;
 
-            // Change asset status to WriteOff
+            // Change asset status to Decommissioned (write-off)
             if (writeOffRecord.Asset != null)
             {
-                writeOffRecord.Asset.Status = AssetStatus.WriteOff;
+                writeOffRecord.Asset.Status = AssetStatus.Decommissioned;
                 writeOffRecord.Asset.LastUpdated = DateTime.UtcNow;
             }
 
@@ -295,8 +295,8 @@ namespace HospitalAssetTracker.Services
                 ApprovedRequests = writeOffs.Count(w => w.Status == WriteOffStatus.Approved),
                 ProcessedRequests = writeOffs.Count(w => w.Status == WriteOffStatus.Processed),
                 RejectedRequests = writeOffs.Count(w => w.Status == WriteOffStatus.Rejected),
-                TotalEstimatedValue = writeOffs.Where(w => w.EstimatedValue.HasValue).Sum(w => w.EstimatedValue.Value),
-                TotalSalvageValue = writeOffs.Where(w => w.SalvageValue.HasValue).Sum(w => w.SalvageValue.Value)
+                TotalEstimatedValue = writeOffs.Sum(w => w.EstimatedValue) ?? 0M,
+                TotalSalvageValue = writeOffs.Sum(w => w.SalvageValue) ?? 0M
             };
 
             // Reason breakdown
@@ -323,8 +323,8 @@ namespace HospitalAssetTracker.Services
                 ApprovedRequests = writeOffs.Count(w => w.Status == WriteOffStatus.Approved),
                 ProcessedRequests = writeOffs.Count(w => w.Status == WriteOffStatus.Processed),
                 RejectedRequests = writeOffs.Count(w => w.Status == WriteOffStatus.Rejected),
-                TotalEstimatedValue = writeOffs.Where(w => w.EstimatedValue.HasValue).Sum(w => w.EstimatedValue.Value),
-                TotalSalvageValue = writeOffs.Where(w => w.SalvageValue.HasValue).Sum(w => w.SalvageValue.Value)
+                TotalEstimatedValue = writeOffs.Sum(w => w.EstimatedValue) ?? 0M,
+                TotalSalvageValue = writeOffs.Sum(w => w.SalvageValue) ?? 0M
             };
 
             // Reason breakdown

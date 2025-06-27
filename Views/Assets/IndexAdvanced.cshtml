@@ -1,0 +1,1170 @@
+@model HospitalAssetTracker.Models.AssetSearchResult
+@{
+    ViewData["Title"] = "Assets - Advanced Management";
+}
+
+<style>
+    /* Advanced Search Styling */
+    .search-container {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .filter-chip {
+        display: inline-block;
+        background: #0d6efd;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        margin: 0.25rem;
+        position: relative;
+    }
+    
+    .filter-chip .remove-filter {
+        margin-left: 0.5rem;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    .bulk-actions {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+    
+    .bulk-actions.show {
+        display: block;
+    }
+    
+    .asset-card {
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .asset-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.6rem;
+        border-radius: 15px;
+        font-weight: 500;
+    }
+    
+    .search-stats {
+        background: #e3f2fd;
+        border: 1px solid #2196f3;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .export-dropdown {
+        min-width: 200px;
+    }
+    
+    /* DataTable Enhancements */
+    .dataTables_wrapper .dataTables_length select,
+    .dataTables_wrapper .dataTables_filter input {
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        padding: 0.375rem 0.75rem;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 4px;
+        margin: 0 2px;
+    }
+    
+    .table-actions {
+        white-space: nowrap;
+    }
+    
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>IT Assets Management</h1>
+        <div class="text-muted">
+            Advanced search, filtering, and bulk operations
+        </div>
+    </div>
+    <div class="btn-group">
+        @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+        {
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Asset
+            </a>
+        }
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="bi bi-download"></i> Export
+            </button>
+            <ul class="dropdown-menu export-dropdown">
+                <li><a class="dropdown-item" href="#" onclick="exportAssets('excel')">
+                    <i class="bi bi-file-earmark-excel text-success"></i> Excel
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="exportAssets('csv')">
+                    <i class="bi bi-file-earmark-text text-info"></i> CSV
+                </a></li>
+                <li><a class="dropdown-item" href="#" onclick="exportAssets('pdf')">
+                    <i class="bi bi-file-earmark-pdf text-danger"></i> PDF Report
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" onclick="showExportCustomizer()">
+                    <i class="bi bi-gear"></i> Custom Export
+                </a></li>
+            </ul>
+        </div>
+        <button type="button" class="btn btn-outline-info" onclick="showAssetComparison()">
+            <i class="bi bi-arrow-left-right"></i> Compare
+        </button>
+    </div>
+</div>
+
+<!-- Search Results Statistics -->
+@if (Model.FilteredCount > 0)
+{
+    <div class="search-stats">
+        <div class="row">
+            <div class="col-md-8">
+                <h6 class="mb-2">
+                    <i class="bi bi-bar-chart-fill text-primary"></i> Search Results
+                </h6>
+                <div class="row text-center">
+                    <div class="col-3">
+                        <div class="fw-bold text-primary">@Model.FilteredCount</div>
+                        <small class="text-muted">Assets Found</small>
+                    </div>
+                    <div class="col-3">
+                        <div class="fw-bold text-success">$@Model.TotalValue.ToString("N0")</div>
+                        <small class="text-muted">Total Value</small>
+                    </div>
+                    <div class="col-3">
+                        <div class="fw-bold text-warning">@Model.WarrantyExpiringCount</div>
+                        <small class="text-muted">Expiring Soon</small>
+                    </div>
+                    <div class="col-3">
+                        <div class="fw-bold text-info">@Model.UnassignedCount</div>
+                        <small class="text-muted">Unassigned</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <h6 class="mb-2">Quick Filters</h6>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm" onclick="quickFilter('warranty-expiring')">
+                        <i class="bi bi-clock"></i> Warranty Expiring
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="quickFilter('unassigned')">
+                        <i class="bi bi-person-x"></i> Unassigned
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="quickFilter('available')">
+                        <i class="bi bi-check-circle"></i> Available
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Advanced Search Container -->
+<div class="search-container">
+    <form method="get" action="@Url.Action("AdvancedSearch")" id="advancedSearchForm">
+        <div class="row g-3">
+            <!-- Quick Search -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                    <i class="bi bi-search"></i> Quick Search
+                </label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
+                           placeholder="Asset tag, brand, model, serial..." autocomplete="off">
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearSearch()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <div class="form-text">Search across asset tag, brand, model, serial number, and description</div>
+            </div>
+            
+            <!-- Saved Searches -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                    <i class="bi bi-bookmark"></i> Saved Searches
+                </label>
+                <div class="input-group">
+                    <select class="form-select" id="savedSearches" onchange="loadSavedSearch()">
+                        <option value="">Select saved search...</option>
+                        <!-- Populated via JavaScript -->
+                    </select>
+                    <button type="button" class="btn btn-outline-primary" onclick="saveCurrentSearch()">
+                        <i class="bi bi-plus"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Advanced Filters (Collapsible) -->
+        <div class="mt-3">
+            <button type="button" class="btn btn-link p-0 fw-semibold" data-bs-toggle="collapse" data-bs-target="#advancedFilters">
+                <i class="bi bi-funnel"></i> Advanced Filters
+                <i class="bi bi-chevron-down"></i>
+            </button>
+        </div>
+        
+        <div class="collapse" id="advancedFilters">
+            <div class="row g-3 mt-2">
+                <!-- Categories -->
+                <div class="col-md-4">
+                    <label class="form-label">Categories</label>
+                    <div class="category-filter">
+                        @foreach (AssetCategory category in Enum.GetValues<AssetCategory>())
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="cat_@((int)category)" 
+                                       name="categories" value="@((int)category)">
+                                <label class="form-check-label" for="cat_@((int)category)">@category</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+                
+                <!-- Statuses -->
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <div class="status-filter">
+                        @foreach (AssetStatus status in Enum.GetValues<AssetStatus>())
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="stat_@((int)status)" 
+                                       name="statuses" value="@((int)status)">
+                                <label class="form-check-label" for="stat_@((int)status)">@status</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+                
+                <!-- Assignment -->
+                <div class="col-md-4">
+                    <label class="form-label">Assignment</label>
+                    <div class="assignment-filter">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="assignmentFilter" id="all-assignment" value="" checked>
+                            <label class="form-check-label" for="all-assignment">All Assets</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="assignmentFilter" id="assigned-only" value="assigned">
+                            <label class="form-check-label" for="assigned-only">Assigned Only</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="assignmentFilter" id="unassigned-only" value="unassigned">
+                            <label class="form-check-label" for="unassigned-only">Unassigned Only</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Date Ranges -->
+                <div class="col-md-6">
+                    <label class="form-label">Purchase Date Range</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="date" class="form-control" name="purchaseDateFrom" placeholder="From">
+                        </div>
+                        <div class="col-6">
+                            <input type="date" class="form-control" name="purchaseDateTo" placeholder="To">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Warranty Expiry Range</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <input type="date" class="form-control" name="warrantyExpiryFrom" placeholder="From">
+                        </div>
+                        <div class="col-6">
+                            <input type="date" class="form-control" name="warrantyExpiryTo" placeholder="To">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Price Range -->
+                <div class="col-md-6">
+                    <label class="form-label">Price Range</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" name="priceFrom" placeholder="From" step="0.01">
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" name="priceTo" placeholder="To" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Department/Location -->
+                <div class="col-md-6">
+                    <label class="form-label">Department</label>
+                    <input type="text" class="form-control" name="department" placeholder="Department name">
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Search Assets
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="resetAdvancedSearch()">
+                    <i class="bi bi-arrow-clockwise"></i> Reset
+                </button>
+                <button type="button" class="btn btn-outline-info" onclick="previewSearch()">
+                    <i class="bi bi-eye"></i> Preview Results
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Active Filters Display -->
+<div id="activeFilters" class="mb-3" style="display: none;">
+    <h6>Active Filters:</h6>
+    <div id="filterChips"></div>
+</div>
+
+<!-- Bulk Actions Panel -->
+<div class="bulk-actions" id="bulkActions">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <i class="bi bi-check-square text-warning"></i>
+            <span id="selectedCount">0</span> assets selected
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-warning btn-sm" onclick="bulkUpdateStatus()">
+                <i class="bi bi-arrow-repeat"></i> Update Status
+            </button>
+            <button type="button" class="btn btn-info btn-sm" onclick="bulkChangeLocation()">
+                <i class="bi bi-geo-alt"></i> Change Location
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="bulkAssign()">
+                <i class="bi bi-person"></i> Assign
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="bulkDelete()">
+                <i class="bi bi-trash"></i> Delete
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
+                <i class="bi bi-x"></i> Clear
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Assets DataTable -->
+<div class="card">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="bi bi-table"></i> Assets List
+                @if (Model.FilteredCount > 0)
+                {
+                    <span class="badge bg-primary">@Model.FilteredCount results</span>
+                }
+            </h6>
+            <div>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary" onclick="toggleViewMode('table')" id="tableViewBtn">
+                        <i class="bi bi-table"></i> Table
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="toggleViewMode('card')" id="cardViewBtn">
+                        <i class="bi bi-grid"></i> Cards
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <!-- Table View -->
+        <div id="tableView">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="assetsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>
+                                <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th>Asset Tag</th>
+                            <th>Category</th>
+                            <th>Brand & Model</th>
+                            <th>Status</th>
+                            <th>Location</th>
+                            <th>Assigned To</th>
+                            <th>Warranty</th>
+                            <th>Value</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var asset in Model.Assets)
+                        {
+                            <tr data-asset-id="@asset.Id">
+                                <td>
+                                    <input type="checkbox" class="form-check-input asset-checkbox" 
+                                           value="@asset.Id" onchange="updateBulkActions()">
+                                </td>
+                                <td>
+                                    <div class="fw-bold">@asset.AssetTag</div>
+                                    @if (!string.IsNullOrEmpty(asset.SerialNumber))
+                                    {
+                                        <small class="text-muted">SN: @asset.SerialNumber</small>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">@asset.Category</span>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold">@asset.Brand</div>
+                                    <small class="text-muted">@asset.Model</small>
+                                </td>
+                                <td>
+                                    @{
+                                        var statusClass = asset.Status switch
+                                        {
+                                            AssetStatus.Available => "bg-info",
+                                            AssetStatus.InUse => "bg-success",
+                                            AssetStatus.UnderMaintenance => "bg-warning",
+                                            AssetStatus.Decommissioned => "bg-danger",
+                                            AssetStatus.Lost => "bg-secondary",
+                                            AssetStatus.Stolen => "bg-dark",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="status-badge @statusClass">@asset.Status</span>
+                                </td>
+                                <td>
+                                    @if (asset.Location != null)
+                                    {
+                                        <div>@asset.Location.FullLocation</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not specified</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (asset.AssignedToUser != null)
+                                    {
+                                        <div>@asset.AssignedToUser.UserName</div>
+                                        @if (!string.IsNullOrEmpty(asset.Department))
+                                        {
+                                            <small class="text-muted">@asset.Department</small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Unassigned</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (asset.WarrantyExpiry.HasValue)
+                                    {
+                                        var daysToExpiry = (asset.WarrantyExpiry.Value - DateTime.Today).Days;
+                                        if (daysToExpiry < 0)
+                                        {
+                                            <span class="badge bg-danger">Expired</span>
+                                        }
+                                        else if (daysToExpiry <= 30)
+                                        {
+                                            <span class="badge bg-warning">@daysToExpiry days</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Valid</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/A</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (asset.PurchasePrice.HasValue)
+                                    {
+                                        <span class="fw-semibold">$@asset.PurchasePrice.Value.ToString("N0")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">N/A</span>
+                                    }
+                                </td>
+                                <td class="table-actions">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@asset.Id" 
+                                           class="btn btn-outline-info" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@asset.Id" 
+                                               class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        }
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" 
+                                                    data-bs-toggle="dropdown" title="More Actions">
+                                                <i class="bi bi-three-dots"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="assignAsset(@asset.Id)">
+                                                    <i class="bi bi-person-plus"></i> Assign
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="moveAsset(@asset.Id)">
+                                                    <i class="bi bi-geo-alt"></i> Move
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="generateQR(@asset.Id)">
+                                                    <i class="bi bi-qr-code"></i> QR Code
+                                                </a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item" href="#" onclick="duplicateAsset(@asset.Id)">
+                                                    <i class="bi bi-files"></i> Duplicate
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Card View -->
+        <div id="cardView" style="display: none;">
+            <div class="row g-3 p-3">
+                @foreach (var asset in Model.Assets)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="asset-card card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <input type="checkbox" class="form-check-input asset-checkbox" 
+                                           value="@asset.Id" onchange="updateBulkActions()">
+                                    <strong class="ms-2">@asset.AssetTag</strong>
+                                </div>
+                                @{
+                                    var statusClass = asset.Status switch
+                                    {
+                                        AssetStatus.Available => "bg-info",
+                                        AssetStatus.InUse => "bg-success", 
+                                        AssetStatus.UnderMaintenance => "bg-warning",
+                                        AssetStatus.Decommissioned => "bg-danger",
+                                        AssetStatus.Lost => "bg-secondary",
+                                        AssetStatus.Stolen => "bg-dark",
+                                        _ => "bg-secondary"
+                                    };
+                                }
+                                <span class="status-badge @statusClass">@asset.Status</span>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title">@asset.Brand @asset.Model</h6>
+                                <p class="card-text">
+                                    <small class="text-muted">@asset.Category</small><br>
+                                    @if (!string.IsNullOrEmpty(asset.SerialNumber))
+                                    {
+                                        <small>SN: @asset.SerialNumber</small><br>
+                                    }
+                                    @if (asset.Location != null)
+                                    {
+                                        <small><i class="bi bi-geo-alt"></i> @asset.Location.FullLocation</small><br>
+                                    }
+                                    @if (asset.AssignedToUser != null)
+                                    {
+                                        <small><i class="bi bi-person"></i> @asset.AssignedToUser.UserName</small>
+                                    }
+                                </p>
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        @if (asset.PurchasePrice.HasValue)
+                                        {
+                                            <small class="fw-semibold">$@asset.PurchasePrice.Value.ToString("N0")</small>
+                                        }
+                                    </div>
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@asset.Id" class="btn btn-outline-info">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@asset.Id" class="btn btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+@if (Model.TotalPages > 1)
+{
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div>
+            Showing @((Model.Page - 1) * Model.PageSize + 1) to @(Math.Min(Model.Page * Model.PageSize, Model.FilteredCount)) 
+            of @Model.FilteredCount assets
+        </div>
+        <nav>
+            <ul class="pagination">
+                @if (Model.HasPreviousPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("AdvancedSearch", new { page = Model.Page - 1 })">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                }
+                @for (int i = Math.Max(1, Model.Page - 2); i <= Math.Min(Model.TotalPages, Model.Page + 2); i++)
+                {
+                    <li class="page-item @(i == Model.Page ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("AdvancedSearch", new { page = i })">@i</a>
+                    </li>
+                }
+                @if (Model.HasNextPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("AdvancedSearch", new { page = Model.Page + 1 })">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    </div>
+}
+
+<!-- Export Customizer Modal -->
+<div class="modal fade" id="exportCustomizerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-gear"></i> Customize Export
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="exportCustomForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Export Format</label>
+                            <select class="form-select" name="format">
+                                <option value="excel">Excel Spreadsheet</option>
+                                <option value="csv">CSV File</option>
+                                <option value="pdf">PDF Report</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date Range</label>
+                            <select class="form-select" name="dateRange">
+                                <option value="all">All Time</option>
+                                <option value="current">Current Search Results</option>
+                                <option value="last30">Last 30 Days</option>
+                                <option value="last90">Last 90 Days</option>
+                                <option value="lastyear">Last Year</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Columns to Include</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="col_assetTag" checked>
+                                    <label class="form-check-label" for="col_assetTag">Asset Tag</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="col_category" checked>
+                                    <label class="form-check-label" for="col_category">Category</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="col_brand" checked>
+                                    <label class="form-check-label" for="col_brand">Brand</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="col_model" checked>
+                                    <label class="form-check-label" for="col_model">Model</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="col_status" checked>
+                                    <label class="form-check-label" for="col_status">Status</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="col_location">
+                                    <label class="form-check-label" for="col_location">Location</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="col_assignedTo">
+                                    <label class="form-check-label" for="col_assignedTo">Assigned To</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="col_purchasePrice">
+                                    <label class="form-check-label" for="col_purchasePrice">Purchase Price</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Report Title</label>
+                        <input type="text" class="form-control" name="title" placeholder="Custom report title">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="executeCustomExport()">
+                    <i class="bi bi-download"></i> Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+
+<script>
+// Global variables
+let selectedAssets = [];
+let currentSearchCriteria = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable
+    initializeDataTable();
+    
+    // Initialize search functionality
+    initializeSearch();
+    
+    // Load saved searches
+    loadSavedSearches();
+    
+    // Set default view mode
+    setViewMode('table');
+});
+
+// DataTable initialization
+function initializeDataTable() {
+    if ($.fn.DataTable) {
+        $('#assetsTable').DataTable({
+            responsive: true,
+            pageLength: 25,
+            order: [[1, 'asc']], // Sort by Asset Tag
+            columnDefs: [
+                { orderable: false, targets: [0, -1] }, // Disable sorting for checkbox and actions columns
+                { searchable: false, targets: [0, -1] }
+            ],
+            language: {
+                search: "Search in table:",
+                lengthMenu: "Show _MENU_ assets per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ assets",
+                emptyTable: "No assets found matching your criteria"
+            }
+        });
+    }
+}
+
+// Search functionality
+function initializeSearch() {
+    // Real-time search with debouncing
+    let searchTimeout;
+    $('#searchTerm').on('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            if (this.value.length >= 3 || this.value.length === 0) {
+                performQuickSearch();
+            }
+        }, 300);
+    });
+    
+    // Enter key support
+    $('#searchTerm').on('keypress', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            performQuickSearch();
+        }
+    });
+}
+
+// Perform quick search
+function performQuickSearch() {
+    const searchTerm = $('#searchTerm').val();
+    if (searchTerm.length >= 3 || searchTerm.length === 0) {
+        window.location.href = '@Url.Action("AdvancedSearch")' + '?searchTerm=' + encodeURIComponent(searchTerm);
+    }
+}
+
+// Clear search
+function clearSearch() {
+    $('#searchTerm').val('');
+    window.location.href = '@Url.Action("AdvancedSearch")';
+}
+
+// Quick filters
+function quickFilter(filterType) {
+    let url = '@Url.Action("AdvancedSearch")' + '?';
+    
+    switch(filterType) {
+        case 'warranty-expiring':
+            url += 'warrantyExpiringInDays=30';
+            break;
+        case 'unassigned':
+            url += 'assignmentFilter=unassigned';
+            break;
+        case 'available':
+            url += 'statuses=0'; // AssetStatus.Available
+            break;
+    }
+    
+    window.location.href = url;
+}
+
+// Reset advanced search
+function resetAdvancedSearch() {
+    document.getElementById('advancedSearchForm').reset();
+    $('#activeFilters').hide();
+    $('#filterChips').empty();
+}
+
+// Preview search results
+function previewSearch() {
+    // Collect form data and show preview
+    const formData = new FormData(document.getElementById('advancedSearchForm'));
+    let preview = 'Search will include:\n\n';
+    
+    for (let [key, value] of formData.entries()) {
+        if (value) {
+            preview += `${key}: ${value}\n`;
+        }
+    }
+    
+    alert(preview);
+}
+
+// View mode toggle
+function toggleViewMode(mode) {
+    setViewMode(mode);
+}
+
+function setViewMode(mode) {
+    if (mode === 'table') {
+        $('#tableView').show();
+        $('#cardView').hide();
+        $('#tableViewBtn').addClass('active');
+        $('#cardViewBtn').removeClass('active');
+    } else {
+        $('#tableView').hide();
+        $('#cardView').show();
+        $('#tableViewBtn').removeClass('active');
+        $('#cardViewBtn').addClass('active');
+    }
+    
+    // Save preference
+    localStorage.setItem('assetViewMode', mode);
+}
+
+// Bulk operations
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.asset-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateBulkActions();
+}
+
+function updateBulkActions() {
+    const checkboxes = document.querySelectorAll('.asset-checkbox:checked');
+    selectedAssets = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    const count = selectedAssets.length;
+    document.getElementById('selectedCount').textContent = count;
+    
+    if (count > 0) {
+        document.getElementById('bulkActions').classList.add('show');
+    } else {
+        document.getElementById('bulkActions').classList.remove('show');
+    }
+}
+
+function clearSelection() {
+    document.querySelectorAll('.asset-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('selectAll').checked = false;
+    updateBulkActions();
+}
+
+// Bulk operations
+function bulkUpdateStatus() {
+    if (selectedAssets.length === 0) return;
+    
+    const newStatus = prompt('Enter new status (Available, InUse, UnderMaintenance, Decommissioned):');
+    if (newStatus) {
+        executeBulkOperation('updateStatus', { status: newStatus });
+    }
+}
+
+function bulkChangeLocation() {
+    if (selectedAssets.length === 0) return;
+    
+    const locationId = prompt('Enter location ID:');
+    if (locationId) {
+        executeBulkOperation('changeLocation', { locationId: parseInt(locationId) });
+    }
+}
+
+function bulkAssign() {
+    if (selectedAssets.length === 0) return;
+    
+    const userId = prompt('Enter user ID to assign to:');
+    if (userId) {
+        executeBulkOperation('assign', { userId: userId });
+    }
+}
+
+function bulkDelete() {
+    if (selectedAssets.length === 0) return;
+    
+    if (confirm(`Are you sure you want to delete ${selectedAssets.length} assets? This action cannot be undone.`)) {
+        executeBulkOperation('delete', {});
+    }
+}
+
+function executeBulkOperation(operation, parameters) {
+    fetch('@Url.Action("BulkOperation")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            assetIds: selectedAssets,
+            operation: operation,
+            parameters: parameters
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Bulk operation completed successfully. ${data.successCount} assets processed.`, 'success');
+            location.reload();
+        } else {
+            showToast('Bulk operation failed: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('An error occurred during bulk operation.', 'error');
+    });
+}
+
+// Export functionality
+function exportAssets(format) {
+    const url = '@Url.Action("ExportAssets")' + '?format=' + format + '&' + getCurrentSearchParams();
+    window.open(url, '_blank');
+}
+
+function showExportCustomizer() {
+    const modal = new bootstrap.Modal(document.getElementById('exportCustomizerModal'));
+    modal.show();
+}
+
+function executeCustomExport() {
+    const form = document.getElementById('exportCustomForm');
+    const formData = new FormData(form);
+    
+    // Get selected columns
+    const columns = [];
+    form.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+        columns.push(cb.id.replace('col_', ''));
+    });
+    
+    const exportData = {
+        format: formData.get('format'),
+        dateRange: formData.get('dateRange'),
+        title: formData.get('title'),
+        columns: columns,
+        searchCriteria: getCurrentSearchParams()
+    };
+    
+    fetch('@Url.Action("CustomExport")', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(exportData)
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `assets_export.${exportData.format}`;
+        a.click();
+    });
+    
+    bootstrap.Modal.getInstance(document.getElementById('exportCustomizerModal')).hide();
+}
+
+// Helper functions
+function getCurrentSearchParams() {
+    return window.location.search.substring(1);
+}
+
+function showToast(message, type = 'info') {
+    // Reuse toast function from previous files
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'warning' ? 'warning' : type === 'error' ? 'danger' : 'info'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = toastContainer.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+    
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
+// Saved searches functionality
+function loadSavedSearches() {
+    fetch('@Url.Action("GetSavedSearches")')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('savedSearches');
+            select.innerHTML = '<option value="">Select saved search...</option>';
+            
+            data.forEach(search => {
+                const option = document.createElement('option');
+                option.value = search.id;
+                option.textContent = search.name;
+                select.appendChild(option);
+            });
+        });
+}
+
+function loadSavedSearch() {
+    const searchId = document.getElementById('savedSearches').value;
+    if (searchId) {
+        window.location.href = '@Url.Action("LoadSavedSearch")' + '?id=' + searchId;
+    }
+}
+
+function saveCurrentSearch() {
+    const name = prompt('Enter a name for this search:');
+    if (name) {
+        const searchData = {
+            name: name,
+            criteria: getCurrentSearchParams()
+        };
+        
+        fetch('@Url.Action("SaveSearch")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(searchData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Search saved successfully!', 'success');
+                loadSavedSearches();
+            } else {
+                showToast('Failed to save search.', 'error');
+            }
+        });
+    }
+}
+
+// Asset comparison functionality
+function showAssetComparison() {
+    if (selectedAssets.length < 2) {
+        showToast('Please select at least 2 assets to compare.', 'warning');
+        return;
+    }
+    
+    if (selectedAssets.length > 5) {
+        showToast('Please select no more than 5 assets to compare.', 'warning');
+        return;
+    }
+    
+    const url = '@Url.Action("CompareAssets")' + '?ids=' + selectedAssets.join(',');
+    window.open(url, '_blank');
+}
+
+// Individual asset actions
+function assignAsset(assetId) {
+    // Implementation for quick asset assignment
+    showToast('Asset assignment feature coming soon!', 'info');
+}
+
+function moveAsset(assetId) {
+    // Implementation for quick asset move
+    showToast('Asset move feature coming soon!', 'info');
+}
+
+function generateQR(assetId) {
+    window.open('@Url.Action("GenerateQRCode")' + '?id=' + assetId, '_blank');
+}
+
+function duplicateAsset(assetId) {
+    if (confirm('Create a duplicate of this asset?')) {
+        window.location.href = '@Url.Action("Create")' + '?duplicateFrom=' + assetId;
+    }
+}
+</script>

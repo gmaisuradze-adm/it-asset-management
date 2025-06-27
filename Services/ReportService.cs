@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ClosedXML.Excel;
 using HospitalAssetTracker.Data;
 using HospitalAssetTracker.Models;
+using System.Text; // Added for StringBuilder
 
 namespace HospitalAssetTracker.Services
 {
@@ -69,9 +70,41 @@ namespace HospitalAssetTracker.Services
         {
             return Task.Run(() =>
             {
-                // Simple PDF implementation - for now return empty array
-                // This would be implemented with a proper PDF library
-                return Array.Empty<byte>();
+                var sb = new StringBuilder();
+                sb.AppendLine("Asset Report");
+                sb.AppendLine($"Generated on: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+                sb.AppendLine("======================================================================================================================="); // Adjusted width
+                sb.AppendLine();
+
+                if (!assets.Any())
+                {
+                    sb.AppendLine("No assets to report.");
+                }
+                else
+                {
+                    sb.AppendLine($"Total Assets: {assets.Count()}\n");
+                    sb.AppendLine("-----------------------------------------------------------------------------------------------------------------------"); // Adjusted width
+                    sb.AppendLine("| Asset Tag    | Category        | Brand          | Model                | Status         | Location                     | Assigned To      | Serial No.     |"); // Added Serial
+                    sb.AppendLine("|--------------|-----------------|----------------|----------------------|----------------|------------------------------|------------------|----------------|"); // Adjusted width
+
+                    foreach (var asset in assets)
+                    {
+                        sb.AppendFormat("| {0,-12} | {1,-15} | {2,-14} | {3,-20} | {4,-14} | {5,-28} | {6,-16} | {7,-14} |\n", // Added Serial
+                            asset.AssetTag?.Truncate(12) ?? "N/A",
+                            asset.Category.ToString().Truncate(15),
+                            asset.Brand?.Truncate(14) ?? "N/A",
+                            asset.Model?.Truncate(20) ?? "N/A",
+                            asset.Status.ToString().Truncate(14),
+                            asset.Location?.FullLocation?.Truncate(28) ?? "N/A",
+                            asset.AssignedToUser?.FullName?.Truncate(16) ?? "N/A",
+                            asset.SerialNumber?.Truncate(14) ?? "N/A" // Added Serial
+                        );
+                    }
+                    sb.AppendLine("-----------------------------------------------------------------------------------------------------------------------"); // Adjusted width
+                }
+                
+                string textContent = sb.ToString();
+                return Encoding.UTF8.GetBytes(textContent);
             });
         }
 
@@ -79,8 +112,37 @@ namespace HospitalAssetTracker.Services
         {
             return Task.Run(() =>
             {
-                // Simple PDF implementation - for now return empty array
-                return Array.Empty<byte>();
+                var sb = new StringBuilder();
+                sb.AppendLine("Maintenance Report");
+                sb.AppendLine($"Generated on: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+                sb.AppendLine("================================================================================");
+                sb.AppendLine();
+
+                if (!maintenanceRecords.Any())
+                {
+                    sb.AppendLine("No maintenance records to report.");
+                }
+                else
+                {
+                    sb.AppendLine($"Total Records: {maintenanceRecords.Count()}\n");
+                    sb.AppendLine("--------------------------------------------------------------------------------");
+                    sb.AppendLine("| Asset Tag    | Title                      | Type                | Scheduled    | Completed    | Status         |");
+                    sb.AppendLine("|--------------|----------------------------|---------------------|--------------|--------------|----------------|");
+
+                    foreach (var record in maintenanceRecords)
+                    {
+                        sb.AppendFormat("| {0,-12} | {1,-26} | {2,-19} | {3,-12:yyyy-MM-dd} | {4,-12:yyyy-MM-dd} | {5,-14} |\n",
+                            record.Asset?.AssetTag?.Truncate(12) ?? "N/A",
+                            record.Title?.Truncate(26) ?? "N/A",
+                            record.MaintenanceType.ToString().Truncate(19),
+                            record.ScheduledDate,
+                            record.CompletedDate,
+                            record.Status.ToString().Truncate(14)
+                        );
+                    }
+                    sb.AppendLine("--------------------------------------------------------------------------------");
+                }
+                return Encoding.UTF8.GetBytes(sb.ToString());
             });
         }
 
@@ -88,8 +150,37 @@ namespace HospitalAssetTracker.Services
         {
             return Task.Run(() =>
             {
-                // Simple PDF implementation - for now return empty array
-                return Array.Empty<byte>();
+                var sb = new StringBuilder();
+                sb.AppendLine("Audit Log Report");
+                sb.AppendLine($"Generated on: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+                sb.AppendLine("====================================================================================================================");
+                sb.AppendLine();
+
+                if (!auditLogs.Any())
+                {
+                    sb.AppendLine("No audit logs to report.");
+                }
+                else
+                {
+                    sb.AppendLine($"Total Logs: {auditLogs.Count()}\n");
+                    sb.AppendLine("--------------------------------------------------------------------------------------------------------------------");
+                    sb.AppendLine("| Timestamp           | User ID      | Action         | Entity Type   | Entity ID | Description                                      |"); // Corrected headers
+                    sb.AppendLine("|---------------------|--------------|----------------|---------------|-----------|--------------------------------------------------|");
+
+                    foreach (var log in auditLogs)
+                    {
+                        sb.AppendFormat("| {0,-19:yyyy-MM-dd HH:mm:ss} | {1,-12} | {2,-14} | {3,-13} | {4,-9} | {5,-48} |\n",
+                            log.Timestamp,
+                            log.UserId?.Truncate(12) ?? "N/A",
+                            log.Action.ToString().Truncate(14), // Corrected: Action is non-nullable enum
+                            log.EntityType?.Truncate(13) ?? "N/A",    // Corrected: EntityType
+                            log.EntityId?.ToString().Truncate(9) ?? "N/A", // Corrected: EntityId
+                            log.Description?.Truncate(48) ?? "N/A"   // Corrected: Description
+                        );
+                    }
+                    sb.AppendLine("--------------------------------------------------------------------------------------------------------------------");
+                }
+                return Encoding.UTF8.GetBytes(sb.ToString());
             });
         }
 
@@ -97,7 +188,7 @@ namespace HospitalAssetTracker.Services
         {
             var totalAssets = await _context.Assets.CountAsync();
             var inUseAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.InUse);
-            var underRepairAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.UnderRepair);
+            var underMaintenanceAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.UnderMaintenance);
             var expiredWarrantyAssets = await _context.Assets.CountAsync(a => a.WarrantyExpiry.HasValue && a.WarrantyExpiry.Value < DateTime.UtcNow);
             
             var recentMovements = await _context.AssetMovements
@@ -118,7 +209,7 @@ namespace HospitalAssetTracker.Services
             {
                 { "TotalAssets", totalAssets },
                 { "InUseAssets", inUseAssets },
-                { "UnderRepairAssets", underRepairAssets },
+                { "InMaintenanceAssets", underMaintenanceAssets },
                 { "ExpiredWarrantyAssets", expiredWarrantyAssets },
                 { "RecentMovements", recentMovements },
                 { "UpcomingMaintenance", upcomingMaintenance }
@@ -141,14 +232,38 @@ namespace HospitalAssetTracker.Services
 
         public async Task<Dictionary<string, int>> GetAssetsByLocationAsync()
         {
-            var assets = await _context.Assets
-                .Include(a => a.Location)
-                .Where(a => a.Location != null)
-                .ToListAsync();
+            var assetsWithLocations = await _context.Assets
+                .Include(a => a.Location) // Ensure Location is loaded
+                .Where(a => a.LocationId != null && a.Location != null) // Filter for assets that have a location
+                .ToListAsync(); // Bring data into memory
 
-            return assets
-                .GroupBy(a => a.Location!.FullLocation)
+            // Perform grouping in memory
+            var groupedByLocation = assetsWithLocations
+                .GroupBy(a => a.Location!.FullLocation) // Now this uses the C# property on in-memory objects
                 .ToDictionary(g => g.Key, g => g.Count());
+
+            return groupedByLocation;
+        }
+
+        public async Task<IEnumerable<Asset>> GetExpiredWarrantyAssetsReportAsync()
+        {
+            var today = DateTime.UtcNow.Date;
+            return await _context.Assets
+                .Include(a => a.Location) // Include necessary related data for the report
+                .Include(a => a.AssignedToUser)
+                .Where(a => a.WarrantyExpiry.HasValue && a.WarrantyExpiry.Value.Date <= today)
+                .OrderBy(a => a.AssetTag)
+                .ToListAsync();
+        }
+    }
+
+    // Helper extension method for truncating strings (moved to be a top-level static class)
+    public static class StringExtensions
+    {
+        public static string Truncate(this string value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value)) return value;
+            return value.Length <= maxLength ? value : value.Substring(0, maxLength);
         }
     }
 }

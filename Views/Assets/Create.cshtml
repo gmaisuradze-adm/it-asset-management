@@ -1093,8 +1093,8 @@ function contactSupport() {
     showHelpModal('Contact Support', supportInfo);
 }
 
-// Automatic Asset Tag Generation
-function generateAssetTag() {
+// Automatic Asset Tag Generation with uniqueness check
+async function generateAssetTag() {
     const categorySelect = document.querySelector('select[name="Category"]') || document.getElementById('Category');
     const assetTagInput = document.querySelector('input[name="AssetTag"]') || document.getElementById('AssetTag');
     
@@ -1129,32 +1129,75 @@ function generateAssetTag() {
     
     const prefix = categoryPrefixes[categorySelect.value] || 'ASSET';
     
-    // Generate unique 7-digit number
-    const sevenDigitNum = Math.floor(1000000 + Math.random() * 9000000).toString(); // Random 7-digit number (1000000-9999999)
+    // Show loading state
+    const generateBtn = document.querySelector('button[onclick="generateAssetTag()"]');
+    if (generateBtn) {
+        generateBtn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+        generateBtn.disabled = true;
+    }
     
-    const generatedTag = `${prefix}-${sevenDigitNum}`;
-    
-    // Set the generated tag
-    assetTagInput.value = generatedTag;
-    
-    // Add visual feedback
-    assetTagInput.style.backgroundColor = '#d4edda';
-    assetTagInput.style.borderColor = '#28a745';
-    
-    // Remove visual feedback after 2 seconds
-    setTimeout(() => {
-        assetTagInput.style.backgroundColor = '';
-        assetTagInput.style.borderColor = '';
-    }, 2000);
-    
-    showToast(`Asset Tag generated: ${generatedTag}`, 'success');
-    
-    // Trigger validation
-    validateAssetTag();
+    try {
+        // Check for existing asset tags to ensure uniqueness
+        const response = await fetch('/Assets/GetNextAssetTag', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ prefix: prefix })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                const generatedTag = data.assetTag;
+                
+                // Set the generated tag
+                assetTagInput.value = generatedTag;
+                
+                // Add visual feedback
+                assetTagInput.style.backgroundColor = '#d4edda';
+                assetTagInput.style.borderColor = '#28a745';
+                
+                // Remove visual feedback after 2 seconds
+                setTimeout(() => {
+                    assetTagInput.style.backgroundColor = '';
+                    assetTagInput.style.borderColor = '';
+                }, 2000);
+                
+                showToast(`Asset Tag generated: ${generatedTag}`, 'success');
+                
+                // Trigger validation
+                validateAssetTag();
+            } else {
+                throw new Error(data.message || 'Failed to generate asset tag');
+            }
+        } else {
+            throw new Error('Server error');
+        }
+    } catch (error) {
+        console.error('Error generating asset tag:', error);
+        
+        // Fallback to client-side generation
+        const sevenDigitNum = Math.floor(1000000 + Math.random() * 9000000).toString();
+        const generatedTag = `${prefix}-${sevenDigitNum}`;
+        
+        assetTagInput.value = generatedTag;
+        showToast(`Asset Tag generated (fallback): ${generatedTag}`, 'warning');
+        
+        // Trigger validation which will check uniqueness
+        validateAssetTag();
+    } finally {
+        // Reset button state
+        if (generateBtn) {
+            generateBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
+            generateBtn.disabled = false;
+        }
+    }
 }
 
-// Validate Asset Tag format
-function validateAssetTag() {
+// Validate Asset Tag format and uniqueness
+async function validateAssetTag() {
     const assetTagInput = document.querySelector('[name="AssetTag"]');
     const assetTag = assetTagInput.value.trim();
     
@@ -1165,18 +1208,7 @@ function validateAssetTag() {
     // Check format: 2-4 uppercase letters, dash, 7 digits
     const tagPattern = /^[A-Z]{2,6}-\d{7}$/;
     
-    if (tagPattern.test(assetTag)) {
-        assetTagInput.classList.remove('is-invalid');
-        assetTagInput.classList.add('is-valid');
-        
-        // Remove any existing error message
-        const errorSpan = assetTagInput.parentElement.parentElement.querySelector('.invalid-feedback');
-        if (errorSpan) {
-            errorSpan.remove();
-        }
-        
-        return true;
-    } else {
+    if (!tagPattern.test(assetTag)) {
         assetTagInput.classList.remove('is-valid');
         assetTagInput.classList.add('is-invalid');
         
@@ -1191,6 +1223,63 @@ function validateAssetTag() {
         
         return false;
     }
+    
+    // Check uniqueness via AJAX
+    try {
+        const response = await fetch('/Assets/CheckAssetTagUniqueness', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ assetTag: assetTag })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.isUnique) {
+                assetTagInput.classList.remove('is-invalid');
+                assetTagInput.classList.add('is-valid');
+                
+                // Remove any existing error message
+                const errorSpan = assetTagInput.parentElement.parentElement.querySelector('.invalid-feedback');
+                if (errorSpan) {
+                    errorSpan.remove();
+                }
+                
+                // Add success feedback
+                let successSpan = assetTagInput.parentElement.parentElement.querySelector('.valid-feedback');
+                if (!successSpan) {
+                    successSpan = document.createElement('div');
+                    successSpan.className = 'valid-feedback';
+                    assetTagInput.parentElement.insertAdjacentElement('afterend', successSpan);
+                }
+                successSpan.textContent = 'Asset Tag is available';
+                
+                return true;
+            } else {
+                assetTagInput.classList.remove('is-valid');
+                assetTagInput.classList.add('is-invalid');
+                
+                // Add error message
+                let errorSpan = assetTagInput.parentElement.parentElement.querySelector('.invalid-feedback');
+                if (!errorSpan) {
+                    errorSpan = document.createElement('div');
+                    errorSpan.className = 'invalid-feedback';
+                    assetTagInput.parentElement.insertAdjacentElement('afterend', errorSpan);
+                }
+                errorSpan.textContent = 'Asset Tag already exists. Please choose a different one.';
+                
+                return false;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking asset tag uniqueness:', error);
+        // Don't show error to user, just proceed with format validation
+    }
+    
+    return true;
 }
 
 // Toast notification function

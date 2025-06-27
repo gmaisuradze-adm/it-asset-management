@@ -1,0 +1,504 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Advanced Analytics Dashboard";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0 text-primary">
+                    <i class="fas fa-chart-line me-2"></i>Advanced Analytics Dashboard
+                </h1>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-primary" onclick="refreshAnalytics()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="exportAnalytics()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Cards Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0 bg-primary bg-gradient rounded-3 p-3">
+                            <i class="fas fa-chart-bar text-white fa-lg"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-0 text-muted">Demand Forecast</h6>
+                            <h4 class="mb-0" id="forecastMetric">Loading...</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0 bg-success bg-gradient rounded-3 p-3">
+                            <i class="fas fa-users text-white fa-lg"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-0 text-muted">Resource Optimization</h6>
+                            <h4 class="mb-0" id="resourceMetric">Loading...</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0 bg-warning bg-gradient rounded-3 p-3">
+                            <i class="fas fa-medal text-white fa-lg"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-0 text-muted">Quality Score</h6>
+                            <h4 class="mb-0" id="qualityMetric">Loading...</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0 bg-info bg-gradient rounded-3 p-3">
+                            <i class="fas fa-clock text-white fa-lg"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="card-title mb-0 text-muted">SLA Compliance</h6>
+                            <h4 class="mb-0" id="slaMetric">Loading...</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-area me-2 text-primary"></i>Demand Forecast Trends
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="forecastChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-pie-chart me-2 text-success"></i>Resource Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="resourceChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analytics Tabs -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#forecast-tab">
+                                <i class="fas fa-chart-line me-1"></i>Forecast Details
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#resource-tab">
+                                <i class="fas fa-users me-1"></i>Resource Analysis
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#quality-tab">
+                                <i class="fas fa-star me-1"></i>Quality Insights
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#sla-tab">
+                                <i class="fas fa-clock me-1"></i>SLA Performance
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="forecast-tab">
+                            <div id="forecastDetails">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading forecast data...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading forecast data...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-pane fade" id="resource-tab">
+                            <div id="resourceDetails">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-success" role="status">
+                                        <span class="visually-hidden">Loading resource data...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading resource data...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-pane fade" id="quality-tab">
+                            <div id="qualityDetails">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-warning" role="status">
+                                        <span class="visually-hidden">Loading quality data...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading quality data...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-pane fade" id="sla-tab">
+                            <div id="slaDetails">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-info" role="status">
+                                        <span class="visually-hidden">Loading SLA data...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading SLA data...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let forecastChart, resourceChart;
+        let analyticsData = @Html.Raw(Json.Serialize(Model));
+
+        $(document).ready(function() {
+            initializeAnalytics();
+            loadAnalyticsData();
+        });
+
+        function initializeAnalytics() {
+            // Initialize charts
+            initializeForecastChart();
+            initializeResourceChart();
+            
+            // Load initial data
+            updateMetrics();
+            updateCharts();
+            loadTabContent();
+        }
+
+        function initializeForecastChart() {
+            const ctx = document.getElementById('forecastChart').getContext('2d');
+            forecastChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Predicted Demand',
+                        data: [],
+                        borderColor: 'rgb(13, 110, 253)',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Request Demand Forecast'
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeResourceChart() {
+            const ctx = document.getElementById('resourceChart').getContext('2d');
+            resourceChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            'rgb(25, 135, 84)',
+                            'rgb(255, 193, 7)',
+                            'rgb(220, 53, 69)',
+                            'rgb(13, 202, 240)',
+                            'rgb(111, 66, 193)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Resource Allocation'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateMetrics() {
+            if (analyticsData.DemandForecast) {
+                $('#forecastMetric').text(analyticsData.DemandForecast.TotalPredictedRequests || 'N/A');
+            }
+            if (analyticsData.ResourceOptimization) {
+                $('#resourceMetric').text(analyticsData.ResourceOptimization.OptimizationScore + '%' || 'N/A');
+            }
+            if (analyticsData.QualityAssurance) {
+                $('#qualityMetric').text(analyticsData.QualityAssurance.AverageQualityScore?.toFixed(1) || 'N/A');
+            }
+            if (analyticsData.SlaCompliance) {
+                $('#slaMetric').text(analyticsData.SlaCompliance.OverallComplianceRate?.toFixed(1) + '%' || 'N/A');
+            }
+        }
+
+        function updateCharts() {
+            // Update forecast chart
+            if (analyticsData.DemandForecast && analyticsData.DemandForecast.CategoryForecasts) {
+                const forecasts = analyticsData.DemandForecast.CategoryForecasts;
+                forecastChart.data.labels = forecasts.map(f => f.RequestType);
+                forecastChart.data.datasets[0].data = forecasts.map(f => f.ForecastedRequests);
+                forecastChart.update();
+            }
+
+            // Update resource chart
+            if (analyticsData.ResourceOptimization && analyticsData.ResourceOptimization.ResourceRequirements) {
+                const resources = analyticsData.ResourceOptimization.ResourceRequirements;
+                resourceChart.data.labels = resources.map(r => r.ResourceType);
+                resourceChart.data.datasets[0].data = resources.map(r => r.RequiredQuantity);
+                resourceChart.update();
+            }
+        }
+
+        function loadTabContent() {
+            // Load forecast details
+            if (analyticsData.DemandForecast) {
+                $('#forecastDetails').html(renderForecastDetails(analyticsData.DemandForecast));
+            }
+            
+            // Load resource details
+            if (analyticsData.ResourceOptimization) {
+                $('#resourceDetails').html(renderResourceDetails(analyticsData.ResourceOptimization));
+            }
+            
+            // Load quality details
+            if (analyticsData.QualityAssurance) {
+                $('#qualityDetails').html(renderQualityDetails(analyticsData.QualityAssurance));
+            }
+            
+            // Load SLA details
+            if (analyticsData.SlaCompliance) {
+                $('#slaDetails').html(renderSlaDetails(analyticsData.SlaCompliance));
+            }
+        }
+
+        function renderForecastDetails(forecast) {
+            let html = '<div class="row g-3">';
+            
+            if (forecast.CategoryForecasts) {
+                forecast.CategoryForecasts.forEach(category => {
+                    html += `
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">${category.RequestType}</h6>
+                                    <p class="card-text">
+                                        <strong>Forecasted:</strong> ${category.ForecastedRequests}<br>
+                                        <strong>Confidence:</strong> ${(category.ConfidenceLevel * 100).toFixed(1)}%<br>
+                                        <strong>Growth:</strong> ${(category.GrowthRate * 100).toFixed(1)}%
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        function renderResourceDetails(resource) {
+            let html = '<div class="row g-3">';
+            
+            if (resource.ResourceRequirements) {
+                resource.ResourceRequirements.forEach(req => {
+                    html += `
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">${req.ResourceType}</h6>
+                                    <p class="card-text">
+                                        <strong>Required:</strong> ${req.RequiredQuantity} hours<br>
+                                        <strong>Available:</strong> ${req.CurrentAvailable} hours<br>
+                                        <strong>Gap:</strong> ${req.Gap} hours<br>
+                                        <strong>Priority:</strong> <span class="badge bg-${req.Priority === 'High' ? 'danger' : req.Priority === 'Medium' ? 'warning' : 'info'}">${req.Priority}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        function renderQualityDetails(quality) {
+            let html = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">Overall Metrics</h6>
+                                <p class="card-text">
+                                    <strong>Average Quality Score:</strong> ${quality.AverageQualityScore?.toFixed(1) || 'N/A'}<br>
+                                    <strong>Total Requests Analyzed:</strong> ${quality.TotalRequestsAnalyzed || 0}<br>
+                                    <strong>Analysis Date:</strong> ${new Date(quality.AnalysisDate).toLocaleDateString()}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (quality.ImprovementRecommendations && quality.ImprovementRecommendations.length > 0) {
+                html += `
+                    <div class="row g-3 mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Improvement Recommendations</h6>
+                                    <ul class="list-group list-group-flush">
+                `;
+                
+                quality.ImprovementRecommendations.forEach(rec => {
+                    html += `<li class="list-group-item">${rec}</li>`;
+                });
+                
+                html += `
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+
+        function renderSlaDetails(sla) {
+            let html = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">SLA Performance</h6>
+                                <p class="card-text">
+                                    <strong>Overall Compliance Rate:</strong> ${sla.OverallComplianceRate?.toFixed(1)}%<br>
+                                    <strong>Requests Analyzed:</strong> ${sla.RequestsAnalyzed || 0}<br>
+                                    <strong>Analysis Period:</strong> ${sla.AnalysisDays || 0} days
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (sla.ImprovementRecommendations && sla.ImprovementRecommendations.length > 0) {
+                html += `
+                    <div class="row g-3 mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">SLA Improvement Recommendations</h6>
+                                    <ul class="list-group list-group-flush">
+                `;
+                
+                sla.ImprovementRecommendations.forEach(rec => {
+                    html += `<li class="list-group-item">${rec}</li>`;
+                });
+                
+                html += `
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+
+        function refreshAnalytics() {
+            window.location.reload();
+        }
+
+        function exportAnalytics() {
+            // Create a comprehensive report
+            const reportData = {
+                timestamp: new Date().toISOString(),
+                analytics: analyticsData
+            };
+            
+            const dataStr = JSON.stringify(reportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `request-analytics-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            toastr.success('Analytics data exported successfully');
+        }
+
+        function loadAnalyticsData() {
+            // Additional data loading if needed
+        }
+    </script>
+}

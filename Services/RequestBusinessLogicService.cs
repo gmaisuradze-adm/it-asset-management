@@ -209,39 +209,93 @@ namespace HospitalAssetTracker.Services
         {
             _logger.LogInformation("Generating request demand forecast for {Days} days", forecastDays);
 
-            var historicalData = await _context.ITRequests
-                .Where(r => r.CreatedDate >= DateTime.UtcNow.AddDays(-365))
-                .GroupBy(r => new { r.RequestType, r.Department, Month = r.CreatedDate.Month })
-                .Select(g => new RequestDemandHistoricalData
+            var oneYearAgo = DateTime.UtcNow.AddDays(-365);
+
+            // Step 1: Fetch raw data needed for calculations from the database
+            var rawRequestData = await _context.ITRequests
+                .Where(r => r.CreatedDate >= oneYearAgo)
+                .Select(r => new // Select only the necessary fields
                 {
-                    RequestType = g.Key.RequestType,
-                    Department = g.Key.Department,
-                    Month = g.Key.Month,
-                    RequestCount = g.Count(),
-                    AverageResolutionTime = (g.Sum(r => (r.CompletedDate ?? DateTime.UtcNow).Subtract(r.CreatedDate).TotalDays) / g.Count())
+                    r.RequestType,
+                    r.Department,
+                    r.CreatedDate,
+                    r.CompletedDate
                 })
-                .ToListAsync();
+                .ToListAsync(); // Execute query and bring data into memory
+
+            // Step 2: Perform grouping and complex calculations in memory
+            var groupedHistoricalData = rawRequestData
+                .GroupBy(r => new 
+                { 
+                    r.RequestType, 
+                    Department = r.Department ?? "N/A", // Handle potential null department for grouping key
+                    Year = r.CreatedDate.Year, 
+                    Month = r.CreatedDate.Month 
+                })
+                .Select(g =>
+                {
+                    double totalResolutionDays = 0;
+                    int requestsInGroup = g.Count();
+                    int completedInGroup = 0;
+
+                    foreach (var req in g)
+                    {
+                        // For AverageResolutionTime, consider only completed requests or use a consistent end-date for ongoing ones.
+                        // Using UtcNow for ongoing requests as per original apparent intent.
+                        DateTime endDate = req.CompletedDate ?? DateTime.UtcNow; 
+                        totalResolutionDays += (endDate - req.CreatedDate).TotalDays;
+                        if (req.CompletedDate.HasValue)
+                        {
+                            completedInGroup++;
+                        }
+                    }
+
+                    return new RequestDemandHistoricalData
+                    {
+                        RequestType = g.Key.RequestType,
+                        Department = g.Key.Department,
+                        Year = g.Key.Year,
+                        Month = g.Key.Month,
+                        RequestCount = requestsInGroup,
+                        // Calculate average resolution time based on all requests in the group
+                        AverageResolutionTime = requestsInGroup > 0 ? totalResolutionDays / requestsInGroup : 0 
+                                              // Alternative: only for completed requests:
+                                              // AverageResolutionTime = completedInGroup > 0 ? totalResolutionDaysForCompleted / completedInGroup : 0 
+                                              // (ensure totalResolutionDaysForCompleted is calculated appropriately if using this)
+                    };
+                })
+                .ToList();
 
             var forecast = new RequestDemandForecast
             {
                 ForecastDate = DateTime.UtcNow,
                 ForecastPeriodDays = forecastDays,
-                HistoricalDataPoints = historicalData.Count
+                HistoricalDataPoints = groupedHistoricalData.Count, // Count of groups
+                ForecastedDemands = new List<DemandForecastItem>(), // Initialize
+                OverallTrend = "Stable", // Placeholder, to be calculated
+                ConfidenceLevel = 0.75, // Placeholder
+                SeasonalFactors = new Dictionary<string, double>(), // Placeholder
+                GrowthRate = 0.0 // Placeholder
             };
 
-            // Generate forecasts by category
+            // Generate forecasts by category (RequestType)
             var requestTypes = Enum.GetValues<RequestType>();
             foreach (var requestType in requestTypes)
             {
-                var categoryForecast = GenerateCategoryForecast(requestType, historicalData, forecastDays);
+                // Pass the already aggregated and client-side 'groupedHistoricalData'
+                // GenerateCategoryForecast will then filter this in-memory list by requestType
+                var categoryForecast = GenerateCategoryForecast(requestType, groupedHistoricalData, forecastDays);
                 forecast.CategoryForecasts.Add(categoryForecast);
             }
 
-            // Calculate resource requirements
+            // Calculate resource requirements based on the category forecasts
             forecast.ResourceRequirements = CalculateResourceRequirements(forecast.CategoryForecasts);
             
-            // Generate strategic insights
+            // Generate strategic insights based on the overall forecast
             forecast.StrategicInsights = GenerateForecastInsights(forecast);
+
+            // TODO: Implement actual forecasting logic for ForecastedDemands, OverallTrend, ConfidenceLevel, SeasonalFactors, GrowthRate
+            // For now, they remain placeholders.
 
             return forecast;
         }
@@ -504,31 +558,26 @@ namespace HospitalAssetTracker.Services
             // Check inventory availability
             if (!string.IsNullOrEmpty(request.RequestedItemCategory))
             {
-                var inventoryAvailable = await _inventoryService.CheckAvailabilityAsync(request.RequestedItemCategory, 1);
-                options.Add(new FulfillmentOption
+                if (Enum.TryParse<InventoryCategory>(request.RequestedItemCategory, true, out var categoryEnum))
                 {
-                    OptionType = "Inventory",
-                    Available = inventoryAvailable,
-                    EstimatedTimeframe = inventoryAvailable ? "Immediate" : "N/A",
-                    Cost = 0m,
-                    Feasibility = inventoryAvailable ? 100 : 0
-                });
+                    var inventoryItem = await _context.InventoryItems
+                        .FirstOrDefaultAsync(i => i.Category == categoryEnum && i.Quantity >= 1);
+
+                    var inventoryAvailable = inventoryItem != null;
+
+                    options.Add(new FulfillmentOption
+                    {
+                        OptionType = "Inventory",
+                        Available = inventoryAvailable,
+                        EstimatedTimeframe = inventoryAvailable ? "Immediate" : "N/A",
+                        Cost = inventoryAvailable && inventoryItem != null ? inventoryItem.UnitPrice ?? 0m : 0m,
+                        Feasibility = inventoryAvailable ? 100 : 0,
+                        Details = inventoryAvailable && inventoryItem != null ? $"Item '{inventoryItem.Name}' (ID: {inventoryItem.Id}) is available in stock." : "No items in this category are currently in stock."
+                    });
+                }
             }
 
-            // Check asset maintenance option
-            if (request.AssetId.HasValue)
-            {
-                options.Add(new FulfillmentOption
-                {
-                    OptionType = "Asset Maintenance",
-                    Available = true,
-                    EstimatedTimeframe = "2-5 days",
-                    Cost = 500m,
-                    Feasibility = 80
-                });
-            }
-
-            // Procurement option
+            // Check procurement possibility
             options.Add(new FulfillmentOption
             {
                 OptionType = "Procurement",
@@ -554,10 +603,10 @@ namespace HospitalAssetTracker.Services
             return RequestRoute.ProcurementRequired;
         }
 
-        private async Task<int> CalculateEffortEstimateAsync(ITRequest request)
+        private Task<int> CalculateEffortEstimateAsync(ITRequest request)
         {
             // Simplified effort calculation - would be more sophisticated in real implementation
-            return request.Priority switch
+            var effort = request.Priority switch
             {
                 RequestPriority.Critical => 4,
                 RequestPriority.High => 8,
@@ -565,6 +614,7 @@ namespace HospitalAssetTracker.Services
                 RequestPriority.Low => 24,
                 _ => 16
             };
+            return Task.FromResult(effort);
         }
 
         private int CalculateComplexityScore(ITRequest request)
@@ -611,7 +661,7 @@ namespace HospitalAssetTracker.Services
             return risks;
         }
 
-        private async Task<List<string>> IdentifyDependenciesAsync(ITRequest request)
+        private Task<List<string>> IdentifyDependenciesAsync(ITRequest request)
         {
             var dependencies = new List<string>();
 
@@ -621,7 +671,7 @@ namespace HospitalAssetTracker.Services
             if (!string.IsNullOrEmpty(request.RequestedItemCategory))
                 dependencies.Add("Dependent on inventory availability");
 
-            return dependencies;
+            return Task.FromResult(dependencies);
         }
 
         #endregion
@@ -806,13 +856,13 @@ namespace HospitalAssetTracker.Services
 
         #region Forecasting Helper Methods
 
-        private CategoryDemandForecast GenerateCategoryForecast(RequestType requestType, List<RequestDemandHistoricalData> historicalData, int forecastDays)
+        private RequestCategoryForecast GenerateCategoryForecast(RequestType requestType, List<RequestDemandHistoricalData> historicalData, int forecastDays) // Changed return type
         {
             var categoryData = historicalData.Where(h => h.RequestType == requestType).ToList();
             
             if (!categoryData.Any())
             {
-                return new CategoryDemandForecast
+                return new RequestCategoryForecast // Changed type being instantiated
                 {
                     RequestType = requestType,
                     ForecastedRequests = 0,
@@ -824,7 +874,7 @@ namespace HospitalAssetTracker.Services
             var averageMonthlyVolume = categoryData.Average(c => c.RequestCount);
             var predictedVolume = (int)(averageMonthlyVolume * (forecastDays / 30.0));
 
-            return new CategoryDemandForecast
+            return new RequestCategoryForecast // Changed type being instantiated
             {
                 RequestType = requestType,
                 Category = requestType.ToString(),
@@ -880,7 +930,7 @@ namespace HospitalAssetTracker.Services
             return (secondHalf - firstHalf) / firstHalf;
         }
 
-        private List<ResourceRequirement> CalculateResourceRequirements(List<CategoryDemandForecast> forecasts)
+        private List<ResourceRequirement> CalculateResourceRequirements(List<RequestCategoryForecast> forecasts) // Changed parameter type
         {
             var requirements = new List<ResourceRequirement>();
 
@@ -916,19 +966,35 @@ namespace HospitalAssetTracker.Services
         {
             var insights = new List<string>();
 
-            var totalPredicted = forecast.CategoryForecasts.Sum(c => c.PredictedVolume);
-            insights.Add($"Total predicted requests: {totalPredicted} over {forecast.ForecastPeriodDays} days");
+            if (forecast == null) return insights;
 
-            var highestCategory = forecast.CategoryForecasts.OrderByDescending(c => c.PredictedVolume).FirstOrDefault();
-            if (highestCategory != null)
+            var totalPredicted = forecast.CategoryForecasts.Sum(c => c.PredictedVolume);
+            insights.Add($"Total predicted requests: {totalPredicted} over next {forecast.ForecastPeriodDays} days.");
+
+            var highestDemandCategory = forecast.CategoryForecasts.OrderByDescending(c => c.PredictedVolume).FirstOrDefault();
+            if (highestDemandCategory != null)
             {
-                insights.Add($"Highest demand category: {highestCategory.RequestType} ({highestCategory.PredictedVolume} requests)");
+                insights.Add($"Highest demand expected for: {highestDemandCategory.RequestType} ({highestDemandCategory.PredictedVolume} requests).");
             }
 
-            var increasingTrends = forecast.CategoryForecasts.Where(c => c.TrendDirection == "Increasing").ToList();
-            if (increasingTrends.Any())
+            if (forecast.GrowthRate > 0.1)
             {
-                insights.Add($"Increasing demand trends in: {string.Join(", ", increasingTrends.Select(t => t.RequestType))}");
+                insights.Add($"Overall demand shows a significant growth trend of {(forecast.GrowthRate * 100):F1}%.");
+            }
+            else if (forecast.GrowthRate < -0.1)
+            {
+                insights.Add($"Overall demand shows a significant declining trend of {(forecast.GrowthRate * 100):F1}%.");
+            }
+
+            if (forecast.ConfidenceLevel < 0.6)
+            {
+                insights.Add("Forecast confidence is relatively low; consider gathering more historical data or refining models.");
+            }
+
+            // Add more sophisticated insights based on SeasonalFactors, DepartmentTrends, etc. later
+            if (!insights.Any())
+            {
+                insights.Add("No specific strategic insights generated at this time. Monitor trends.");
             }
 
             return insights;
@@ -941,11 +1007,60 @@ namespace HospitalAssetTracker.Services
         private async Task<WorkloadAnalysis> AnalyzeCurrentWorkloadAsync()
         {
             var activeRequests = await _context.ITRequests
-                .Where(r => r.Status != RequestStatus.Completed && r.Status != RequestStatus.Cancelled)
-                .Include(r => r.AssignedToUser)
+                .Where(r => r.Status == RequestStatus.Submitted || r.Status == RequestStatus.InProgress) // Changed Open to Submitted
+                .Include(r => r.AssignedToUser) // Corrected to AssignedToUser
                 .ToListAsync();
 
-            var result = new WorkloadAnalysis
+            var users = await _context.Users
+                .Where(u => u.IsActive)
+                .ToListAsync();
+
+            var currentWorkload = activeRequests
+                .Where(r => r.AssignedToUserId != null) // Corrected to AssignedToUserId
+                .GroupBy(r => r.AssignedToUser!.FullName) // Corrected to AssignedToUser.FullName
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var avgWorkload = currentWorkload.Values.Any() ? currentWorkload.Values.Average() : 0;
+            var rebalanceActions = new List<string>();
+            var requestsRebalanced = 0;
+
+            // Find overloaded users
+            var overloadedUsers = currentWorkload.Where(kvp => kvp.Value > avgWorkload * 1.2).ToList();
+            var underloadedUsers = currentWorkload.Where(kvp => kvp.Value < avgWorkload * 0.8).ToList();
+
+            foreach (var overloaded in overloadedUsers)
+            {
+                var excessRequests = (int)(overloaded.Value - avgWorkload);
+                var requestsToReassign = activeRequests
+                    .Where(r => r.AssignedToUser != null && 
+                               (r.AssignedToUser.FullName) == overloaded.Key) // Corrected to AssignedToUser.FullName
+                    .OrderBy(r => r.Priority)
+                    .Take(excessRequests)
+                    .ToList();
+
+                foreach (var request in requestsToReassign)
+                {
+                    // Find least loaded user
+                    var targetUser = users
+                        .Where(u => currentWorkload.ContainsKey(u.FullName))
+                        .OrderBy(u => currentWorkload[u.FullName])
+                        .FirstOrDefault();
+
+                    if (targetUser != null)
+                    {
+                        request.AssignedToUserId = targetUser.Id; // Corrected to AssignedToUserId
+                        requestsRebalanced++;
+                        rebalanceActions.Add($"Reassigned request #{request.Id} from {overloaded.Key} to {targetUser.FullName}"); // Used FullName
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            // Recalculate workload distribution
+            var newWorkload = await GetCurrentWorkloadDistribution();
+
+            return new WorkloadAnalysis
             {
                 TotalActiveRequests = activeRequests.Count,
                 WorkloadBalance = CalculateWorkloadBalance(activeRequests),
@@ -953,8 +1068,6 @@ namespace HospitalAssetTracker.Services
                 AverageWorkloadPerTechnician = activeRequests.Count / Math.Max(1, activeRequests.Where(r => r.AssignedToUser != null).Select(r => r.AssignedToUserId).Distinct().Count()),
                 TotalTechnicians = activeRequests.Where(r => r.AssignedToUser != null).Select(r => r.AssignedToUserId).Distinct().Count()
             };
-
-            return result;
         }
 
         private double CalculateWorkloadBalance(List<ITRequest> requests)
@@ -1199,7 +1312,7 @@ namespace HospitalAssetTracker.Services
             return Math.Max(0, qualityScore);
         }
 
-        private bool HasCriticalKeywords(string description)
+        private bool HasCriticalKeywords(string? description) // Changed to string? description
         {
             if (string.IsNullOrEmpty(description)) return false;
             
@@ -1237,7 +1350,7 @@ namespace HospitalAssetTracker.Services
 
         #region Integration Helper Methods
 
-        private async Task<IntegrationResult> IntegrateWithAssetModuleAsync(ITRequest request)
+        private Task<IntegrationResult> IntegrateWithAssetModuleAsync(ITRequest request)
         {
             try
             {
@@ -1248,26 +1361,26 @@ namespace HospitalAssetTracker.Services
 
                 if (!involvesAssets)
                 {
-                    return new IntegrationResult { Success = true, Message = "No asset integration required" };
+                    return Task.FromResult(new IntegrationResult { Success = true, Message = "No asset integration required" });
                 }
 
                 // Create asset assignment or work order if needed
                 // This would integrate with the actual asset service
-                return new IntegrationResult 
+                return Task.FromResult(new IntegrationResult 
                 { 
                     Success = true, 
                     Message = "Asset integration completed",
                     IntegratedModules = new[] { "Asset Management" }
-                };
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error integrating with Asset Module for request {RequestId}", request.Id);
-                return new IntegrationResult { Success = false, Message = ex.Message };
+                return Task.FromResult(new IntegrationResult { Success = false, Message = ex.Message });
             }
         }
 
-        private async Task<IntegrationResult> IntegrateWithInventoryModuleAsync(ITRequest request)
+        private Task<IntegrationResult> IntegrateWithInventoryModuleAsync(ITRequest request)
         {
             try
             {
@@ -1275,24 +1388,24 @@ namespace HospitalAssetTracker.Services
                 if (request.RequestType == RequestType.HardwareReplacement)
                 {
                     // This would check actual inventory levels
-                    return new IntegrationResult 
+                    return Task.FromResult(new IntegrationResult 
                     { 
                         Success = true, 
                         Message = "Inventory integration completed",
                         IntegratedModules = new[] { "Inventory Management" }
-                    };
+                    });
                 }
 
-                return new IntegrationResult { Success = true, Message = "No inventory integration required" };
+                return Task.FromResult(new IntegrationResult { Success = true, Message = "No inventory integration required" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error integrating with Inventory Module for request {RequestId}", request.Id);
-                return new IntegrationResult { Success = false, Message = ex.Message };
+                return Task.FromResult(new IntegrationResult { Success = false, Message = ex.Message });
             }
         }
 
-        private async Task<IntegrationResult> IntegrateWithProcurementModuleAsync(ITRequest request)
+        private Task<IntegrationResult> IntegrateWithProcurementModuleAsync(ITRequest request)
         {
             try
             {
@@ -1303,21 +1416,21 @@ namespace HospitalAssetTracker.Services
 
                 if (!needsProcurement)
                 {
-                    return new IntegrationResult { Success = true, Message = "No procurement integration required" };
+                    return Task.FromResult(new IntegrationResult { Success = true, Message = "No procurement integration required" });
                 }
 
                 // This would create a procurement request
-                return new IntegrationResult 
+                return Task.FromResult(new IntegrationResult 
                 { 
                     Success = true, 
                     Message = "Procurement integration completed",
                     IntegratedModules = new[] { "Procurement Management" }
-                };
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error integrating with Procurement Module for request {RequestId}", request.Id);
-                return new IntegrationResult { Success = false, Message = ex.Message };
+                return Task.FromResult(new IntegrationResult { Success = false, Message = ex.Message });
             }
         }
 
@@ -1335,8 +1448,8 @@ namespace HospitalAssetTracker.Services
             try
             {
                 var activeRequests = await _context.ITRequests
-                    .Where(r => r.Status == RequestStatus.Open || r.Status == RequestStatus.InProgress)
-                    .Include(r => r.AssignedTo)
+                    .Where(r => r.Status == RequestStatus.Submitted || r.Status == RequestStatus.InProgress)
+                    .Include(r => r.AssignedToUser)
                     .ToListAsync();
 
                 var users = await _context.Users
@@ -1344,8 +1457,8 @@ namespace HospitalAssetTracker.Services
                     .ToListAsync();
 
                 var currentWorkload = activeRequests
-                    .Where(r => r.AssignedToId != null)
-                    .GroupBy(r => r.AssignedTo!.FirstName + " " + r.AssignedTo.LastName)
+                    .Where(r => r.AssignedToUserId != null)
+                    .GroupBy(r => r.AssignedToUser!.FullName)
                     .ToDictionary(g => g.Key, g => g.Count());
 
                 var avgWorkload = currentWorkload.Values.Any() ? currentWorkload.Values.Average() : 0;
@@ -1360,8 +1473,8 @@ namespace HospitalAssetTracker.Services
                 {
                     var excessRequests = (int)(overloaded.Value - avgWorkload);
                     var requestsToReassign = activeRequests
-                        .Where(r => r.AssignedTo != null && 
-                                   (r.AssignedTo.FirstName + " " + r.AssignedTo.LastName) == overloaded.Key)
+                        .Where(r => r.AssignedToUser != null && 
+                                   (r.AssignedToUser.FullName) == overloaded.Key)
                         .OrderBy(r => r.Priority)
                         .Take(excessRequests)
                         .ToList();
@@ -1370,15 +1483,15 @@ namespace HospitalAssetTracker.Services
                     {
                         // Find least loaded user
                         var targetUser = users
-                            .Where(u => currentWorkload.ContainsKey(u.FirstName + " " + u.LastName))
-                            .OrderBy(u => currentWorkload[u.FirstName + " " + u.LastName])
+                            .Where(u => currentWorkload.ContainsKey(u.FullName))
+                            .OrderBy(u => currentWorkload[u.FullName])
                             .FirstOrDefault();
 
                         if (targetUser != null)
                         {
-                            request.AssignedToId = targetUser.Id;
+                            request.AssignedToUserId = targetUser.Id;
                             requestsRebalanced++;
-                            rebalanceActions.Add($"Reassigned request #{request.Id} from {overloaded.Key} to {targetUser.FirstName} {targetUser.LastName}");
+                            rebalanceActions.Add($"Reassigned request #{request.Id} from {overloaded.Key} to {targetUser.FullName}");
                         }
                     }
                 }
@@ -1419,7 +1532,7 @@ namespace HospitalAssetTracker.Services
             try
             {
                 var unassignedRequests = await _context.ITRequests
-                    .Where(r => r.AssignedToId == null && r.Status == RequestStatus.Open)
+                    .Where(r => r.AssignedToUserId == null && r.Status == RequestStatus.Submitted) // Changed Open to Submitted, corrected to AssignedToUserId
                     .ToListAsync();
 
                 var availableUsers = await _context.Users
@@ -1439,10 +1552,10 @@ namespace HospitalAssetTracker.Services
 
                     if (bestMatch != null)
                     {
-                        request.AssignedToId = bestMatch.Id;
+                        request.AssignedToUserId = bestMatch.Id; // Corrected to AssignedToUserId
                         optimizedCount++;
 
-                        var userName = $"{bestMatch.FirstName} {bestMatch.LastName}";
+                        var userName = $"{bestMatch.FullName}"; // Used FullName
                         optimizationActions.Add($"Assigned request #{request.Id} ({request.Title}) to {userName}");
 
                         if (!skillBasedMatches.ContainsKey(userName))
@@ -1495,16 +1608,16 @@ namespace HospitalAssetTracker.Services
         private async Task<Dictionary<string, int>> GetCurrentWorkloadDistribution()
         {
             return await _context.ITRequests
-                .Where(r => r.AssignedToId != null && (r.Status == RequestStatus.Open || r.Status == RequestStatus.InProgress))
-                .Include(r => r.AssignedTo)
-                .GroupBy(r => r.AssignedTo!.FirstName + " " + r.AssignedTo.LastName)
+                .Where(r => r.AssignedToUserId != null && (r.Status == RequestStatus.Submitted || r.Status == RequestStatus.InProgress)) // Changed Open to Submitted, corrected to AssignedToUserId
+                .Include(r => r.AssignedToUser) // Corrected to AssignedToUser
+                .GroupBy(r => r.AssignedToUser!.FullName) // Corrected to AssignedToUser.FullName
                 .ToDictionaryAsync(g => g.Key, g => g.Count());
         }
 
         private int GetCurrentUserWorkload(string userId)
         {
             return _context.ITRequests
-                .Count(r => r.AssignedToId == userId && (r.Status == RequestStatus.Open || r.Status == RequestStatus.InProgress));
+                .Count(r => r.AssignedToUserId == userId && (r.Status == RequestStatus.Submitted || r.Status == RequestStatus.InProgress)); // Changed Open to Submitted, corrected to AssignedToUserId
         }
 
         private double CalculateWorkloadImprovement(Dictionary<string, int> oldWorkload, Dictionary<string, int> newWorkload)

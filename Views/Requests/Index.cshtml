@@ -22,7 +22,7 @@
                 <label class="form-label">Type</label>
                 <select class="form-select" name="RequestType">
                     <option value="">All Types</option>
-                    @foreach (var type in ViewBag.RequestTypes as IEnumerable<SelectListItem>)
+                    @foreach (var type in (ViewBag.RequestTypes as IEnumerable<SelectListItem>) ?? Enumerable.Empty<SelectListItem>())
                     {
                         <option value="@type.Value" selected="@type.Selected">@type.Text</option>
                     }
@@ -32,7 +32,7 @@
                 <label class="form-label">Status</label>
                 <select class="form-select" name="Status">
                     <option value="">All Statuses</option>
-                    @foreach (var status in ViewBag.Statuses as IEnumerable<SelectListItem>)
+                    @foreach (var status in (ViewBag.Statuses as IEnumerable<SelectListItem>) ?? Enumerable.Empty<SelectListItem>())
                     {
                         <option value="@status.Value" selected="@status.Selected">@status.Text</option>
                     }
@@ -42,7 +42,7 @@
                 <label class="form-label">Priority</label>
                 <select class="form-select" name="Priority">
                     <option value="">All Priorities</option>
-                    @foreach (var priority in ViewBag.Priorities as IEnumerable<SelectListItem>)
+                    @foreach (var priority in (ViewBag.Priorities as IEnumerable<SelectListItem>) ?? Enumerable.Empty<SelectListItem>())
                     {
                         <option value="@priority.Value" selected="@priority.Selected">@priority.Text</option>
                     }
@@ -103,7 +103,7 @@
                                 </td>
                                 <td>
                                     <span class="badge @GetStatusBadgeClass(request.Status)">
-                                        @request.Status.ToString().Replace("_", " ")
+                                        @request.Status.ToString()
                                     </span>
                                 </td>
                                 <td>@request.RequestedByUser?.FirstName @request.RequestedByUser?.LastName</td>
@@ -126,9 +126,9 @@
                                         <a asp-action="Details" asp-route-id="@request.Id" class="btn btn-sm btn-outline-primary" title="View Details">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        @if (request.Status == RequestStatus.Submitted || request.Status == RequestStatus.InProgress)
+                                        @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
                                         {
-                                            @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                                            if (request.Status != RequestStatus.Completed && request.Status != RequestStatus.Cancelled)
                                             {
                                                 <a asp-action="Edit" asp-route-id="@request.Id" class="btn btn-sm btn-outline-secondary" title="Edit">
                                                     <i class="bi bi-pencil"></i>
@@ -151,21 +151,21 @@
                         @if (Model.PageNumber > 1)
                         {
                             <li class="page-item">
-                                <a class="page-link" asp-route-page="@(Model.PageNumber - 1)" asp-all-route-data="@Context.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString())">Previous</a>
+                                <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageNumber - 1)" asp-route-SearchTerm="@ViewBag.SearchTerm" asp-route-RequestType="@ViewBag.RequestType" asp-route-Status="@ViewBag.Status" asp-route-Priority="@ViewBag.Priority" asp-route-Department="@ViewBag.Department">Previous</a>
                             </li>
                         }
                         
                         @for (int i = Math.Max(1, Model.PageNumber - 2); i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
                         {
                             <li class="page-item @(i == Model.PageNumber ? "active" : "")">
-                                <a class="page-link" asp-route-page="@i" asp-all-route-data="@Context.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString())">@i</a>
+                                <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-SearchTerm="@ViewBag.SearchTerm" asp-route-RequestType="@ViewBag.RequestType" asp-route-Status="@ViewBag.Status" asp-route-Priority="@ViewBag.Priority" asp-route-Department="@ViewBag.Department">@i</a>
                             </li>
                         }
                         
                         @if (Model.PageNumber < Model.TotalPages)
                         {
                             <li class="page-item">
-                                <a class="page-link" asp-route-page="@(Model.PageNumber + 1)" asp-all-route-data="@Context.Request.Query.ToDictionary(q => q.Key, q => q.Value.ToString())">Next</a>
+                                <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageNumber + 1)" asp-route-SearchTerm="@ViewBag.SearchTerm" asp-route-RequestType="@ViewBag.RequestType" asp-route-Status="@ViewBag.Status" asp-route-Priority="@ViewBag.Priority" asp-route-Department="@ViewBag.Department">Next</a>
                             </li>
                         }
                     </ul>
@@ -201,30 +201,22 @@
 }
 
 @functions {
-    private string GetPriorityBadgeClass(RequestPriority priority)
+    private string GetStatusBadgeClass(RequestStatus status) => status switch
     {
-        return priority switch
-        {
-            RequestPriority.Critical => "bg-danger",
-            RequestPriority.High => "bg-warning text-dark",
-            RequestPriority.Medium => "bg-info",
-            RequestPriority.Low => "bg-success",
-            _ => "bg-secondary"
-        };
-    }
+        RequestStatus.Submitted => "bg-info text-white",
+        RequestStatus.InProgress => "bg-warning text-dark",
+        RequestStatus.OnHold => "bg-secondary text-white",
+        RequestStatus.Completed => "bg-success text-white",
+        RequestStatus.Cancelled => "bg-danger text-white",
+        _ => "bg-light text-dark"
+    };
 
-    private string GetStatusBadgeClass(RequestStatus status)
+    private string GetPriorityBadgeClass(RequestPriority priority) => priority switch
     {
-        return status switch
-        {
-            RequestStatus.Submitted => "bg-primary",
-            RequestStatus.InProgress => "bg-warning text-dark",
-            RequestStatus.PendingApproval => "bg-info",
-            RequestStatus.Approved => "bg-success",
-            RequestStatus.Completed => "bg-success",
-            RequestStatus.Cancelled => "bg-secondary",
-            RequestStatus.OnHold => "bg-warning text-dark",
-            _ => "bg-secondary"
-        };
-    }
+        RequestPriority.Critical => "bg-danger text-white",
+        RequestPriority.High => "bg-warning text-dark",
+        RequestPriority.Medium => "bg-info text-white",
+        RequestPriority.Low => "bg-success text-white",
+        _ => "bg-secondary text-white"
+    };
 }

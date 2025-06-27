@@ -1,0 +1,1327 @@
+using Microsoft.EntityFrameworkCore;
+using HospitalAssetTracker.Data;
+using HospitalAssetTracker.Models;
+using HospitalAssetTracker.Services;
+
+namespace HospitalAssetTracker.Services
+{
+    public class ProcurementService : IProcurementService
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly IAuditService _auditService;
+        private readonly IAssetService _assetService;
+        private readonly IInventoryService _inventoryService;
+
+        public ProcurementService(
+            ApplicationDbContext context,
+            IAuditService auditService,
+            IAssetService assetService,
+            IInventoryService inventoryService)
+        {
+            _context = context;
+            _auditService = auditService;
+            _assetService = assetService;
+            _inventoryService = inventoryService;
+        }
+
+        public async Task<PagedResult<ProcurementRequest>> GetProcurementRequestsAsync(ProcurementSearchModel searchModel)
+        {
+            var query = _context.ProcurementRequests
+                .Include(p => p.RequestedByUser)
+                .Include(p => p.SelectedVendor)
+                .Include(p => p.OriginatingRequest)
+                .AsQueryable();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(searchModel.SearchTerm))
+            {
+                query = query.Where(p => p.Title.Contains(searchModel.SearchTerm) ||
+                                       p.Description.Contains(searchModel.SearchTerm) ||
+                                       p.ProcurementNumber.Contains(searchModel.SearchTerm) ||
+                                       (p.SelectedVendor != null && p.SelectedVendor.Name.Contains(searchModel.SearchTerm)));
+            }
+
+            if (searchModel.ProcurementType.HasValue)
+            {
+                query = query.Where(p => p.ProcurementType == searchModel.ProcurementType.Value);
+            }
+
+            if (searchModel.Status.HasValue)
+            {
+                query = query.Where(p => p.Status == searchModel.Status.Value);
+            }
+
+            if (searchModel.Category.HasValue)
+            {
+                query = query.Where(p => p.Category == searchModel.Category.Value);
+            }
+
+            if (searchModel.VendorId.HasValue)
+            {
+                query = query.Where(p => p.SelectedVendorId == searchModel.VendorId.Value);
+            }
+
+            if (searchModel.AmountFrom.HasValue)
+            {
+                query = query.Where(p => p.EstimatedBudget >= searchModel.AmountFrom.Value);
+            }
+
+            if (searchModel.AmountTo.HasValue)
+            {
+                query = query.Where(p => p.EstimatedBudget <= searchModel.AmountTo.Value);
+            }
+
+            if (searchModel.DateFrom.HasValue)
+            {
+                query = query.Where(p => p.CreatedDate >= searchModel.DateFrom.Value);
+            }
+
+            if (searchModel.DateTo.HasValue)
+            {
+                query = query.Where(p => p.CreatedDate <= searchModel.DateTo.Value);
+            }
+
+            // Apply sorting
+            query = searchModel.SortBy?.ToLower() switch
+            {
+                "title" => searchModel.SortDesc ? query.OrderByDescending(p => p.Title) : query.OrderBy(p => p.Title),
+                "priority" => searchModel.SortDesc ? query.OrderByDescending(p => p.Category) : query.OrderBy(p => p.Category),
+                "status" => searchModel.SortDesc ? query.OrderByDescending(p => p.Status) : query.OrderBy(p => p.Status),
+                "totalamount" => searchModel.SortDesc ? query.OrderByDescending(p => p.EstimatedBudget) : query.OrderBy(p => p.EstimatedBudget),
+                "vendor" => searchModel.SortDesc 
+                    ? query.OrderByDescending(p => p.SelectedVendor != null ? p.SelectedVendor.Name : string.Empty) 
+                    : query.OrderBy(p => p.SelectedVendor != null ? p.SelectedVendor.Name : string.Empty),
+                "createdate" => searchModel.SortDesc ? query.OrderByDescending(p => p.CreatedDate) : query.OrderBy(p => p.CreatedDate),
+                _ => query.OrderByDescending(p => p.CreatedDate)
+            };
+
+            var totalItems = await query.CountAsync();
+            var items = await query
+                .Skip((searchModel.Page - 1) * searchModel.PageSize)
+                .Take(searchModel.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<ProcurementRequest>
+            {
+                Items = items,
+                TotalCount = totalItems,
+                PageNumber = searchModel.Page,
+                PageSize = searchModel.PageSize
+            };
+        }
+
+        public async Task<ProcurementRequest?> GetProcurementRequestByIdAsync(int procurementId)
+        {
+            return await _context.ProcurementRequests
+                .Include(p => p.RequestedByUser)
+                .Include(p => p.SelectedVendor)
+                .Include(p => p.OriginatingRequest)
+                .Include(p => p.Items)
+                .Include(p => p.Activities)
+                .Include(p => p.Approvals)
+                .FirstOrDefaultAsync(p => p.Id == procurementId);
+        }
+
+        public async Task<ProcurementRequest> CreateProcurementRequestAsync(ProcurementRequest procurement, string userId)
+        {
+            // Generate procurement number
+            var datePrefix = DateTime.Now.ToString("yyyyMM");
+            var lastProcurement = await _context.ProcurementRequests
+                .Where(p => p.ProcurementNumber.StartsWith($"PROC-{datePrefix}"))
+                .OrderByDescending(p => p.ProcurementNumber)
+                .FirstOrDefaultAsync();
+
+            int sequence = 1;
+            if (lastProcurement != null)
+            {
+                var lastSequence = lastProcurement.ProcurementNumber.Split('-').Last();
+                if (int.TryParse(lastSequence, out int lastNum))
+                {
+                    sequence = lastNum + 1;
+                }
+            }
+
+            procurement.ProcurementNumber = $"PROC-{datePrefix}-{sequence:D4}";
+            procurement.RequestedByUserId = userId;
+            procurement.CreatedDate = DateTime.UtcNow;
+            procurement.Status = ProcurementStatus.Draft;
+
+            // Calculate total amount from items
+            if (procurement.Items?.Any() == true)
+            {
+                procurement.EstimatedBudget = procurement.Items.Sum(i => i.Quantity * i.EstimatedUnitPrice);
+            }
+
+            // Set automatic priority based on urgency and amount
+            await SetAutomaticPriorityAsync(procurement);
+
+            _context.ProcurementRequests.Add(procurement);
+            await _context.SaveChangesAsync();
+
+            // Create initial activity log
+            var initialActivity = new ProcurementActivity
+            {
+                ProcurementRequestId = procurement.Id,
+                ActivityType = ProcurementActivityType.Created,
+                Description = "Procurement request created",
+                ActivityDate = DateTime.UtcNow,
+                UserId = userId
+            };
+            _context.ProcurementActivities.Add(initialActivity);
+            await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync(AuditAction.Create, "ProcurementRequest", procurement.Id, userId, 
+                $"Procurement request {procurement.ProcurementNumber} created");
+
+            return procurement;
+        }
+
+        public async Task<ProcurementRequest> CreateProcurementFromRequestAsync(int requestId, string userId)
+        {
+            var request = await _context.ITRequests
+                .Include(r => r.Requester)
+                .FirstOrDefaultAsync(r => r.Id == requestId);
+
+            if (request == null)
+                throw new InvalidOperationException("Related request not found");
+
+            var procurement = new ProcurementRequest
+            {
+                Title = $"Procurement for: {request.Title}",
+                Description = request.Description,
+                ProcurementType = MapRequestTypeToProcurementType(request.RequestType),
+                Category = MapRequestPriorityToProcurementCategory(request.Priority),
+                RequiredByDate = request.RequiredByDate,
+                EstimatedBudget = request.EstimatedCost ?? 0,
+                OriginatingRequestId = requestId,
+                SpecificationNotes = request.BusinessJustification,
+                // IsUrgent is not a property on ProcurementRequest, Category handles this.
+            };
+
+            // Add procurement items based on request
+            if (!string.IsNullOrEmpty(request.RequestedItemCategory))
+            {
+                var item = new ProcurementItem
+                {
+                    ItemName = request.RequestedItemCategory,
+                    Description = request.RequestedItemSpecifications,
+                    Quantity = 1,
+                    EstimatedUnitPrice = request.EstimatedCost ?? 0,
+                };
+                procurement.Items = new List<ProcurementItem> { item };
+            }
+
+            return await CreateProcurementRequestAsync(procurement, userId);
+        }
+
+        public async Task<ProcurementRequest> UpdateProcurementRequestAsync(ProcurementRequest procurement, string userId)
+        {
+            var existing = await GetProcurementRequestByIdAsync(procurement.Id);
+            if (existing == null)
+                throw new InvalidOperationException("Procurement request not found");
+
+            // Prevent editing after approval has started
+            if (existing.Status != ProcurementStatus.Draft)
+            {
+                throw new InvalidOperationException("Cannot update a procurement request that is already submitted or approved.");
+            }
+
+            // Update fields
+            existing.Title = procurement.Title;
+            existing.Description = procurement.Description;
+            existing.Category = procurement.Category;
+            existing.RequiredByDate = procurement.RequiredByDate;
+            existing.SpecificationNotes = procurement.SpecificationNotes;
+            
+            // Recalculate estimated budget from items
+            if (procurement.Items?.Any() == true)
+            {
+                existing.Items = procurement.Items;
+                existing.EstimatedBudget = existing.Items.Sum(i => i.EstimatedTotalPrice);
+            }
+
+            existing.LastUpdatedDate = DateTime.UtcNow;
+            existing.LastUpdatedByUserId = userId;
+
+            await _context.SaveChangesAsync();
+
+            // Log activity
+            var activity = new ProcurementActivity
+            {
+                ProcurementRequestId = procurement.Id,
+                ActivityType = ProcurementActivityType.Updated,
+                Description = "Procurement request updated",
+                ActivityDate = DateTime.UtcNow,
+                UserId = userId
+            };
+            _context.ProcurementActivities.Add(activity);
+            await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync(AuditAction.Update, "ProcurementRequest", procurement.Id, userId, 
+                $"Procurement request {existing.ProcurementNumber} updated");
+
+            return existing;
+        }
+
+        public async Task<bool> SubmitForApprovalAsync(int procurementId, string userId)
+        {
+            var procurement = await GetProcurementRequestByIdAsync(procurementId);
+            if (procurement == null || procurement.Status != ProcurementStatus.Draft)
+            {
+                 return false; // Can only submit from Draft status
+            }
+
+            // Logic to determine the next approval step
+            var nextApprovalLevel = GetNextRequiredApprovalLevel(procurement);
+            if (nextApprovalLevel == null)
+            {
+                // No approval needed, move to approved status directly
+                procurement.Status = ProcurementStatus.Approved;
+                procurement.ApprovalDate = DateTime.UtcNow;
+                await InitiateProcurementProcessAsync(procurement, userId);
+                
+                var autoApproveActivity = new ProcurementActivity
+                {
+                    ProcurementRequestId = procurementId,
+                    ActivityType = ProcurementActivityType.Approved,
+                    Description = "Request auto-approved as it does not meet criteria for formal approval.",
+                    ActivityDate = DateTime.UtcNow,
+                    UserId = userId
+                };
+                _context.ProcurementActivities.Add(autoApproveActivity);
+            }
+            else
+            {
+                procurement.Status = ProcurementStatus.PendingApproval;
+                procurement.CurrentApprovalLevel = nextApprovalLevel;
+                
+                var submitActivity = new ProcurementActivity
+                {
+                    ProcurementRequestId = procurementId,
+                    ActivityType = ProcurementActivityType.SubmittedForApproval,
+                    Description = $"Submitted for {nextApprovalLevel} level approval.",
+                    ActivityDate = DateTime.UtcNow,
+                    UserId = userId
+                };
+                _context.ProcurementActivities.Add(submitActivity);
+            }
+
+            procurement.RequestDate = DateTime.UtcNow; // This should be submission date
+            procurement.LastUpdatedDate = DateTime.UtcNow;
+            procurement.LastUpdatedByUserId = userId;
+
+            await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync(AuditAction.Update, "ProcurementRequest", procurementId, userId, 
+                $"Procurement request {procurement.ProcurementNumber} submitted for approval");
+
+            return true;
+        }
+
+        public async Task<bool> ApproveProcurementAsync(int procurementId, string approverId, string? comments = null)
+        {
+            var procurement = await GetProcurementRequestByIdAsync(procurementId);
+            if (procurement == null || procurement.Status != ProcurementStatus.PendingApproval)
+            {
+                return false; // Can only approve requests that are pending approval
+            }
+
+            // Create approval record
+            var approval = new ProcurementApproval
+            {
+                ProcurementRequestId = procurementId,
+                ApproverId = approverId,
+                ApprovalDate = DateTime.UtcNow,
+                Status = ProcurementApprovalStatus.Approved,
+                Comments = comments,
+                ApprovalLevel = procurement.CurrentApprovalLevel ?? ProcurementApprovalLevel.Manager // Default level
+            };
+            _context.ProcurementApprovals.Add(approval);
+
+            // Check for next approval level
+            var nextApprovalLevel = GetNextRequiredApprovalLevel(procurement);
+
+            if (nextApprovalLevel == null)
+            {
+                // Fully approved
+                procurement.Status = ProcurementStatus.Approved;
+                procurement.ApprovalDate = DateTime.UtcNow;
+                
+                if (await ShouldAutoInitiateProcurementAsync(procurement))
+                {
+                    await InitiateProcurementProcessAsync(procurement, approverId);
+                }
+            }
+            else
+            {
+                // Move to next approval level
+                procurement.CurrentApprovalLevel = nextApprovalLevel;
+            }
+            
+            procurement.LastUpdatedDate = DateTime.UtcNow;
+            procurement.LastUpdatedByUserId = approverId;
+
+            var activity = new ProcurementActivity
+            {
+                ProcurementRequestId = procurementId,
+                ActivityType = ProcurementActivityType.Approved,
+                Description = $"Approved at {approval.ApprovalLevel} level. {(comments != null ? $"Comments: {comments}" : "")}",
+                ActivityDate = DateTime.UtcNow,
+                UserId = approverId
+            };
+            _context.ProcurementActivities.Add(activity);
+
+            await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync(AuditAction.Update, "ProcurementRequest", procurementId, approverId, 
+                $"Procurement request {procurement.ProcurementNumber} approved at level {approval.ApprovalLevel}");
+
+            return true;
+        }
+
+        public async Task<bool> ReceiveProcurementAsync(int procurementId, string receivedById, List<ProcurementItemReceived> receivedItems)
+        {
+            var procurement = await GetProcurementRequestByIdAsync(procurementId);
+            if (procurement == null || procurement.Status != ProcurementStatus.OrderPlaced)
+            {
+                return false; // Can only receive items for ordered procurements
+            }
+
+            procurement.Status = ProcurementStatus.PartiallyDelivered; // Default to partial, update to full later
+            procurement.ReceivedDate = DateTime.UtcNow;
+            procurement.LastUpdatedDate = DateTime.UtcNow;
+            procurement.LastUpdatedByUserId = receivedById;
+            procurement.FinalCost = receivedItems.Sum(i => i.ReceivedQuantity * i.UnitPrice);
+
+            // Process received items
+            foreach (var receivedItem in receivedItems)
+            {
+                // Find the original procurement item to update its received quantity
+                var originalItem = procurement.Items?.FirstOrDefault(i => i.Id == receivedItem.ProcurementItemId);
+                if (originalItem != null)
+                {
+                    originalItem.QuantityReceived += receivedItem.ReceivedQuantity;
+                }
+
+                if (receivedItem.IsAsset)
+                {
+                    // Create a new Asset for each unit received
+                    for (int i = 0; i < receivedItem.ReceivedQuantity; i++)
+                    {
+                        var asset = new Asset
+                        {
+                            Description = receivedItem.Description ?? receivedItem.ItemName,
+                            AssetCategoryId = receivedItem.AssetCategoryId ?? (int)AssetCategory.Other,
+                            Brand = receivedItem.Brand ?? "N/A",
+                            Model = receivedItem.Model ?? "N/A",
+                            SerialNumber = receivedItem.SerialNumber ?? "", // Assuming one serial per item for now
+                            Status = AssetStatus.Available,
+                            PurchasePrice = receivedItem.UnitPrice,
+                            WarrantyExpiry = receivedItem.WarrantyExpiryDate,
+                            AcquisitionDate = DateTime.UtcNow,
+                            // LocationId = 1, // Default warehouse/stock location
+                            LastUpdated = DateTime.UtcNow,
+                            CreatedDate = DateTime.UtcNow
+                        };
+                        await _assetService.CreateAssetAsync(asset, receivedById);
+                    }
+                }
+                else
+                {
+                    // Add to or update inventory for consumables
+                    await _inventoryService.UpdateInventoryFromProcurementAsync(receivedItem, receivedById);
+                }
+            }
+
+            // Check if all items are fully received
+            if (procurement.Items != null && procurement.Items.All(i => i.Quantity <= i.QuantityReceived))
+            {
+                procurement.Status = ProcurementStatus.Delivered;
+            }
+
+            // If this is for a specific request, try to fulfill it
+            if (procurement.OriginatingRequestId.HasValue)
+            {
+                await ProcessRequestFulfillmentAsync(procurement.OriginatingRequestId.Value, receivedById);
+            }
+
+            var activity = new ProcurementActivity
+            {
+                ProcurementRequestId = procurementId,
+                ActivityType = ProcurementActivityType.Received,
+                Description = $"Items received. Final cost: {procurement.FinalCost:C}",
+                ActivityDate = DateTime.UtcNow,
+                UserId = receivedById
+            };
+            _context.ProcurementActivities.Add(activity);
+
+            await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync(AuditAction.Update, "ProcurementRequest", procurementId, receivedById, 
+                $"Procurement {procurement.ProcurementNumber} received");
+
+            return true;
+        }
+
+        public async Task<ProcurementDashboardData> GetProcurementDashboardDataAsync()
+        {
+            var totalProcurements = await _context.ProcurementRequests.CountAsync();
+            var pendingApproval = await _context.ProcurementRequests.CountAsync(p => 
+                p.Status == ProcurementStatus.PendingApproval);
+            var inProgress = await _context.ProcurementRequests.CountAsync(p => 
+                p.Status == ProcurementStatus.InProcurement || p.Status == ProcurementStatus.OrderPlaced);
+            var completedThisMonth = await _context.ProcurementRequests.CountAsync(p => 
+                p.Status == ProcurementStatus.Completed && 
+                p.ReceivedDate.HasValue && 
+                p.ReceivedDate.Value.Month == DateTime.UtcNow.Month);
+
+            // Calculate total spending this month
+            var totalSpendingThisMonth = await _context.ProcurementRequests
+                .Where(p => (p.Status == ProcurementStatus.Completed || p.Status == ProcurementStatus.Delivered || p.Status == ProcurementStatus.PartiallyDelivered) && 
+                           p.ReceivedDate.HasValue && 
+                           p.ReceivedDate.Value.Month == DateTime.UtcNow.Month)
+                .SumAsync(p => p.FinalCost ?? 0);
+
+            // Get procurement by type counts
+            var procurementsByType = await _context.ProcurementRequests
+                .GroupBy(p => p.ProcurementType)
+                .Select(g => new { Type = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(k => k.Type.ToString(), v => v.Count);
+
+            // Get top vendors by spending
+            var topVendors = await _context.ProcurementRequests
+                .Where(p => p.FinalCost.HasValue && p.FinalCost > 0 && p.SelectedVendorId.HasValue && p.SelectedVendor != null)
+                .Include(p => p.SelectedVendor)
+                .GroupBy(p => p.SelectedVendor!.Name) // Added null-forgiving operator as we've checked SelectedVendor != null
+                .Select(g => new { Vendor = g.Key, Total = g.Sum(p => p.FinalCost!.Value) }) // Added null-forgiving operator as we've checked FinalCost.HasValue
+                .OrderByDescending(x => x.Total)
+                .Take(5)
+                .ToDictionaryAsync(k => k.Vendor, v => v.Total);
+
+            // Get recent procurements
+            var recentProcurementsData = await _context.ProcurementRequests
+                .Include(p => p.RequestedByUser)
+                .Include(p => p.SelectedVendor)
+                .OrderByDescending(p => p.RequestDate)
+                .Take(10)
+                .ToListAsync();
+
+            return new ProcurementDashboardData
+            {
+                TotalProcurements = totalProcurements,
+                PendingApprovals = pendingApproval,
+                InProgressProcurements = inProgress,
+                CompletedThisMonth = completedThisMonth,
+                TotalSpendThisMonth = totalSpendingThisMonth,
+                ProcurementsByCategory = procurementsByType,
+                TopVendorsBySpending = topVendors,
+                RecentProcurements = recentProcurementsData.Select(p => new RecentProcurementViewModel
+                {
+                    Id = p.Id,
+                    Title = p.Title,
+                    Status = p.Status.ToString(),
+                    RequestedBy = p.RequestedByUser?.UserName ?? "N/A",
+                    Vendor = p.SelectedVendor?.Name ?? "N/A",
+                    Amount = p.FinalCost ?? p.EstimatedBudget,
+                    Date = p.RequestDate
+                }).ToList()
+            };
+        }
+
+        #region Enhanced Advanced Methods - Implementation Stubs
+
+        // Advanced Search and Filtering
+        public async Task<PagedResult<ProcurementSearchModels.AdvancedProcurementSearchResult>> GetProcurementRequestsAdvancedAsync(ProcurementSearchModels.AdvancedProcurementSearchModel searchModel)
+        {
+            // TODO: Fix property mismatches - temporarily return empty result
+            return new PagedResult<ProcurementSearchModels.AdvancedProcurementSearchResult>
+            {
+                Items = new List<ProcurementSearchModels.AdvancedProcurementSearchResult>(),
+                TotalCount = 0,
+                PageNumber = searchModel.PageNumber ?? 1,
+                PageSize = searchModel.PageSize ?? 10
+            };
+        }
+
+        public async Task<List<ProcurementSearchModels.AdvancedProcurementSearchResult>> SearchProcurementRequestsAsync(string searchTerm, int maxResults = 10)
+        {
+            // TODO: Fix property mismatches - temporarily return empty list
+            return new List<ProcurementSearchModels.AdvancedProcurementSearchResult>();
+        }
+                .Include(p => p.RequestedByUser)
+                .Include(p => p.SelectedVendor)
+                .Include(p => p.OriginatingRequest)
+                .Include(p => p.Items)
+                .Include(p => p.Approvals)
+                .AsQueryable();
+
+            // Apply comprehensive filters
+            if (!string.IsNullOrEmpty(searchModel.SearchTerm))
+            {
+                query = query.Where(p => p.Title.Contains(searchModel.SearchTerm) ||
+                                       p.Description.Contains(searchModel.SearchTerm) ||
+                                       p.ProcurementNumber.Contains(searchModel.SearchTerm) ||
+                                       (p.SelectedVendor != null && p.SelectedVendor.Name.Contains(searchModel.SearchTerm)) ||
+                                       p.SpecificationNotes.Contains(searchModel.SearchTerm));
+            }
+
+            if (!string.IsNullOrEmpty(searchModel.ProcurementNumber))
+            {
+                query = query.Where(p => p.ProcurementNumber.Contains(searchModel.ProcurementNumber));
+            }
+
+            if (!string.IsNullOrEmpty(searchModel.Title))
+            {
+                query = query.Where(p => p.Title.Contains(searchModel.Title));
+            }
+
+            if (searchModel.Status.HasValue)
+            {
+                query = query.Where(p => p.Status == searchModel.Status.Value);
+            }
+
+            if (searchModel.ProcurementType.HasValue)
+            {
+                query = query.Where(p => p.ProcurementType == searchModel.ProcurementType.Value);
+            }
+
+            if (searchModel.Category.HasValue)
+            {
+                query = query.Where(p => p.Category == searchModel.Category.Value);
+            }
+
+            if (searchModel.Method.HasValue)
+            {
+                query = query.Where(p => p.Method == searchModel.Method.Value);
+            }
+
+            if (searchModel.Source.HasValue)
+            {
+                query = query.Where(p => p.Source == searchModel.Source.Value);
+            }
+
+            // Financial filters
+            if (searchModel.EstimatedCostFrom.HasValue)
+            {
+                query = query.Where(p => p.EstimatedBudget >= searchModel.EstimatedCostFrom.Value);
+            }
+
+            if (searchModel.EstimatedCostTo.HasValue)
+            {
+                query = query.Where(p => p.EstimatedBudget <= searchModel.EstimatedCostTo.Value);
+            }
+
+            if (searchModel.ActualCostFrom.HasValue)
+            {
+                query = query.Where(p => p.FinalCost >= searchModel.ActualCostFrom.Value);
+            }
+
+            if (searchModel.ActualCostTo.HasValue)
+            {
+                query = query.Where(p => p.FinalCost <= searchModel.ActualCostTo.Value);
+            }
+
+            // Date filters
+            if (searchModel.RequestDateFrom.HasValue)
+            {
+                query = query.Where(p => p.RequestDate >= searchModel.RequestDateFrom.Value);
+            }
+
+            if (searchModel.RequestDateTo.HasValue)
+            {
+                query = query.Where(p => p.RequestDate <= searchModel.RequestDateTo.Value);
+            }
+
+            if (searchModel.RequiredDateFrom.HasValue)
+            {
+                query = query.Where(p => p.RequiredByDate >= searchModel.RequiredDateFrom.Value);
+            }
+
+            if (searchModel.RequiredDateTo.HasValue)
+            {
+                query = query.Where(p => p.RequiredByDate <= searchModel.RequiredDateTo.Value);
+            }
+
+            // User and vendor filters
+            if (!string.IsNullOrEmpty(searchModel.RequestedByUserId))
+            {
+                query = query.Where(p => p.RequestedByUserId == searchModel.RequestedByUserId);
+            }
+
+            if (searchModel.VendorId.HasValue)
+            {
+                query = query.Where(p => p.SelectedVendorId == searchModel.VendorId.Value);
+            }
+
+            // Department filter
+            if (!string.IsNullOrEmpty(searchModel.Department))
+            {
+                query = query.Where(p => p.RequestedByUser != null && p.RequestedByUser.Department == searchModel.Department);
+            }
+
+            // Budget and integration filters
+            if (!string.IsNullOrEmpty(searchModel.BudgetCode))
+            {
+                query = query.Where(p => p.BudgetCode == searchModel.BudgetCode);
+            }
+
+            if (searchModel.OriginatingRequestId.HasValue)
+            {
+                query = query.Where(p => p.OriginatingRequestId == searchModel.OriginatingRequestId.Value);
+            }
+
+            if (searchModel.ReplacementForAssetId.HasValue)
+            {
+                query = query.Where(p => p.ReplacementForAssetId == searchModel.ReplacementForAssetId.Value);
+            }
+
+            // Boolean filters
+            if (searchModel.IsOverdue.HasValue && searchModel.IsOverdue.Value)
+            {
+                query = query.Where(p => p.RequiredByDate < DateTime.UtcNow && 
+                                       (p.Status == ProcurementStatus.Draft || 
+                                        p.Status == ProcurementStatus.PendingApproval || 
+                                        p.Status == ProcurementStatus.InProcurement));
+            }
+
+            // TODO: Add IsUrgent property to AdvancedProcurementSearchModel
+            // if (searchModel.IsUrgent.HasValue && searchModel.IsUrgent.Value)
+            // {
+            //     query = query.Where(p => p.Category == ProcurementCategory.Critical);
+            // }
+
+            // TODO: Add RequiresTender property to AdvancedProcurementSearchModel  
+            // if (searchModel.RequiresTender.HasValue)
+            // {
+            //     query = query.Where(p => p.RequiresTender == searchModel.RequiresTender.Value);
+            // }
+
+            // Apply sorting
+            query = searchModel.SortBy?.ToLower() switch
+            {
+                "procurementnumber" => searchModel.SortDirection?.ToLower() == "desc" 
+                    ? query.OrderByDescending(p => p.ProcurementNumber) 
+                    : query.OrderBy(p => p.ProcurementNumber),
+                "title" => searchModel.SortDirection?.ToLower() == "desc" 
+                    ? query.OrderByDescending(p => p.Title) 
+                    : query.OrderBy(p => p.Title),
+                "status" => searchModel.SortDirection?.ToLower() == "desc" 
+                    ? query.OrderByDescending(p => p.Status) 
+                    : query.OrderBy(p => p.Status),
+                "category" => searchModel.SortDirection?.ToLower() == "desc" 
+                    ? query.OrderByDescending(p => p.Category) 
+                    : query.OrderBy(p => p.Category),
+                "estimatedbudget" => searchModel.SortDirection?.ToLower() == "desc" 
+                    ? query.OrderByDescending(p => p.EstimatedBudget) 
+                    : query.OrderBy(p => p.EstimatedBudget),
+                "finalcost" => searchModel.SortDirection?.ToLower() == "desc" 
+                    ? query.OrderByDescending(p => p.FinalCost) 
+                    : query.OrderBy(p => p.FinalCost),
+                "requestdate" => searchModel.SortDirection?.ToLower() == "desc" 
+                    ? query.OrderByDescending(p => p.RequestDate) 
+                    : query.OrderBy(p => p.RequestDate),
+                "requiredbydate" => searchModel.SortDirection?.ToLower() == "desc" 
+                    ? query.OrderByDescending(p => p.RequiredByDate) 
+                    : query.OrderBy(p => p.RequiredByDate),
+                "vendor" => searchModel.SortDirection?.ToLower() == "desc" 
+                    ? query.OrderByDescending(p => p.SelectedVendor != null ? p.SelectedVendor.Name : string.Empty) 
+                    : query.OrderBy(p => p.SelectedVendor != null ? p.SelectedVendor.Name : string.Empty),
+                _ => query.OrderByDescending(p => p.RequestDate)
+            };
+
+            var totalItems = await query.CountAsync();
+            var items = await query
+                .Skip((searchModel.PageNumber - 1) * searchModel.PageSize)
+                .Take(searchModel.PageSize)
+                .ToListAsync();
+
+            // Convert to advanced search results
+            var results = items.Select(p => new ProcurementSearchModels.AdvancedProcurementSearchResult
+            {
+                Id = p.Id,
+                ProcurementNumber = p.ProcurementNumber,
+                Title = p.Title,
+                Description = p.Description,
+                Status = p.Status,
+                ProcurementType = p.ProcurementType,
+                Category = p.Category,
+                Method = p.Method ?? ProcurementMethod.DirectPurchase,
+                Source = p.Source ?? ProcurementSource.UserRequest,
+                EstimatedBudget = p.EstimatedBudget,
+                FinalCost = p.FinalCost,
+                RequestDate = p.RequestDate,
+                RequiredByDate = p.RequiredByDate,
+                RequestedByUser = p.RequestedByUser?.UserName ?? "N/A",
+                VendorName = p.SelectedVendor?.Name ?? "Not Selected",
+                Department = p.RequestedByUser?.Department ?? "Unknown",
+                ItemCount = p.Items?.Count ?? 0,
+                ApprovalCount = p.Approvals?.Count ?? 0,
+                IsOverdue = p.RequiredByDate < DateTime.UtcNow && 
+                           (p.Status == ProcurementStatus.Draft || 
+                            p.Status == ProcurementStatus.PendingApproval || 
+                            p.Status == ProcurementStatus.InProcurement),
+                DaysUntilRequired = p.RequiredByDate.HasValue 
+                    ? (int)(p.RequiredByDate.Value - DateTime.UtcNow).TotalDays 
+                    : null,
+                TimeInCurrentStatus = p.LastUpdatedDate.HasValue 
+                    ? (int)(DateTime.UtcNow - p.LastUpdatedDate.Value).TotalDays 
+                    : (int)(DateTime.UtcNow - p.CreatedDate).TotalDays,
+                BudgetVariance = p.FinalCost.HasValue && p.EstimatedBudget > 0 
+                    ? ((p.FinalCost.Value - p.EstimatedBudget) / p.EstimatedBudget) * 100 
+                    : null
+            }).ToList();
+
+            return new PagedResult<ProcurementSearchModels.AdvancedProcurementSearchResult>
+            {
+                Items = results,
+                TotalCount = totalItems,
+                PageNumber = searchModel.PageNumber,
+                PageSize = searchModel.PageSize
+            };
+        }
+
+        public async Task<IEnumerable<ProcurementSearchModels.AdvancedProcurementSearchResult>> SearchProcurementRequestsAsync(string searchTerm, int maxResults = 50)
+        {
+            var query = _context.ProcurementRequests
+                .Include(p => p.RequestedByUser)
+                .Include(p => p.SelectedVendor)
+                .Where(p => p.Title.Contains(searchTerm) ||
+                           p.Description.Contains(searchTerm) ||
+                           p.ProcurementNumber.Contains(searchTerm) ||
+                           (p.SelectedVendor != null && p.SelectedVendor.Name.Contains(searchTerm)))
+                .OrderByDescending(p => p.RequestDate)
+                .Take(maxResults);
+
+            var items = await query.ToListAsync();
+            
+            return items.Select(p => new ProcurementSearchModels.AdvancedProcurementSearchResult
+            {
+                Id = p.Id,
+                ProcurementNumber = p.ProcurementNumber,
+                Title = p.Title,
+                Status = p.Status,
+                Category = p.Category,
+                EstimatedBudget = p.EstimatedBudget,
+                RequestDate = p.RequestDate,
+                RequestedByUser = p.RequestedByUser?.UserName ?? "N/A",
+                VendorName = p.SelectedVendor?.Name ?? "Not Selected"
+            });
+        }
+
+        // Enhanced Approval Methods
+        public async Task<ProcurementSearchModels.ApprovalChainModel> GetApprovalChainAsync(int procurementId)
+        {
+            // TODO: Implement approval chain retrieval
+            return new ProcurementSearchModels.ApprovalChainModel { ProcurementId = procurementId };
+        }
+
+        public async Task<bool> ProcessApprovalStepAsync(int procurementId, string approverId, bool approve, string? comments = null)
+        {
+            // TODO: Implement approval step processing
+            return await Task.FromResult(true);
+        }
+
+        public async Task<IEnumerable<ProcurementSearchModels.AdvancedProcurementSearchResult>> GetPendingApprovalsForUserAsync(string userId)
+        {
+            // TODO: Implement user pending approvals
+            return new List<ProcurementSearchModels.AdvancedProcurementSearchResult>();
+        }
+
+        // Bulk Operations
+        public async Task<ProcurementSearchModels.BulkOperationResult> BulkApproveProcurementsAsync(ProcurementSearchModels.BulkApprovalRequest request, string userId)
+        {
+            // TODO: Implement bulk approval
+            return new ProcurementSearchModels.BulkOperationResult { Success = true, Message = "Not implemented yet" };
+        }
+
+        public async Task<ProcurementSearchModels.BulkOperationResult> BulkUpdateProcurementsAsync(ProcurementSearchModels.BulkProcurementUpdateRequest request, string userId)
+        {
+            // TODO: Implement bulk update
+            return new ProcurementSearchModels.BulkOperationResult { Success = true, Message = "Not implemented yet" };
+        }
+
+        public async Task<ProcurementSearchModels.BulkOperationResult> BulkOperationProcurementsAsync(ProcurementSearchModels.BulkProcurementOperationRequest request, string userId)
+        {
+            // TODO: Implement bulk operations
+            return new ProcurementSearchModels.BulkOperationResult { Success = true, Message = "Not implemented yet" };
+        }
+
+        // Quick Filter Methods
+        public async Task<IEnumerable<ProcurementSearchModels.AdvancedProcurementSearchResult>> GetPendingApprovalRequestsAsync()
+        {
+            var items = await _context.ProcurementRequests
+                .Include(p => p.RequestedByUser)
+                .Include(p => p.SelectedVendor)
+                .Where(p => p.Status == ProcurementStatus.PendingApproval)
+                .OrderByDescending(p => p.RequestDate)
+                .ToListAsync();
+
+            return items.Select(ConvertToAdvancedSearchResult);
+        }
+
+        public async Task<IEnumerable<ProcurementSearchModels.AdvancedProcurementSearchResult>> GetOverdueProcurementRequestsAsync()
+        {
+            var items = await _context.ProcurementRequests
+                .Include(p => p.RequestedByUser)
+                .Include(p => p.SelectedVendor)
+                .Where(p => p.RequiredByDate < DateTime.UtcNow && 
+                           (p.Status == ProcurementStatus.Draft || 
+                            p.Status == ProcurementStatus.PendingApproval || 
+                            p.Status == ProcurementStatus.InProcurement))
+                .OrderBy(p => p.RequiredByDate)
+                .ToListAsync();
+
+            return items.Select(ConvertToAdvancedSearchResult);
+        }
+
+        public async Task<IEnumerable<ProcurementSearchModels.AdvancedProcurementSearchResult>> GetEmergencyProcurementsAsync()
+        {
+            var items = await _context.ProcurementRequests
+                .Include(p => p.RequestedByUser)
+                .Include(p => p.SelectedVendor)
+                .Where(p => p.Category == ProcurementCategory.Critical)
+                .OrderByDescending(p => p.RequestDate)
+                .ToListAsync();
+
+            return items.Select(ConvertToAdvancedSearchResult);
+        }
+
+        public async Task<IEnumerable<ProcurementSearchModels.AdvancedProcurementSearchResult>> GetHighValueProcurementsAsync()
+        {
+            var highValueThreshold = 50000m; // Configurable threshold
+            var items = await _context.ProcurementRequests
+                .Include(p => p.RequestedByUser)
+                .Include(p => p.SelectedVendor)
+                .Where(p => p.EstimatedBudget >= highValueThreshold || 
+                           (p.FinalCost.HasValue && p.FinalCost >= highValueThreshold))
+                .OrderByDescending(p => p.EstimatedBudget)
+                .ToListAsync();
+
+            return items.Select(ConvertToAdvancedSearchResult);
+        }
+
+        public async Task<IEnumerable<ProcurementSearchModels.AdvancedProcurementSearchResult>> GetRecentProcurementRequestsAsync()
+        {
+            var recentThreshold = DateTime.UtcNow.AddDays(-30); // Last 30 days
+            var items = await _context.ProcurementRequests
+                .Include(p => p.RequestedByUser)
+                .Include(p => p.SelectedVendor)
+                .Where(p => p.RequestDate >= recentThreshold)
+                .OrderByDescending(p => p.RequestDate)
+                .Take(50)
+                .ToListAsync();
+
+            return items.Select(ConvertToAdvancedSearchResult);
+        }
+
+        public async Task<IEnumerable<ProcurementSearchModels.AdvancedProcurementSearchResult>> GetUserProcurementRequestsAsync(string userId)
+        {
+            var items = await _context.ProcurementRequests
+                .Include(p => p.RequestedByUser)
+                .Include(p => p.SelectedVendor)
+                .Where(p => p.RequestedByUserId == userId)
+                .OrderByDescending(p => p.RequestDate)
+                .ToListAsync();
+
+            return items.Select(ConvertToAdvancedSearchResult);
+        }
+
+        // Export functionality
+        public async Task<byte[]?> ExportProcurementDataAsync(ProcurementSearchModels.ProcurementExportRequest request)
+        {
+            // TODO: Implement export functionality
+            return await Task.FromResult<byte[]?>(null);
+        }
+
+        // Analytics and Reporting
+        public async Task<ProcurementSearchModels.ProcurementAnalyticsModel> GetProcurementAnalyticsAsync(DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            // TODO: Implement analytics
+            return new ProcurementSearchModels.ProcurementAnalyticsModel
+            {
+                GeneratedDate = DateTime.UtcNow,
+                GeneratedBy = "System"
+            };
+        }
+
+        public async Task<ProcurementSearchModels.ProcurementReport> GenerateProcurementReportAsync(string reportType, DateTime fromDate, DateTime toDate)
+        {
+            // TODO: Implement report generation
+            return new ProcurementSearchModels.ProcurementReport
+            {
+                GeneratedDate = DateTime.UtcNow,
+                GeneratedBy = "System",
+                ReportType = reportType,
+                FromDate = fromDate,
+                ToDate = toDate
+            };
+        }
+
+        // Enhanced Vendor Management
+        public async Task<ProcurementSearchModels.VendorEvaluationModel> GetVendorEvaluationAsync(int vendorId)
+        {
+            // TODO: Implement vendor evaluation
+            return new ProcurementSearchModels.VendorEvaluationModel { VendorId = vendorId };
+        }
+
+        public async Task<ProcurementSearchModels.VendorPerformanceMetrics> GetVendorPerformanceAsync(int vendorId, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            // TODO: Implement vendor performance metrics
+            return new ProcurementSearchModels.VendorPerformanceMetrics { VendorId = vendorId };
+        }
+
+        public async Task<ProcurementSearchModels.VendorComparisonModel> CompareVendorsAsync(List<int> vendorIds, string criteria)
+        {
+            // TODO: Implement vendor comparison
+            return new ProcurementSearchModels.VendorComparisonModel { ComparisonCriteria = criteria };
+        }
+
+        public async Task<IEnumerable<Vendor>> GetRecommendedVendorsAsync(ProcurementType procurementType, ProcurementCategory category)
+        {
+            // TODO: Implement vendor recommendations
+            return new List<Vendor>();
+        }
+
+        // Budget Management
+        public async Task<ProcurementSearchModels.BudgetAllocationModel> GetBudgetAllocationAsync(string budgetCode)
+        {
+            // TODO: Implement budget allocation retrieval
+            return new ProcurementSearchModels.BudgetAllocationModel { BudgetCode = budgetCode };
+        }
+
+        public async Task<bool> ValidateBudgetAvailabilityAsync(string budgetCode, decimal amount)
+        {
+            // TODO: Implement budget validation
+            return await Task.FromResult(true);
+        }
+
+        public async Task<IEnumerable<ProcurementSearchModels.BudgetAllocationModel>> GetDepartmentBudgetsAsync(string department)
+        {
+            // TODO: Implement department budgets retrieval
+            return new List<ProcurementSearchModels.BudgetAllocationModel>();
+        }
+
+        public async Task<ProcurementSearchModels.CostAnalysisModel> GetCostAnalysisAsync(DateTime fromDate, DateTime toDate)
+        {
+            // TODO: Implement cost analysis
+            return new ProcurementSearchModels.CostAnalysisModel();
+        }
+
+        // Integration Methods
+        public async Task<ProcurementRequest> CreateFromInventoryTriggerAsync(int inventoryItemId, string userId)
+        {
+            // TODO: Implement inventory-triggered procurement
+            var procurement = new ProcurementRequest
+            {
+                Title = "Auto-generated from inventory trigger",
+                TriggeredByInventoryItemId = inventoryItemId,
+                Source = ProcurementSource.InventoryThreshold
+            };
+            return await CreateProcurementRequestAsync(procurement, userId);
+        }
+
+        public async Task<ProcurementRequest> CreateFromAssetReplacementAsync(int assetId, string userId)
+        {
+            // TODO: Implement asset replacement procurement
+            var procurement = new ProcurementRequest
+            {
+                Title = "Asset replacement procurement",
+                ReplacementForAssetId = assetId,
+                Source = ProcurementSource.AssetLifecycle
+            };
+            return await CreateProcurementRequestAsync(procurement, userId);
+        }
+
+        public async Task<bool> LinkToRequestAsync(int procurementId, int requestId, string userId)
+        {
+            // TODO: Implement request linking
+            var procurement = await GetProcurementRequestByIdAsync(procurementId);
+            if (procurement != null)
+            {
+                procurement.OriginatingRequestId = requestId;
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            return false;
+        }
+
+        #endregion
+
+        // --- Private Helper Methods ---
+
+        private async Task SetAutomaticPriorityAsync(ProcurementRequest procurement)
+        {
+            // Example logic: Set priority based on type and budget
+            if (procurement.ProcurementType == ProcurementType.Emergency)
+            {
+                procurement.Category = ProcurementCategory.Critical;
+            }
+            else if (procurement.EstimatedBudget > 20000)
+            {
+                procurement.Category = ProcurementCategory.High;
+            }
+            else if (procurement.EstimatedBudget > 5000)
+            {
+                procurement.Category = ProcurementCategory.Medium;
+            }
+            else
+            {
+                procurement.Category = ProcurementCategory.Low;
+            }
+            await Task.CompletedTask;
+        }
+
+        private ProcurementType MapRequestTypeToProcurementType(RequestType requestType)
+        {
+            return requestType switch
+            {
+                RequestType.NewHardware => ProcurementType.Capital,
+                RequestType.NewSoftware => ProcurementType.Capital,
+                RequestType.Service => ProcurementType.Operational,
+                RequestType.Repair => ProcurementType.Operational,
+                _ => ProcurementType.Operational,
+            };
+        }
+
+        private ProcurementCategory MapRequestPriorityToProcurementCategory(RequestPriority priority)
+        {
+            return priority switch
+            {
+                RequestPriority.Critical => ProcurementCategory.Critical,
+                RequestPriority.High => ProcurementCategory.High,
+                RequestPriority.Medium => ProcurementCategory.Medium,
+                RequestPriority.Low => ProcurementCategory.Low,
+                _ => ProcurementCategory.Low,
+            };
+        }
+
+        private ProcurementApprovalLevel? GetNextRequiredApprovalLevel(ProcurementRequest procurement)
+        {
+            // Simplified approval logic. This should be expanded based on real business rules.
+            if (procurement.EstimatedBudget > 50000 && !procurement.Approvals.Any(a => a.ApprovalLevel == ProcurementApprovalLevel.Executive))
+            {
+                return ProcurementApprovalLevel.Executive;
+            }
+            if (procurement.EstimatedBudget > 10000 && !procurement.Approvals.Any(a => a.ApprovalLevel == ProcurementApprovalLevel.DepartmentHead))
+            {
+                return ProcurementApprovalLevel.DepartmentHead;
+            }
+            if (procurement.EstimatedBudget > 1000 && !procurement.Approvals.Any(a => a.ApprovalLevel == ProcurementApprovalLevel.Manager))
+            {
+                return ProcurementApprovalLevel.Manager;
+            }
+            return null; // No more approvals needed
+        }
+
+        private async Task<bool> ShouldAutoInitiateProcurementAsync(ProcurementRequest procurement)
+        {
+            // Example: Auto-initiate if a vendor is selected and it's a standard purchase
+            if (procurement.SelectedVendorId.HasValue && procurement.Method == ProcurementMethod.DirectPurchase)
+            {
+                return await Task.FromResult(true);
+            }
+            return await Task.FromResult(false);
+        }
+
+        private async Task InitiateProcurementProcessAsync(ProcurementRequest procurement, string userId)
+        {
+            procurement.Status = ProcurementStatus.InProcurement;
+            procurement.ProcurementStartDate = DateTime.UtcNow;
+            // Assign to a default procurement officer or based on rules
+            // procurement.AssignedToProcurementOfficerId = ...;
+
+            var activity = new ProcurementActivity
+            {
+                ProcurementRequestId = procurement.Id,
+                ActivityType = ProcurementActivityType.ProcessingStarted,
+                Description = "Procurement process initiated.",
+                ActivityDate = DateTime.UtcNow,
+                UserId = userId
+            };
+            _context.ProcurementActivities.Add(activity);
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task ProcessRequestFulfillmentAsync(int requestId, string userId)
+        {
+            var request = await _context.ITRequests.FindAsync(requestId);
+            if (request != null)
+            {
+                request.Status = RequestStatus.Completed;
+                request.ResolutionDate = DateTime.UtcNow;
+                request.ResolutionDetails = "Fulfilled via procurement request.";
+                
+                await _auditService.LogAsync(AuditAction.Update, "ITRequest", requestId, userId, 
+                    $"Request {request.RequestNumber} fulfilled by procurement.");
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<List<ProcurementRequest>> GetOverdueProcurementsAsync()
+        {
+            return await _context.ProcurementRequests
+                .Where(p => p.ExpectedDeliveryDate.HasValue && p.ExpectedDeliveryDate < DateTime.UtcNow && p.Status != ProcurementStatus.Completed && p.Status != ProcurementStatus.Delivered)
+                .ToListAsync();
+        }
+
+        public async Task<int> GetActiveRequestsCountAsync()
+        {
+            return await _context.ProcurementRequests.CountAsync(p => p.Status != ProcurementStatus.Completed && p.Status != ProcurementStatus.Cancelled && p.Status != ProcurementStatus.Rejected);
+        }
+
+        public async Task<int> GetPendingApprovalsCountAsync()
+        {
+            return await _context.ProcurementRequests.CountAsync(p => p.Status == ProcurementStatus.PendingApproval);
+        }
+
+        public async Task<int> GetActiveVendorsCountAsync()
+        {
+            return await _context.Vendors.CountAsync(v => v.IsActive);
+        }
+
+        public async Task<decimal> GetMonthlySpendAsync()
+        {
+            var today = DateTime.UtcNow;
+            var total = await _context.ProcurementRequests
+                .Where(p => p.ReceivedDate.HasValue && p.ReceivedDate.Value.Year == today.Year && p.ReceivedDate.Value.Month == today.Month && p.FinalCost.HasValue)
+                .SumAsync(p => p.FinalCost);
+            return total ?? 0;
+        }
+
+        public async Task<List<ProcurementRequest>> GetRecentRequestsAsync(int count = 10)
+        {
+            return await _context.ProcurementRequests
+                .OrderByDescending(p => p.RequestDate)
+                .Take(count)
+                .ToListAsync();
+        }
+
+        public async Task<List<ProcurementApproval>> GetRecentApprovalsAsync(int count = 5)
+        {
+            return await _context.ProcurementApprovals
+                .Include(a => a.ProcurementRequest)
+                .Include(a => a.Approver)
+                .OrderByDescending(a => a.ApprovalDate)
+                .Take(count)
+                .ToListAsync();
+        }
+
+        public async Task<List<Vendor>> GetActiveVendorsAsync()
+        {
+            return await _context.Vendors.Where(v => v.IsActive).ToListAsync();
+        }
+
+        public async Task<List<List<string>>> GetExportDataAsync(string reportType)
+        {
+            // This is a placeholder. A real implementation would be more complex.
+            var data = new List<List<string>>();
+            data.Add(new List<string> { "Column1", "Column2", "Column3" });
+            data.Add(new List<string> { "Data1", "Data2", "Data3" });
+            return await Task.FromResult(data);
+        }
+
+        public async Task<List<Vendor>> GetVendorsAsync()
+        {
+            return await _context.Vendors.ToListAsync();
+        }
+
+        public async Task<Vendor> CreateVendorAsync(Vendor vendor, string userId)
+        {
+            vendor.CreatedDate = DateTime.UtcNow;
+            _context.Vendors.Add(vendor);
+            await _context.SaveChangesAsync();
+            await _auditService.LogAsync(AuditAction.Create, "Vendor", vendor.Id, userId, $"Vendor {vendor.Name} created.");
+            return vendor;
+        }
+
+        public async Task<Dictionary<string, decimal>> GetTopVendorsBySpendingAsync(int topN = 5)
+        {
+            var vendorSpending = await _context.ProcurementRequests
+                .Where(p => p.Status == ProcurementStatus.Completed && p.SelectedVendor != null && p.FinalCost.HasValue)
+                .GroupBy(p => p.SelectedVendor!.Name)
+                .Select(g => new { Vendor = g.Key, Total = g.Sum(p => p.FinalCost!.Value) })
+                .OrderByDescending(x => x.Total)
+                .Take(topN)
+                .ToDictionaryAsync(k => k.Vendor, v => v.Total);
+
+            return vendorSpending;
+        }
+
+        public async Task<ProcurementRequest> AutoCreateProcurementFromRequestAsync(ITRequest request, string userId)
+        {
+            var procurement = new ProcurementRequest
+            {
+                Title = $"Procurement for: {request.Title}",
+                Description = request.Description,
+                ProcurementType = MapRequestTypeToProcurementType(request.RequestType),
+                Category = MapRequestPriorityToProcurementCategory(request.Priority),
+                RequiredByDate = request.RequiredByDate,
+                EstimatedBudget = request.EstimatedCost ?? 0,
+                OriginatingRequestId = request.Id,
+                SpecificationNotes = request.BusinessJustification,
+                Status = ProcurementStatus.Draft,
+                RequestedByUserId = userId,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            // Add procurement items based on request
+            if (!string.IsNullOrEmpty(request.RequestedItemCategory))
+            {
+                var item = new ProcurementItem
+                {
+                    ItemName = request.RequestedItemCategory,
+                    Description = request.RequestedItemSpecifications,
+                    Quantity = 1,
+                    EstimatedUnitPrice = request.EstimatedCost ?? 0,
+                };
+                procurement.Items = new List<ProcurementItem> { item };
+            }
+
+            return await CreateProcurementRequestAsync(procurement, userId);
+        }
+
+        // Helper method to convert ProcurementRequest to AdvancedProcurementSearchResult
+        private ProcurementSearchModels.AdvancedProcurementSearchResult ConvertToAdvancedSearchResult(ProcurementRequest p)
+        {
+            return new ProcurementSearchModels.AdvancedProcurementSearchResult
+            {
+                Id = p.Id,
+                ProcurementNumber = p.ProcurementNumber,
+                Title = p.Title,
+                Description = p.Description,
+                Status = p.Status,
+                ProcurementType = p.ProcurementType,
+                Category = p.Category,
+                Method = p.Method ?? ProcurementMethod.DirectPurchase,
+                Priority = MapCategoryToPriority(p.Category), // Map from Category to Priority
+                Source = p.Source,
+                EstimatedCost = p.EstimatedBudget,
+                ActualCost = p.FinalCost,
+                BudgetCode = p.BudgetCode,
+                RequestDate = p.RequestDate,
+                RequiredDate = p.RequiredByDate,
+                ApprovalDate = p.ApprovalDate,
+                DeliveryDate = p.ReceivedDate,
+                CompletionDate = p.Status == ProcurementStatus.Completed ? p.ReceivedDate : null,
+                RequestedByUserName = p.RequestedByUser?.UserName ?? "N/A",
+                VendorName = p.SelectedVendor?.Name ?? "Not Selected",
+                Department = p.RequestedByUser?.Department ?? "Unknown",
+                VendorCount = p.SelectedVendor != null ? 1 : 0
+            };
+        }
+
+        // Helper method to map ProcurementCategory to ProcurementPriority
+        private static ProcurementPriority MapCategoryToPriority(ProcurementCategory category)
+        {
+            return category switch
+            {
+                ProcurementCategory.Critical => ProcurementPriority.Critical,
+                ProcurementCategory.High => ProcurementPriority.High,
+                ProcurementCategory.Medium => ProcurementPriority.Medium,
+                ProcurementCategory.Low => ProcurementPriority.Low,
+                _ => ProcurementPriority.Medium
+            };
+        }
+    }
+}

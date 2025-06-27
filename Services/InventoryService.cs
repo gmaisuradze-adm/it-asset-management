@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using HospitalAssetTracker.Data;
 using HospitalAssetTracker.Models;
-using static HospitalAssetTracker.Models.InventorySearchModels;
+using static HospitalAssetTracker.Models.InventorySearchModels; // Reverted to using static
 using ClosedXML.Excel;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -14,6 +14,10 @@ namespace HospitalAssetTracker.Services
     /// </summary>
     public class InventoryService : IInventoryService
     {
+        private const string EntityName = "InventoryItem";
+        private const string UnknownValue = "Unknown";
+        private const string SystemUser = "System";
+        
         private readonly ApplicationDbContext _context;
         private readonly IAuditService _auditService;
         private readonly ILogger<InventoryService> _logger;
@@ -399,16 +403,14 @@ namespace HospitalAssetTracker.Services
                 query = query.Where(i => i.Id != excludeId.Value);
 
             return !await query.AnyAsync(i => i.ItemCode == itemCode);
-        }
-
-        public async Task<bool> CheckAvailabilityAsync(int inventoryItemId, int requiredQuantity)
+        }        public async Task<bool> CheckAvailabilityAsync(int itemId, int quantity)
         {
             var item = await _context.InventoryItems
-                .FirstOrDefaultAsync(i => i.Id == inventoryItemId);
-            
+                .FirstOrDefaultAsync(i => i.Id == itemId);
+
             if (item == null) return false;
-            
-            return item.Quantity >= requiredQuantity;
+
+            return item.Quantity >= quantity;
         }
 
         public async Task<bool> CheckAvailabilityAsync(string itemName, int requiredQuantity)
@@ -478,88 +480,6 @@ namespace HospitalAssetTracker.Services
             );
 
             return true;
-        }
-
-        // Continue with other methods...
-        #endregion
-
-        #region Helper Methods
-
-        private async Task<string> GenerateItemCodeAsync(InventoryCategory category)
-        {
-            var prefix = category switch
-            {
-                InventoryCategory.Desktop => "DT",
-                InventoryCategory.Laptop => "LT",
-                InventoryCategory.Server => "SV",
-                InventoryCategory.NetworkDevice => "ND",
-                InventoryCategory.Printer => "PR",
-                InventoryCategory.Monitor => "MN",
-                InventoryCategory.Peripherals => "PE",
-                InventoryCategory.Components => "CP",
-                InventoryCategory.Storage => "ST",
-                InventoryCategory.Memory => "MM",
-                InventoryCategory.PowerSupply => "PS",
-                InventoryCategory.Cables => "CB",
-                InventoryCategory.Software => "SW",
-                InventoryCategory.Accessories => "AC",
-                InventoryCategory.Consumables => "CS",
-                InventoryCategory.MedicalDevice => "MD",
-                InventoryCategory.Telephone => "TL",
-                InventoryCategory.Audio => "AD",
-                InventoryCategory.Video => "VD",
-                InventoryCategory.Security => "SC",
-                InventoryCategory.Backup => "BK",
-                _ => "IT"
-            };
-
-            var currentYear = DateTime.Now.Year.ToString()[2..];
-            var latestItem = await _context.InventoryItems
-                .Where(i => i.ItemCode.StartsWith($"{prefix}{currentYear}"))
-                .OrderByDescending(i => i.ItemCode)
-                .FirstOrDefaultAsync();
-
-            var sequence = 1;
-            if (latestItem != null && latestItem.ItemCode.Length >= 6)
-            {
-                var sequencePart = latestItem.ItemCode[4..];
-                if (int.TryParse(sequencePart, out var lastSequence))
-                {
-                    sequence = lastSequence + 1;
-                }
-            }
-
-            return $"{prefix}{currentYear}{sequence:D4}";
-        }
-
-        #endregion
-
-        // Placeholder implementations for remaining interface methods
-        // These would be implemented with similar patterns as above
-
-        public Task<bool> ReserveStockAsync(int itemId, int quantity, string reason, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> ReleaseReservationAsync(int itemId, int quantity, string reason, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> AllocateStockAsync(int itemId, int quantity, string reason, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> SetStockLevelsAsync(int itemId, int minStock, int maxStock, int reorderLevel, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> TransferInventoryAsync(int itemId, int quantity, int fromLocationId, int toLocationId, string reason, string userId, string? fromZone = null, string? toZone = null, string? fromShelf = null, string? toShelf = null, string? fromBin = null, string? toBin = null)
-        {
-            throw new NotImplementedException();
         }
 
         public async Task<bool> StockInAsync(int itemId, int quantity, decimal? unitCost, string supplier, string reason, string userId, string? purchaseOrderNumber = null, string? invoiceNumber = null)
@@ -924,6 +844,7 @@ namespace HospitalAssetTracker.Services
             throw new NotImplementedException();
         }
 
+        /*
         public Task<bool> BulkUpdateStatusAsync(List<int> itemIds, InventoryStatus newStatus, string reason, string userId)
         {
             throw new NotImplementedException();
@@ -943,6 +864,7 @@ namespace HospitalAssetTracker.Services
         {
             throw new NotImplementedException();
         }
+        */
 
         public Task<InventoryStockReport> GetStockReportAsync()
         {
@@ -959,664 +881,1260 @@ namespace HospitalAssetTracker.Services
             throw new NotImplementedException();
         }
 
+        public async Task<bool> UpdateInventoryFromProcurementAsync(ProcurementItemReceived receivedItem, string userId)
+        {
+            if (receivedItem == null) throw new ArgumentNullException(nameof(receivedItem));
+
+            // Find an existing inventory item or create a new one
+            var inventoryItem = await _context.InventoryItems
+                .FirstOrDefaultAsync(i => i.Name == receivedItem.ItemName && i.Brand == receivedItem.Brand && i.Model == receivedItem.Model);
+
+            if (inventoryItem == null)
+            {
+                inventoryItem = new InventoryItem
+                {
+                    Name = receivedItem.ItemName,
+                    Description = receivedItem.Description,
+                    Brand = receivedItem.Brand ?? "N/A",
+                    Model = receivedItem.Model ?? "N/A",
+                    UnitCost = receivedItem.UnitPrice,
+                    Quantity = receivedItem.ReceivedQuantity,
+                    // Set other properties as needed, e.g., Category from receivedItem
+                };
+                await CreateInventoryItemAsync(inventoryItem, userId);
+            }
+            else
+            {
+                await StockInAsync(inventoryItem.Id, receivedItem.ReceivedQuantity, receivedItem.UnitPrice, receivedItem.SupplierName ?? "Procurement", "Received from procurement", userId, receivedItem.PurchaseOrderNumber);
+            }
+
+            return true;
+        }
+
         public async Task<IEnumerable<StockLevelAlert>> GetStockLevelAlertsAsync()
         {
             var alerts = new List<StockLevelAlert>();
 
             // Critical stock alerts (quantity <= minimum stock)
             var criticalItems = await _context.InventoryItems
+                .AsNoTracking()
                 .Where(i => i.Quantity <= i.MinimumStock && i.MinimumStock > 0)
                 .Include(i => i.Location)
                 .Select(i => new StockLevelAlert
                 {
                     InventoryItemId = i.Id,
-                    ItemCode = i.ItemCode,
                     ItemName = i.Name,
-                    Category = i.Category,
+                    ItemCode = i.ItemCode,
                     CurrentStock = i.Quantity,
-                    MinimumStock = i.MinimumStock,
+                    MinimumLevel = i.MinimumStock,
                     ReorderLevel = i.ReorderLevel,
-                    AlertType = "Critical",
-                    LocationName = i.Location != null ? i.Location.FullLocation : "Unknown"
+                    AlertType = "CriticalStock",
+                    LocationName = i.Location != null ? i.Location.Name : "N/A",
+                    CreatedDate = DateTime.UtcNow
                 })
                 .ToListAsync();
-
+            
             alerts.AddRange(criticalItems);
 
-            // Low stock alerts (quantity <= reorder level but > minimum stock)
+            // Low stock alerts (reorder level)
             var lowStockItems = await _context.InventoryItems
-                .Where(i => i.Quantity <= i.ReorderLevel && i.Quantity > i.MinimumStock && i.ReorderLevel > 0)
-                .Include(i => i.Location)
+                .AsNoTracking()
+                .Where(i => i.Quantity <= i.ReorderLevel && i.ReorderLevel > 0 && i.Quantity > i.MinimumStock)
+                 .Include(i => i.Location)
                 .Select(i => new StockLevelAlert
                 {
                     InventoryItemId = i.Id,
-                    ItemCode = i.ItemCode,
                     ItemName = i.Name,
-                    Category = i.Category,
+                    ItemCode = i.ItemCode,
                     CurrentStock = i.Quantity,
-                    MinimumStock = i.MinimumStock,
+                    MinimumLevel = i.MinimumStock,
                     ReorderLevel = i.ReorderLevel,
-                    AlertType = "Low",
-                    LocationName = i.Location != null ? i.Location.FullLocation : "Unknown"
+                    AlertType = "LowStock",
+                    LocationName = i.Location != null ? i.Location.Name : "N/A",
+                    CreatedDate = DateTime.UtcNow
                 })
                 .ToListAsync();
 
             alerts.AddRange(lowStockItems);
 
-            // Zero stock alerts
-            var zeroStockItems = await _context.InventoryItems
-                .Where(i => i.Quantity == 0)
-                .Include(i => i.Location)
-                .Select(i => new StockLevelAlert
-                {
-                    InventoryItemId = i.Id,
-                    ItemCode = i.ItemCode,
-                    ItemName = i.Name,
-                    Category = i.Category,
-                    CurrentStock = i.Quantity,
-                    MinimumStock = i.MinimumStock,
-                    ReorderLevel = i.ReorderLevel,
-                    AlertType = "Out of Stock",
-                    LocationName = i.Location != null ? i.Location.FullLocation : "Unknown"
-                })
-                .ToListAsync();
-
-            alerts.AddRange(zeroStockItems);
-
-            return alerts.OrderBy(a => a.CurrentStock).ThenBy(a => a.ItemName);
+            return alerts.DistinctBy(a => a.InventoryItemId).ToList();
         }
 
-        public Task<IEnumerable<ExpiryAlert>> GetExpiryAlertsAsync(int daysAhead = 30)
+        public async Task<InventoryReservationResult> CheckAvailabilityAndReserveAsync(int itemId, int quantity, string reason, string userId)
         {
-            throw new NotImplementedException();
-        }
-
-        public async Task<IEnumerable<InventoryItem>> GetLowStockItemsAsync()
-        {
-            return await _context.InventoryItems
-                .Where(i => i.Quantity <= i.ReorderLevel)
-                .Include(i => i.Location)
-                .OrderBy(i => i.Quantity)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<InventoryItem>> GetCriticalStockItemsAsync()
-        {
-            return await _context.InventoryItems
-                .Where(i => i.Quantity <= i.MinimumStock)
-                .Include(i => i.Location)
-                .OrderBy(i => i.Quantity)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<InventoryItem>> GetOverstockedItemsAsync()
-        {
-            return await _context.InventoryItems
-                .Where(i => i.Quantity > i.MaximumStock)
-                .Include(i => i.Location)
-                .OrderByDescending(i => i.Quantity)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<InventoryItem>> GetExpiredItemsAsync()
-        {
-            return await _context.InventoryItems
-                .Where(i => i.WarrantyExpiry.HasValue && i.WarrantyExpiry <= DateTime.UtcNow)
-                .Include(i => i.Location)
-                .OrderBy(i => i.WarrantyExpiry)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<InventoryItem>> GetItemsNearingExpiryAsync(int daysAhead = 30)
-        {
-            var cutoffDate = DateTime.UtcNow.AddDays(daysAhead);
-            return await _context.InventoryItems
-                .Where(i => i.WarrantyExpiry.HasValue && 
-                           i.WarrantyExpiry > DateTime.UtcNow && 
-                           i.WarrantyExpiry <= cutoffDate)
-                .Include(i => i.Location)
-                .OrderBy(i => i.WarrantyExpiry)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<InventoryItem>> SearchInventoryAsync(string searchTerm)
-        {
-            var term = searchTerm.ToLower();
-            return await _context.InventoryItems
-                .Where(i => i.Name.ToLower().Contains(term) ||
-                           i.ItemCode.ToLower().Contains(term) ||
-                           i.Brand.ToLower().Contains(term) ||
-                           i.Model.ToLower().Contains(term) ||
-                           (i.SerialNumber != null && i.SerialNumber.ToLower().Contains(term)) ||
-                           (i.Description != null && i.Description.ToLower().Contains(term)))
-                .Include(i => i.Location)
-                .OrderBy(i => i.Name)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<InventoryItem>> GetInventoryByLocationAsync(int locationId)
-        {
-            return await _context.InventoryItems
-                .Where(i => i.LocationId == locationId)
-                .OrderBy(i => i.Name)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<InventoryItem>> GetInventoryByCategoryAsync(InventoryCategory category)
-        {
-            return await _context.InventoryItems
-                .Where(i => i.Category == category)
-                .Include(i => i.Location)
-                .OrderBy(i => i.Name)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<InventoryItem>> GetInventoryByStatusAsync(InventoryStatus status)
-        {
-            return await _context.InventoryItems
-                .Where(i => i.Status == status)
-                .Include(i => i.Location)
-                .OrderBy(i => i.Name)
-                .ToListAsync();
-        }
-
-        public Task<IEnumerable<InventoryItem>> GetInventoryBySupplierAsync(string supplier)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<InventoryItem>> GetConsumableItemsAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<InventoryItem>> GetItemsRequiringCalibrationAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> UpdateStockLevelsAsync(int itemId, int quantity, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> ValidateStockAvailabilityAsync(int itemId, int requiredQuantity)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> GetAvailableStockAsync(int itemId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> GetReservedStockAsync(int itemId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> GetAllocatedStockAsync(int itemId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> MarkQualityCheckedAsync(int transactionId, bool passed, string notes, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<InventoryTransaction>> GetPendingQualityChecksAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> ScheduleCalibrationAsync(int itemId, DateTime calibrationDate, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> CompleteCalibrationAsync(int itemId, DateTime calibrationDate, string certificateNumber, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<InventoryItem>> GetItemsDueForCalibrationAsync(int daysAhead = 30)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> UpdateStorageLocationAsync(int itemId, string? zone, string? shelf, string? bin, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<InventoryItem>> GetItemsByStorageLocationAsync(int locationId, string? zone = null, string? shelf = null, string? bin = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<byte[]> ExportInventoryToExcelAsync(InventorySearchCriteria? criteria = null)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<byte[]> ExportMovementHistoryToExcelAsync(int itemId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<byte[]> ExportStockReportToExcelAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> ImportInventoryFromExcelAsync(byte[] fileData, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> CleanupOldMovementsAsync(int daysToKeep = 365)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> CleanupOldTransactionsAsync(int daysToKeep = 365)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> RecalculateInventoryValuesAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> UpdateAllTotalValuesAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task<InventoryDashboardData> GetInventoryDashboardDataAsync()
-        {
-            var dashboardData = new InventoryDashboardData();
-
-            // Total counts
-            dashboardData.TotalItems = await _context.InventoryItems.CountAsync();
-            dashboardData.AvailableItems = await _context.InventoryItems.CountAsync(i => i.Status == InventoryStatus.Available);
-            dashboardData.LowStockItems = await _context.InventoryItems.CountAsync(i => i.Quantity <= i.MinimumLevel);
-            dashboardData.OutOfStockItems = await _context.InventoryItems.CountAsync(i => i.Quantity == 0);
-            dashboardData.TotalValue = await _context.InventoryItems.SumAsync(i => (i.Quantity * i.UnitCost) ?? 0);
-
-            // Category breakdown
-            dashboardData.CategoryData = await _context.InventoryItems
-                .GroupBy(i => i.Category.ToString())
-                .Select(g => new { Category = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.Category, x => x.Count);
-
-            // Recent movements (last 10)
-            var recentMovementsData = await _context.InventoryMovements
-                .Include(m => m.InventoryItem)
-                .Include(m => m.User)
-                .OrderByDescending(m => m.MovementDate)
-                .Take(10)
-                .ToListAsync();
-
-            dashboardData.RecentMovements = recentMovementsData.Select(m => new InventoryMovementViewModel
+            var item = await _context.InventoryItems.FindAsync(itemId);
+            if (item == null)
             {
-                Id = m.Id,
-                ItemName = m.InventoryItem.Name,
-                MovementType = m.MovementType,
-                QuantityChanged = m.Quantity,
-                MovementDate = m.MovementDate,
-                MovedBy = m.User?.FirstName + " " + m.User?.LastName,
-                Reason = m.Reason
-            }).ToList();
-
-            // Low stock alerts
-            var lowStockItems = await _context.InventoryItems
-                .Where(i => i.Quantity <= i.MinimumLevel)
-                .OrderBy(i => i.Quantity)
-                .Take(10)
-                .ToListAsync();
-
-            dashboardData.LowStockAlerts = lowStockItems.Select(i => new InventoryAlertViewModel
-            {
-                ItemId = i.Id,
-                ItemName = i.Name,
-                CurrentQuantity = i.Quantity,
-                MinimumStock = i.MinimumLevel,
-                Category = i.Category.ToString(),
-                Status = i.Quantity == 0 ? "Out of Stock" : "Low Stock"
-            }).ToList();
-
-            return dashboardData;
-        }
-
-        public Task<Dictionary<InventoryCategory, int>> GetInventoryCountByCategoryAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<Dictionary<InventoryStatus, int>> GetInventoryCountByStatusAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<decimal> GetTotalInventoryValueAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> GetTotalInventoryItemsAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<int> GetUniqueInventoryItemsAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        #region New Integration Methods - Required by Interface
-
-        public async Task<IEnumerable<Location>> GetAllInventoryLocationsAsync()
-        {
-            return await _context.Locations
-                .Where(l => _context.InventoryItems.Any(i => i.LocationId == l.Id))
-                .OrderBy(l => l.Building)
-                .ThenBy(l => l.Floor)
-                .ThenBy(l => l.Room)
-                .ToListAsync();
-        }
-
-        public async Task<bool> CheckAvailabilityAndReserveAsync(string itemCode, int quantity, int requestId, string userId)
-        {
-            var item = await GetInventoryItemByItemCodeAsync(itemCode);
-            if (item == null || item.Quantity < quantity)
-                return false;
-
-            // Create a reservation record (this could be a new entity or use existing movement system)
-            var movement = new InventoryMovement
-            {
-                InventoryItemId = item.Id,
-                MovementType = InventoryMovementType.Out,
-                Quantity = quantity,
-                MovementDate = DateTime.UtcNow,
-                Reason = $"Reserved for Request #{requestId}",
-                PerformedByUserId = userId,
-                ReferenceNumber = requestId.ToString()
-            };
-
-            item.Quantity -= quantity; // Reserve the stock
-            _context.InventoryMovements.Add(movement);
-            await _context.SaveChangesAsync();
-
-            await _auditService.LogAsync(AuditAction.Update, "InventoryItem", item.Id, userId, 
-                $"Reserved {quantity} units for Request #{requestId}");
-
-            return true;
-        }
-
-        public async Task<bool> ReleaseReservedStockForRequestAsync(int requestId, string userId)
-        {
-            // Find movements related to this request
-            var reservationMovements = await _context.InventoryMovements
-                .Where(m => m.ReferenceNumber == requestId.ToString() && 
-                           m.MovementType == InventoryMovementType.Out &&
-                           m.Reason.Contains("Reserved"))
-                .ToListAsync();
-
-            foreach (var movement in reservationMovements)
-            {
-                var item = await GetInventoryItemByIdAsync(movement.InventoryItemId);
-                if (item != null)
-                {
-                    // Create a return movement
-                    var returnMovement = new InventoryMovement
-                    {
-                        InventoryItemId = item.Id,
-                        MovementType = InventoryMovementType.In,
-                        Quantity = movement.Quantity,
-                        MovementDate = DateTime.UtcNow,
-                        Reason = $"Released reservation for Request #{requestId}",
-                        PerformedByUserId = userId,
-                        ReferenceNumber = requestId.ToString()
-                    };
-
-                    item.Quantity += movement.Quantity; // Return the stock
-                    _context.InventoryMovements.Add(returnMovement);
-
-                    await _auditService.LogAsync(AuditAction.Update, "InventoryItem", item.Id, userId, 
-                        $"Released {movement.Quantity} reserved units for Request #{requestId}");
-                }
+                return new InventoryReservationResult { Success = false, Message = "Inventory item not found." };
             }
 
-            await _context.SaveChangesAsync();
-            return true;
-        }
+            if (item.Quantity < quantity)
+            {
+                return new InventoryReservationResult 
+                { 
+                    Success = false, 
+                    Message = $"Insufficient stock for {item.Name}. Required: {quantity}, Available: {item.Quantity}."
+                };
+            }
 
-        public async Task<InventoryItem?> GetItemBySKUAsync(string sku)
-        {
-            return await _context.InventoryItems
-                .Include(i => i.Location)
-                .Include(i => i.CreatedByUser)
-                .Include(i => i.LastUpdatedByUser)
-                .FirstOrDefaultAsync(i => i.SKU == sku);
-        }
-
-        public async Task<bool> ReceiveStockFromProcurementAsync(int inventoryItemId, int procurementActivityId, int quantityReceived, decimal unitCost, DateTime receivedDate, string userId, string? batchNumber = null, DateTime? expiryDate = null)
-        {
-            var item = await GetInventoryItemByIdAsync(inventoryItemId);
-            if (item == null)
-                return false;
-
-            // Update inventory quantity
-            item.Quantity += quantityReceived;
-            item.UnitCost = unitCost;
-            item.TotalValue = item.Quantity * unitCost;
+            // Reserve the stock
+            item.Quantity -= quantity;
+            item.ReservedQuantity += quantity;
             item.LastUpdatedDate = DateTime.UtcNow;
             item.LastUpdatedByUserId = userId;
 
-            // Create movement record
+            // Create a reservation movement record
             var movement = new InventoryMovement
             {
-                InventoryItemId = inventoryItemId,
-                MovementType = InventoryMovementType.In,
-                Quantity = quantityReceived,
-                MovementDate = receivedDate,
-                Reason = $"Received from Procurement Activity #{procurementActivityId}",
-                PerformedByUserId = userId,
-                ReferenceNumber = procurementActivityId.ToString()
-            };
-
-            // Create transaction record
-            var transaction = new InventoryTransaction
-            {
-                InventoryItemId = inventoryItemId,
-                TransactionType = InventoryTransactionType.Purchase,
-                TransactionDate = receivedDate,
-                Quantity = quantityReceived,
-                UnitCost = unitCost,
-                TotalCost = quantityReceived * unitCost,
-                CreatedByUserId = userId,
-                BatchNumber = batchNumber,
-                ExpiryDate = expiryDate,
-                Notes = $"Received from Procurement Activity #{procurementActivityId}"
-            };
-
-            _context.InventoryMovements.Add(movement);
-            _context.InventoryTransactions.Add(transaction);
-            await _context.SaveChangesAsync();
-
-            await _auditService.LogAsync(AuditAction.Create, "InventoryItem", inventoryItemId, userId, 
-                $"Received {quantityReceived} units from procurement");
-
-            return true;
-        }
-
-        public async Task<bool> AssignComponentToAssetAsync(int assetId, int inventoryItemId, int quantity, string? serialNumber, DateTime installationDate, string userId)
-        {
-            var item = await GetInventoryItemByIdAsync(inventoryItemId);
-            var asset = await _context.Assets.FindAsync(assetId);
-            
-            if (item == null || asset == null || item.Quantity < quantity)
-                return false;
-
-            // Create asset-inventory mapping
-            var mapping = new AssetInventoryMapping
-            {
-                AssetId = assetId,
-                InventoryItemId = inventoryItemId,
+                InventoryItemId = itemId,
+                MovementType = InventoryMovementType.Reservation,
                 Quantity = quantity,
-                SerialNumber = serialNumber,
-                Status = AssetInventoryMappingStatus.Active,
-                DeploymentDate = installationDate,
-                DeployedByUserId = userId,
+                MovementDate = DateTime.UtcNow,
+                Reason = reason,
+                PerformedByUserId = userId,
                 CreatedDate = DateTime.UtcNow
             };
-
-            // Update inventory quantity
-            item.Quantity -= quantity;
-
-            // Create movement record
-            var movement = new InventoryMovement
-            {
-                InventoryItemId = inventoryItemId,
-                MovementType = InventoryMovementType.Out,
-                Quantity = quantity,
-                MovementDate = installationDate,
-                Reason = $"Assigned to Asset #{asset.AssetTag}",
-                PerformedByUserId = userId,
-                RelatedAssetId = assetId
-            };
-
-            _context.AssetInventoryMappings.Add(mapping);
             _context.InventoryMovements.Add(movement);
+
             await _context.SaveChangesAsync();
 
-            await _auditService.LogAsync(AuditAction.Assignment, "AssetInventoryMapping", mapping.Id, userId, 
-                $"Assigned {quantity} units of {item.Name} to Asset {asset.AssetTag}");
+            // Create audit log
+            await _auditService.LogAsync(
+                AuditAction.Update,
+                "InventoryItem",
+                itemId,
+                userId,
+                $"Reserved {quantity} units of {item.ItemCode} for: {reason}. Available quantity now: {item.Quantity}.",
+                new { OldQuantity = item.Quantity + quantity, OldReservedQuantity = item.ReservedQuantity - quantity },
+                new { NewQuantity = item.Quantity, NewReservedQuantity = item.ReservedQuantity }
+            );
+
+            return new InventoryReservationResult 
+            { 
+                Success = true, 
+                QuantityReserved = quantity, 
+                Message = $"Successfully reserved {quantity} units of {item.Name}."
+            };
+        }
+
+        public async Task<bool> UpdateInventoryQuantityAsync(int itemId, int newQuantity, string reason, string userId)
+        {
+            var item = await _context.InventoryItems.FindAsync(itemId);
+            if (item == null)
+            {
+                _logger.LogWarning("UpdateInventoryQuantityAsync: Item with ID {ItemId} not found.", itemId);
+                return false;
+            }
+
+            var originalQuantity = item.Quantity;
+            var quantityChange = newQuantity - originalQuantity;
+
+            // Update the quantity
+            item.Quantity = newQuantity;
+
+            if (item.Quantity < 0)
+            {
+                _logger.LogWarning("UpdateInventoryQuantityAsync: Attempted to set negative quantity for item {ItemId}. Setting to 0.", itemId);
+                item.Quantity = 0; // Prevent negative inventory
+            }
+
+            item.LastUpdatedDate = DateTime.UtcNow;
+            item.LastUpdatedByUserId = userId;
+
+            // Recalculate total value
+            if (item.UnitCost.HasValue)
+            {
+                item.TotalValue = item.UnitCost.Value * item.Quantity;
+            }
+
+            // Create movement record
+            var movementType = quantityChange > 0 ? InventoryMovementType.StockIn : InventoryMovementType.StockOut;
+            var movement = new InventoryMovement
+            {
+                InventoryItemId = itemId,
+                MovementType = movementType,
+                Quantity = Math.Abs(quantityChange),
+                MovementDate = DateTime.UtcNow,
+                Reason = reason,
+                PerformedByUserId = userId,
+                CreatedDate = DateTime.UtcNow
+            };
+            _context.InventoryMovements.Add(movement);
+
+            await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync(
+                AuditAction.Update,
+                "InventoryItem",
+                itemId,
+                userId,
+                $"Quantity updated for {item.ItemCode}. Change: {quantityChange:+#;-#;0}. Reason: {reason}.",
+                new { OldQuantity = originalQuantity },
+                new { NewQuantity = item.Quantity }
+            );
 
             return true;
         }
 
-        public async Task<bool> RemoveComponentFromAssetAsync(int assetId, int inventoryItemId, int quantity, DateTime removalDate, string reason, string userId)
+        public async Task<bool> ReceiveStockFromProcurementAsync(int inventoryItemId, int quantity, decimal unitCost, string supplier, string purchaseOrderNumber, string userId)
         {
-            var mapping = await _context.AssetInventoryMappings
-                .FirstOrDefaultAsync(m => m.AssetId == assetId && 
-                                         m.InventoryItemId == inventoryItemId && 
-                                         m.Status == AssetInventoryMappingStatus.Active);
-            
-            if (mapping == null || mapping.Quantity < quantity)
-                return false;
-
-            var item = await GetInventoryItemByIdAsync(inventoryItemId);
-            var asset = await _context.Assets.FindAsync(assetId);
-
-            if (item == null || asset == null)
-                return false;
-
-            // Update mapping
-            if (mapping.Quantity == quantity)
+            var item = await _context.InventoryItems.FindAsync(inventoryItemId);
+            if (item == null)
             {
-                mapping.Status = AssetInventoryMappingStatus.Removed;
-                mapping.ReturnDate = removalDate;
-                mapping.ReturnedByUserId = userId;
-            }
-            else
-            {
-                mapping.Quantity -= quantity;
+                _logger.LogError("ReceiveStockFromProcurementAsync: Inventory item with ID {InventoryItemId} not found.", inventoryItemId);
+                return false;
             }
 
-            // Return to inventory
+            var oldQuantity = item.Quantity;
+
+            // Update item details
             item.Quantity += quantity;
+            item.UnitCost = unitCost; // Update with the latest cost
+            item.Supplier = supplier;
+            item.PurchaseDate = DateTime.UtcNow;
+            item.LastUpdatedDate = DateTime.UtcNow;
+            item.LastUpdatedByUserId = userId;
 
-            // Create movement record
-            var movement = new InventoryMovement
+            // Recalculate total value
+            item.TotalValue = item.UnitCost.Value * item.Quantity;
+
+            // Create Stock-In Movement
+            var stockInMovement = new InventoryMovement
             {
-                InventoryItemId = inventoryItemId,
-                MovementType = InventoryMovementType.In,
+                InventoryItemId = item.Id,
+                MovementType = InventoryMovementType.StockIn,
                 Quantity = quantity,
-                MovementDate = removalDate,
-                Reason = $"Removed from Asset #{asset.AssetTag}: {reason}",
+                MovementDate = DateTime.UtcNow,
+                Reason = $"Received from procurement. PO: {purchaseOrderNumber}",
                 PerformedByUserId = userId,
-                RelatedAssetId = assetId
+                CreatedDate = DateTime.UtcNow
             };
+            _context.InventoryMovements.Add(stockInMovement);
 
-            _context.InventoryMovements.Add(movement);
+            // Create Purchase Transaction
+            var transaction = new InventoryTransaction
+            {
+                InventoryItemId = item.Id,
+                TransactionType = InventoryTransactionType.Purchase,
+                Quantity = quantity,
+                UnitCost = unitCost,
+                TotalCost = quantity * unitCost,
+                Supplier = supplier,
+                PurchaseOrderNumber = purchaseOrderNumber,
+                PurchaseDate = DateTime.UtcNow,
+                TransactionDate = DateTime.UtcNow,
+                Description = $"Received stock from PO: {purchaseOrderNumber}",
+                CreatedByUserId = userId,
+                CreatedDate = DateTime.UtcNow
+            };
+            _context.InventoryTransactions.Add(transaction);
+
             await _context.SaveChangesAsync();
 
-            await _auditService.LogAsync(AuditAction.Update, "AssetInventoryMapping", mapping.Id, userId, 
-                $"Removed {quantity} units of {item.Name} from Asset {asset.AssetTag}");
+            // Create Audit Log
+            await _auditService.LogAsync(
+                AuditAction.Update,
+                "InventoryItem",
+                item.Id,
+                userId,
+                $"Received {quantity} units of {item.ItemCode} from PO {purchaseOrderNumber}. New quantity: {item.Quantity}.",
+                new { OldQuantity = oldQuantity, OldUnitCost = item.UnitCost },
+                new { NewQuantity = item.Quantity, NewUnitCost = unitCost }
+            );
 
             return true;
         }
 
-        public async Task<IEnumerable<InventoryItem>> GetCompatibleComponentsAsync(int assetId)
-        {
-            var asset = await _context.Assets
-                .Include(a => a.Location)
-                .FirstOrDefaultAsync(a => a.Id == assetId);
-            
-            if (asset == null)
-                return new List<InventoryItem>();
 
-            // This is a simplified implementation - in reality, you'd have more complex compatibility logic
-            // based on asset category, model, specifications, etc.
-            return await _context.InventoryItems
-                .Where(i => i.Status == InventoryStatus.Available && 
-                           i.Quantity > 0 &&
-                           (i.Category == InventoryCategory.Component || 
-                            i.Category == InventoryCategory.Accessory))
-                .OrderBy(i => i.Name)
-                .ToListAsync();
+        // Continue with other methods...
+        #endregion
+
+        #region Helper Methods
+
+        private async Task<string> GenerateItemCodeAsync(InventoryCategory category)
+        {
+            var prefix = category switch
+            {
+                InventoryCategory.Desktop => "DT",
+                InventoryCategory.Laptop => "LT",
+                InventoryCategory.Server => "SV",
+                InventoryCategory.NetworkDevice => "ND",
+                InventoryCategory.Printer => "PR",
+                InventoryCategory.Monitor => "MN",
+                InventoryCategory.Peripherals => "PE",
+                InventoryCategory.Components => "CP",
+                InventoryCategory.Storage => "ST",
+                InventoryCategory.Memory => "MM",
+                InventoryCategory.PowerSupply => "PS",
+                InventoryCategory.Cables => "CB",
+                InventoryCategory.Software => "SW",
+                InventoryCategory.Accessories => "AC",
+                InventoryCategory.Consumables => "CS",
+                InventoryCategory.MedicalDevice => "MD",
+                InventoryCategory.Telephone => "TL",
+                InventoryCategory.Audio => "AD",
+                InventoryCategory.Video => "VD",
+                InventoryCategory.Security => "SC",
+                InventoryCategory.Backup => "BK",
+                _ => "IT"
+            };
+
+            var currentYear = DateTime.Now.Year.ToString()[2..];
+            var latestItem = await _context.InventoryItems
+                .Where(i => i.ItemCode.StartsWith($"{prefix}{currentYear}"))
+                .OrderByDescending(i => i.ItemCode)
+                .FirstOrDefaultAsync();
+
+            var sequence = 1;
+            if (latestItem != null && latestItem.ItemCode.Length >= 6)
+            {
+                var sequencePart = latestItem.ItemCode[4..];
+                if (int.TryParse(sequencePart, out var lastSequence))
+                {
+                    sequence = lastSequence + 1;
+                }
+            }
+
+            return $"{prefix}{currentYear}{sequence:D4}";
         }
 
         #endregion
 
-        public async Task<bool> UpdateInventoryQuantityAsync(int itemId, int newQuantity, string userId)
+        // Placeholder implementations for remaining interface methods
+        // These would be implemented with similar patterns as above
+
+        public async Task<InventoryDashboardData> GetInventoryDashboardDataAsync()
         {
+            var data = new InventoryDashboardData();
+
+            var items = await _context.InventoryItems.AsNoTracking().ToListAsync();
+
+            data.TotalItems = items.Count;
+            data.OutOfStockItems = items.Count(i => i.Quantity == 0);
+            data.LowStockItems = items.Count(i => i.Quantity > 0 && i.Quantity <= i.MinimumStock);
+            data.TotalValue = items.Sum(i => i.TotalValue ?? 0);
+
+            data.CategoryDistribution = items.GroupBy(i => i.Category.ToString())
+                                             .ToDictionary(g => g.Key, g => g.Count());
+
+            data.StatusDistribution = items.GroupBy(i => i.Status.ToString())
+                                           .ToDictionary(g => g.Key, g => g.Count());
+
+            data.RecentMovements = await _context.InventoryMovements
+                .AsNoTracking()
+                .OrderByDescending(m => m.MovementDate)
+                .Take(10)
+                .Select(m => new InventoryMovementViewModel
+                {
+                    Id = m.Id,
+                    ItemName = m.InventoryItem != null ? m.InventoryItem.Name : "N/A",
+                    MovementType = m.MovementType,
+                    QuantityChanged = m.Quantity,
+                    MovementDate = m.MovementDate,
+                    MovedBy = m.PerformedByUser != null ? m.PerformedByUser.UserName : "System"
+                }).ToListAsync();
+
+            return data;
+        }
+
+        public async Task<IEnumerable<InventoryExpiryAlert>> GetExpiryAlertsAsync()
+        {
+            var upcomingExpiryDate = DateTime.UtcNow.AddDays(30);
+            return await _context.InventoryItems
+                .AsNoTracking()
+                .Where(i => i.WarrantyExpiry.HasValue && i.WarrantyExpiry.Value <= upcomingExpiryDate)
+                .Include(i => i.Location)
+                .Select(i => new InventoryExpiryAlert
+                {
+                    InventoryItemId = i.Id,
+                    ItemName = i.Name,
+                    ItemCode = i.ItemCode,
+                    WarrantyExpiry = i.WarrantyExpiry,
+                    DaysUntilExpiry = i.WarrantyExpiry.HasValue 
+                        ? (int)(i.WarrantyExpiry.Value - DateTime.UtcNow).TotalDays 
+                        : 0,
+                    AlertType = i.WarrantyExpiry.HasValue && i.WarrantyExpiry.Value < DateTime.UtcNow 
+                        ? "Expired" 
+                        : "Expiring",
+                    LocationName = i.Location != null ? i.Location.Name : "Unknown",
+                    CreatedDate = DateTime.UtcNow
+                })
+                .ToListAsync();
+        }
+
+        public Task<bool> ReserveStockAsync(int itemId, int quantity, string reason, string userId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> ReleaseReservationAsync(int itemId, int quantity, string reason, string userId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> AllocateStockAsync(int itemId, int quantity, string reason, string userId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> SetStockLevelsAsync(int itemId, int minStock, int maxStock, int reorderLevel, string userId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> TransferInventoryAsync(int itemId, int quantity, int fromLocationId, int toLocationId, string reason, string userId, string? fromZone = null, string? toZone = null, string? fromShelf = null, string? toShelf = null, string? fromBin = null, string? toBin = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        #region Enhanced Advanced Search & Bulk Operations
+
+        public async Task<PagedResult<AdvancedInventorySearchResult>> GetInventoryItemsAdvancedAsync(AdvancedInventorySearchModel searchModel)
+        {
+            var query = _context.InventoryItems
+                .Include(i => i.Location)
+                .Include(i => i.CreatedByUser)
+                .Include(i => i.LastUpdatedByUser)
+                .AsQueryable();
+
+            // Apply search filters
+            if (!string.IsNullOrEmpty(searchModel.SearchTerm))
+            {
+                var searchTerm = searchModel.SearchTerm.ToLower();
+                query = query.Where(i => 
+                    i.Name.ToLower().Contains(searchTerm) ||
+                    i.ItemCode.ToLower().Contains(searchTerm) ||
+                    i.Brand.ToLower().Contains(searchTerm) ||
+                    i.Model.ToLower().Contains(searchTerm) ||
+                    (i.Description != null && i.Description.ToLower().Contains(searchTerm)) ||
+                    (i.SerialNumber != null && i.SerialNumber.ToLower().Contains(searchTerm)));
+            }
+
+            if (!string.IsNullOrEmpty(searchModel.ItemCode))
+            {
+                query = query.Where(i => i.ItemCode.Contains(searchModel.ItemCode));
+            }
+
+            if (searchModel.Category.HasValue)
+            {
+                query = query.Where(i => i.Category == searchModel.Category.Value);
+            }
+
+            if (searchModel.Status.HasValue)
+            {
+                query = query.Where(i => i.Status == searchModel.Status.Value);
+            }
+
+            if (searchModel.Condition.HasValue)
+            {
+                query = query.Where(i => i.Condition == searchModel.Condition.Value);
+            }
+
+            if (searchModel.LocationId.HasValue)
+            {
+                query = query.Where(i => i.LocationId == searchModel.LocationId.Value);
+            }
+
+            if (!string.IsNullOrEmpty(searchModel.Brand))
+            {
+                query = query.Where(i => i.Brand.Contains(searchModel.Brand));
+            }
+
+            if (!string.IsNullOrEmpty(searchModel.Model))
+            {
+                query = query.Where(i => i.Model.Contains(searchModel.Model));
+            }
+
+            if (!string.IsNullOrEmpty(searchModel.Supplier))
+            {
+                query = query.Where(i => i.Supplier != null && i.Supplier.Contains(searchModel.Supplier));
+            }
+
+            // Stock level filters
+            if (searchModel.StockLevelFilter.HasValue)
+            {
+                switch (searchModel.StockLevelFilter.Value)
+                {
+                    case StockLevelFilter.LowStock:
+                        query = query.Where(i => i.Quantity <= i.ReorderLevel);
+                        break;
+                    case StockLevelFilter.CriticalStock:
+                        query = query.Where(i => i.Quantity <= i.MinimumStock);
+                        break;
+                    case StockLevelFilter.OutOfStock:
+                        query = query.Where(i => i.Quantity == 0);
+                        break;
+                    case StockLevelFilter.Overstocked:
+                        query = query.Where(i => i.Quantity >= i.MaximumStock);
+                        break;
+                    case StockLevelFilter.Normal:
+                        query = query.Where(i => i.Quantity > i.ReorderLevel && i.Quantity < i.MaximumStock);
+                        break;
+                }
+            }
+
+            // Quick filters
+            if (searchModel.ShowLowStockOnly)
+            {
+                query = query.Where(i => i.Quantity <= i.ReorderLevel);
+            }
+
+            if (searchModel.ShowCriticalStockOnly)
+            {
+                query = query.Where(i => i.Quantity <= i.MinimumStock);
+            }
+
+            if (searchModel.ShowOverstockedOnly)
+            {
+                query = query.Where(i => i.Quantity >= i.MaximumStock);
+            }
+
+            // Quantity filters
+            if (searchModel.MinQuantity.HasValue)
+            {
+                query = query.Where(i => i.Quantity >= searchModel.MinQuantity.Value);
+            }
+
+            if (searchModel.MaxQuantity.HasValue)
+            {
+                query = query.Where(i => i.Quantity <= searchModel.MaxQuantity.Value);
+            }
+
+            // Value filters
+            if (searchModel.MinUnitCost.HasValue)
+            {
+                query = query.Where(i => i.UnitCost >= searchModel.MinUnitCost.Value);
+            }
+
+            if (searchModel.MaxUnitCost.HasValue)
+            {
+                query = query.Where(i => i.UnitCost <= searchModel.MaxUnitCost.Value);
+            }
+
+            if (searchModel.MinTotalValue.HasValue)
+            {
+                query = query.Where(i => i.TotalValue >= searchModel.MinTotalValue.Value);
+            }
+
+            if (searchModel.MaxTotalValue.HasValue)
+            {
+                query = query.Where(i => i.TotalValue <= searchModel.MaxTotalValue.Value);
+            }
+
+            // Date filters
+            if (searchModel.CreatedFrom.HasValue)
+            {
+                query = query.Where(i => i.CreatedDate >= searchModel.CreatedFrom.Value);
+            }
+
+            if (searchModel.CreatedTo.HasValue)
+            {
+                query = query.Where(i => i.CreatedDate <= searchModel.CreatedTo.Value.AddDays(1));
+            }
+
+            if (searchModel.PurchaseDateFrom.HasValue)
+            {
+                query = query.Where(i => i.PurchaseDate >= searchModel.PurchaseDateFrom.Value);
+            }
+
+            if (searchModel.PurchaseDateTo.HasValue)
+            {
+                query = query.Where(i => i.PurchaseDate <= searchModel.PurchaseDateTo.Value.AddDays(1));
+            }
+
+            // Boolean filters
+            if (searchModel.IsConsumable.HasValue)
+            {
+                query = query.Where(i => i.IsConsumable == searchModel.IsConsumable.Value);
+            }
+
+            if (searchModel.HasSerialNumber.HasValue)
+            {
+                if (searchModel.HasSerialNumber.Value)
+                {
+                    query = query.Where(i => !string.IsNullOrEmpty(i.SerialNumber));
+                }
+                else
+                {
+                    query = query.Where(i => string.IsNullOrEmpty(i.SerialNumber));
+                }
+            }
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply sorting
+            query = searchModel.SortOrder.ToLower() == "desc"
+                ? ApplySortingDescending(query, searchModel.SortBy)
+                : ApplySortingAscending(query, searchModel.SortBy);
+
+            // Apply pagination
+            var items = await query
+                .Skip((searchModel.PageNumber - 1) * searchModel.PageSize)
+                .Take(searchModel.PageSize)
+                .Select(i => new AdvancedInventorySearchResult
+                {
+                    Id = i.Id,
+                    ItemCode = i.ItemCode,
+                    Name = i.Name,
+                    Description = i.Description,
+                    Category = i.Category,
+                    ItemType = i.ItemType,
+                    Status = i.Status,
+                    Condition = i.Condition,
+                    Brand = i.Brand,
+                    Model = i.Model,
+                    SerialNumber = i.SerialNumber,
+                    Quantity = i.Quantity,
+                    ReservedQuantity = i.ReservedQuantity,
+                    MinimumStock = i.MinimumStock,
+                    MaximumStock = i.MaximumStock,
+                    ReorderLevel = i.ReorderLevel,
+                    UnitCost = i.UnitCost,
+                    TotalValue = i.TotalValue,
+                    Supplier = i.Supplier,
+                    PurchaseDate = i.PurchaseDate,
+                    WarrantyExpiry = i.WarrantyExpiry,
+                    LocationName = i.Location != null ? i.Location.Name : "Unknown",
+                    StorageLocation = GetStorageLocationString(i.StorageZone, i.StorageShelf, i.StorageBin) ?? UnknownValue,
+                    AbcClassification = i.AbcClassification,
+                    CreatedDate = i.CreatedDate,
+                    LastUpdatedDate = i.LastUpdatedDate,
+                    CreatedByUserName = i.CreatedByUser != null ? (i.CreatedByUser.UserName ?? SystemUser) : SystemUser,
+                    LastUpdatedByUserName = i.LastUpdatedByUser != null ? (i.LastUpdatedByUser.UserName ?? UnknownValue) : UnknownValue
+                })
+                .ToListAsync();
+
+            return new PagedResult<AdvancedInventorySearchResult>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageNumber = searchModel.PageNumber,
+                PageSize = searchModel.PageSize
+            };
+        }
+
+        public async Task<IEnumerable<AdvancedInventorySearchResult>> SearchInventoryItemsAsync(string searchTerm, int maxResults = 50)
+        {
+            if (string.IsNullOrEmpty(searchTerm)) return new List<AdvancedInventorySearchResult>();
+
+            var searchModel = new AdvancedInventorySearchModel
+            {
+                SearchTerm = searchTerm,
+                PageSize = maxResults
+            };
+
+            var result = await GetInventoryItemsAdvancedAsync(searchModel);
+            return result.Items;
+        }
+
+        public async Task<IEnumerable<InventoryQuickFilterModel>> GetQuickFiltersAsync()
+        {
+            var filters = new List<InventoryQuickFilterModel>();
+
+            // Add system filters
+            filters.Add(new InventoryQuickFilterModel
+            {
+                Name = "Low Stock Items",
+                Description = "Items at or below reorder level",
+                FilterCriteria = new AdvancedInventorySearchModel { ShowLowStockOnly = true },
+                ItemCount = await _context.InventoryItems.CountAsync(i => i.Quantity <= i.ReorderLevel),
+                IsSystemFilter = true
+            });
+
+            filters.Add(new InventoryQuickFilterModel
+            {
+                Name = "Critical Stock Items",
+                Description = "Items at or below minimum stock level",
+                FilterCriteria = new AdvancedInventorySearchModel { ShowCriticalStockOnly = true },
+                ItemCount = await _context.InventoryItems.CountAsync(i => i.Quantity <= i.MinimumStock),
+                IsSystemFilter = true
+            });
+
+            filters.Add(new InventoryQuickFilterModel
+            {
+                Name = "High Value Items",
+                Description = "Items with total value over $1000",
+                FilterCriteria = new AdvancedInventorySearchModel { MinTotalValue = 1000 },
+                ItemCount = await _context.InventoryItems.CountAsync(i => i.TotalValue >= 1000),
+                IsSystemFilter = true
+            });
+
+            filters.Add(new InventoryQuickFilterModel
+            {
+                Name = "Expiring Warranty",
+                Description = "Items with warranty expiring in 30 days",
+                FilterCriteria = new AdvancedInventorySearchModel { ShowExpiringWarrantyOnly = true },
+                ItemCount = await _context.InventoryItems.CountAsync(i => 
+                    i.WarrantyExpiry.HasValue && 
+                    i.WarrantyExpiry.Value >= DateTime.Now && 
+                    i.WarrantyExpiry.Value <= DateTime.Now.AddDays(30)),
+                IsSystemFilter = true
+            });
+
+            return filters;
+        }
+
+        public async Task<int> GetInventoryCountAsync(AdvancedInventorySearchModel searchModel)
+        {
+            var result = await GetInventoryItemsAdvancedAsync(searchModel);
+            return result.TotalCount;
+        }
+
+        public async Task<BulkOperationResult> ExecuteBulkOperationAsync(BulkInventoryOperationModel operationModel, string userId)
+        {
+            var result = new BulkOperationResult
+            {
+                TotalItems = operationModel.SelectedItemIds.Count,
+                ExecutedBy = userId
+            };
+
             try
             {
-                var item = await _context.InventoryItems.FindAsync(itemId);
-                if (item == null)
+                var items = await _context.InventoryItems
+                    .Where(i => operationModel.SelectedItemIds.Contains(i.Id))
+                    .ToListAsync();
+
+                switch (operationModel.OperationType)
                 {
-                    _logger.LogWarning("Inventory item with ID {ItemId} not found", itemId);
-                    return false;
+                    case BulkOperationType.UpdateStatus:
+                        await ProcessBulkStatusUpdate(items, operationModel, userId, result);
+                        break;
+                    case BulkOperationType.UpdateLocation:
+                        await ProcessBulkLocationUpdate(items, operationModel, userId, result);
+                        break;
+                    case BulkOperationType.AdjustStock:
+                        await ProcessBulkStockAdjustment(items, operationModel, userId, result);
+                        break;
+                    default:
+                        result.ErrorMessages.Add($"Bulk operation type {operationModel.OperationType} is not implemented");
+                        break;
                 }
 
-                var oldQuantity = item.Quantity;
-                var adjustmentQuantity = newQuantity - oldQuantity;
-
-                item.Quantity = newQuantity;
-                if (item.UnitCost.HasValue)
+                if (result.SuccessfulItems > 0)
                 {
-                    item.TotalValue = item.UnitCost.Value * item.Quantity;
+                    await _context.SaveChangesAsync();
+                    result.Success = true;
+                    result.Summary = $"Successfully processed {result.SuccessfulItems} of {result.TotalItems} items";
                 }
-
-                // Create movement record
-                var movement = new InventoryMovement
-                {
-                    InventoryItemId = itemId,
-                    MovementType = adjustmentQuantity > 0 ? InventoryMovementType.StockIn : InventoryMovementType.StockOut,
-                    Quantity = Math.Abs(adjustmentQuantity),
-                    MovementDate = DateTime.UtcNow,
-                    Notes = $"Quantity updated from {oldQuantity} to {newQuantity}"
-                };
-
-                _context.InventoryMovements.Add(movement);
-
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Inventory quantity updated for item {ItemId} from {OldQuantity} to {NewQuantity} by user {UserId}", 
-                    itemId, oldQuantity, newQuantity, userId);
-
-                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating inventory quantity for item {ItemId}", itemId);
-                return false;
+                _logger.LogError(ex, "Error executing bulk operation");
+                result.ErrorMessages.Add($"Unexpected error: {ex.Message}");
+            }
+
+            return result;
+        }
+
+        // Advanced bulk operations implementation
+        public async Task<InventorySearchModels.BulkOperationResult> BulkUpdateInventoryAsync(InventorySearchModels.BulkInventoryUpdateRequest request, string userId)
+        {
+            var result = new InventorySearchModels.BulkOperationResult();
+            
+            try
+            {
+                var items = await _context.InventoryItems
+                    .Where(i => request.ItemIds.Contains(i.Id))
+                    .ToListAsync();
+
+                if (!items.Any())
+                {
+                    result.Message = "No items found to update";
+                    return result;
+                }
+
+                foreach (var item in items)
+                {
+                    try
+                    {
+                        switch (request.UpdateType.ToLower())
+                        {
+                            case "status":
+                                if (request.UpdateValue is InventoryStatus status)
+                                {
+                                    item.Status = status;
+                                }
+                                break;
+                            case "location":
+                                if (request.UpdateValue is int locationId)
+                                {
+                                    item.LocationId = locationId;
+                                }
+                                break;
+                            case "category":
+                                if (request.UpdateValue is InventoryCategory category)
+                                {
+                                    item.Category = category;
+                                }
+                                break;
+                        }
+
+                        item.LastUpdatedDate = DateTime.UtcNow;
+                        item.LastUpdatedByUserId = userId;
+                        result.AffectedItems++;
+                    }
+                    catch (Exception ex)
+                    {
+                        result.Errors.Add($"Error updating item {item.ItemCode}: {ex.Message}");
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                result.Success = true;
+                result.Message = $"Successfully updated {result.AffectedItems} items";
+            }
+            catch (Exception ex)
+            {
+                result.Message = $"Bulk update failed: {ex.Message}";
+                _logger.LogError(ex, "Bulk update operation failed");
+            }
+
+            return result;
+        }
+
+        public async Task<byte[]?> ExportInventoryAsync(InventorySearchModels.InventoryExportRequest request)
+        {
+            try
+            {
+                // This is a placeholder implementation
+                // In a real implementation, you would use libraries like EPPlus for Excel or iTextSharp for PDF
+                var items = new List<InventoryItem>();
+
+                if (request.ItemIds?.Any() == true)
+                {
+                    items = await _context.InventoryItems
+                        .Where(i => request.ItemIds.Contains(i.Id))
+                        .Include(i => i.Location)
+                        .ToListAsync();
+                }
+                else if (request.SearchCriteria != null)
+                {
+                    var searchResult = await GetInventoryItemsAdvancedAsync(request.SearchCriteria);
+                    // Would need to convert AdvancedInventorySearchResult back to InventoryItem
+                    // This is simplified for now
+                }
+
+                // For now, return null - implement actual export logic based on request.Format
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Export operation failed");
+                return null;
             }
         }
+
+        public async Task<IEnumerable<InventorySearchModels.AdvancedInventorySearchResult>> GetLowStockItemsAsync()
+        {
+            var items = await _context.InventoryItems
+                .Include(i => i.Location)
+                .Where(i => i.Quantity <= i.MinimumStock && i.MinimumStock > 0)
+                .OrderBy(i => i.Quantity)
+                .Take(50)
+                .ToListAsync();
+
+            return items.Select(i => new InventorySearchModels.AdvancedInventorySearchResult
+            {
+                Id = i.Id,
+                ItemCode = i.ItemCode,
+                Name = i.Name,
+                Category = i.Category,
+                Quantity = i.Quantity,
+                UnitCost = i.UnitCost,
+                TotalValue = i.TotalValue,
+                LocationName = i.Location?.Name ?? UnknownValue,
+                Status = i.Status,
+                MinimumStock = i.MinimumStock,
+                ReorderLevel = i.ReorderLevel
+            });
+        }
+
+        public async Task<IEnumerable<InventorySearchModels.AdvancedInventorySearchResult>> GetOutOfStockItemsAsync()
+        {
+            var items = await _context.InventoryItems
+                .Include(i => i.Location)
+                .Where(i => i.Quantity <= 0)
+                .OrderBy(i => i.LastUpdatedDate)
+                .Take(50)
+                .ToListAsync();
+
+            return items.Select(i => new InventorySearchModels.AdvancedInventorySearchResult
+            {
+                Id = i.Id,
+                ItemCode = i.ItemCode,
+                Name = i.Name,
+                Category = i.Category,
+                Quantity = i.Quantity,
+                UnitCost = i.UnitCost,
+                TotalValue = i.TotalValue,
+                LocationName = i.Location?.Name ?? UnknownValue,
+                Status = i.Status,
+                MinimumStock = i.MinimumStock,
+                ReorderLevel = i.ReorderLevel
+            });
+        }
+
+        public async Task<IEnumerable<InventorySearchModels.AdvancedInventorySearchResult>> GetExpiringSoonItemsAsync()
+        {
+            var cutoffDate = DateTime.UtcNow.AddDays(30); // 30 days from now
+            
+            var items = await _context.InventoryItems
+                .Include(i => i.Location)
+                .Where(i => i.WarrantyExpiry.HasValue && i.WarrantyExpiry.Value <= cutoffDate)
+                .OrderBy(i => i.WarrantyExpiry)
+                .Take(50)
+                .ToListAsync();
+
+            return items.Select(i => new InventorySearchModels.AdvancedInventorySearchResult
+            {
+                Id = i.Id,
+                ItemCode = i.ItemCode,
+                Name = i.Name,
+                Category = i.Category,
+                Quantity = i.Quantity,
+                UnitCost = i.UnitCost,
+                TotalValue = i.TotalValue,
+                LocationName = i.Location?.Name ?? UnknownValue,
+                Status = i.Status,
+                WarrantyExpiry = i.WarrantyExpiry
+            });
+        }
+
+        public async Task<IEnumerable<InventorySearchModels.AdvancedInventorySearchResult>> GetHighValueItemsAsync()
+        {
+            var items = await _context.InventoryItems
+                .Include(i => i.Location)
+                .Where(i => i.TotalValue.HasValue)
+                .OrderByDescending(i => i.TotalValue)
+                .Take(50)
+                .ToListAsync();
+
+            return items.Select(i => new InventorySearchModels.AdvancedInventorySearchResult
+            {
+                Id = i.Id,
+                ItemCode = i.ItemCode,
+                Name = i.Name,
+                Category = i.Category,
+                Quantity = i.Quantity,
+                UnitCost = i.UnitCost,
+                TotalValue = i.TotalValue,
+                LocationName = i.Location?.Name ?? UnknownValue,
+                Status = i.Status
+            });
+        }
+
+        public async Task<IEnumerable<InventorySearchModels.AdvancedInventorySearchResult>> GetRecentlyAddedItemsAsync()
+        {
+            var cutoffDate = DateTime.UtcNow.AddDays(-7); // Last 7 days
+            
+            var items = await _context.InventoryItems
+                .Include(i => i.Location)
+                .Where(i => i.CreatedDate >= cutoffDate)
+                .OrderByDescending(i => i.CreatedDate)
+                .Take(50)
+                .ToListAsync();
+
+            return items.Select(i => new InventorySearchModels.AdvancedInventorySearchResult
+            {
+                Id = i.Id,
+                ItemCode = i.ItemCode,
+                Name = i.Name,
+                Category = i.Category,
+                Quantity = i.Quantity,
+                UnitCost = i.UnitCost,
+                TotalValue = i.TotalValue,
+                LocationName = i.Location?.Name ?? UnknownValue,
+                Status = i.Status,
+                CreatedDate = i.CreatedDate
+            });
+        }
+
+        #endregion
+
+        #region Private Helper Methods for Advanced Operations
+
+        private static IQueryable<InventoryItem> ApplySortingAscending(IQueryable<InventoryItem> query, string sortBy)
+        {
+            return sortBy.ToLower() switch
+            {
+                "name" => query.OrderBy(i => i.Name),
+                "itemcode" => query.OrderBy(i => i.ItemCode),
+                "category" => query.OrderBy(i => i.Category),
+                "brand" => query.OrderBy(i => i.Brand),
+                "model" => query.OrderBy(i => i.Model),
+                "quantity" => query.OrderBy(i => i.Quantity),
+                "unitcost" => query.OrderBy(i => i.UnitCost),
+                "totalvalue" => query.OrderBy(i => i.TotalValue),
+                "status" => query.OrderBy(i => i.Status),
+                "location" => query.OrderBy(i => i.Location!.Name),
+                "createdate" => query.OrderBy(i => i.CreatedDate),
+                _ => query.OrderBy(i => i.Name)
+            };
+        }
+
+        private static IQueryable<InventoryItem> ApplySortingDescending(IQueryable<InventoryItem> query, string sortBy)
+        {
+            return sortBy.ToLower() switch
+            {
+                "name" => query.OrderByDescending(i => i.Name),
+                "itemcode" => query.OrderByDescending(i => i.ItemCode),
+                "category" => query.OrderByDescending(i => i.Category),
+                "brand" => query.OrderByDescending(i => i.Brand),
+                "model" => query.OrderByDescending(i => i.Model),
+                "quantity" => query.OrderByDescending(i => i.Quantity),
+                "unitcost" => query.OrderByDescending(i => i.UnitCost),
+                "totalvalue" => query.OrderByDescending(i => i.TotalValue),
+                "status" => query.OrderByDescending(i => i.Status),
+                "location" => query.OrderByDescending(i => i.Location!.Name),
+                "createdate" => query.OrderByDescending(i => i.CreatedDate),
+                _ => query.OrderByDescending(i => i.Name)
+            };
+        }
+
+        private static string? GetStorageLocationString(string? zone, string? shelf, string? bin)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrEmpty(zone)) parts.Add($"Zone: {zone}");
+            if (!string.IsNullOrEmpty(shelf)) parts.Add($"Shelf: {shelf}");
+            if (!string.IsNullOrEmpty(bin)) parts.Add($"Bin: {bin}");
+            return parts.Count > 0 ? string.Join(", ", parts) : null;
+        }
+
+        private async Task ProcessBulkStatusUpdate(List<InventoryItem> items, BulkInventoryOperationModel operationModel, string userId, BulkOperationResult result)
+        {
+            if (!operationModel.NewStatus.HasValue)
+            {
+                result.ErrorMessages.Add("New status is required for status update operation");
+                return;
+            }
+
+            foreach (var item in items)
+            {
+                try
+                {
+                    var oldStatus = item.Status;
+                    item.Status = operationModel.NewStatus.Value;
+                    item.LastUpdatedDate = DateTime.UtcNow;
+                    item.LastUpdatedByUserId = userId;
+
+                    await _auditService.LogAsync(
+                        AuditAction.Update,
+                        "InventoryItem",
+                        item.Id,
+                        userId,
+                        $"Bulk status update: {oldStatus} → {item.Status}",
+                        new { OldStatus = oldStatus },
+                        new { NewStatus = item.Status }
+                    );
+
+                    result.SuccessfulItems++;
+                }
+                catch (Exception ex)
+                {
+                    result.FailedItems++;
+                    result.ErrorMessages.Add($"Failed to update item {item.ItemCode}: {ex.Message}");
+                }
+            }
+        }
+
+        private async Task ProcessBulkLocationUpdate(List<InventoryItem> items, BulkInventoryOperationModel operationModel, string userId, BulkOperationResult result)
+        {
+            if (!operationModel.NewLocationId.HasValue)
+            {
+                result.ErrorMessages.Add("New location is required for location update operation");
+                return;
+            }
+
+            foreach (var item in items)
+            {
+                try
+                {
+                    var oldLocationId = item.LocationId;
+                    item.LocationId = operationModel.NewLocationId.Value;
+                    item.StorageZone = operationModel.NewStorageZone;
+                    item.StorageShelf = operationModel.NewStorageShelf;
+                    item.LastUpdatedDate = DateTime.UtcNow;
+                    item.LastUpdatedByUserId = userId;
+
+                    // Create movement record
+                    var movement = new InventoryMovement
+                    {
+                        InventoryItemId = item.Id,
+                        MovementType = InventoryMovementType.Transfer,
+                        Quantity = item.Quantity,
+                        FromLocationId = oldLocationId,
+                        ToLocationId = item.LocationId,
+                        FromZone = null, // Would need to track previous zone
+                        ToZone = operationModel.NewStorageZone,
+                        MovementDate = DateTime.UtcNow,
+                        Reason = operationModel.TransferReason ?? "Bulk location update",
+                        PerformedByUserId = userId,
+                        CreatedDate = DateTime.UtcNow
+                    };
+                    _context.InventoryMovements.Add(movement);
+
+                    await _auditService.LogAsync(
+                        AuditAction.Update,
+                        "InventoryItem",
+                        item.Id,
+                        userId,
+                        $"Bulk location update: Location changed to {operationModel.NewLocationId}",
+                        new { OldLocationId = oldLocationId },
+                        new { NewLocationId = item.LocationId, NewZone = item.StorageZone }
+                    );
+
+                    result.SuccessfulItems++;
+                }
+                catch (Exception ex)
+                {
+                    result.FailedItems++;
+                    result.ErrorMessages.Add($"Failed to update location for item {item.ItemCode}: {ex.Message}");
+                }
+            }
+        }
+
+        private async Task ProcessBulkStockAdjustment(List<InventoryItem> items, BulkInventoryOperationModel operationModel, string userId, BulkOperationResult result)
+        {
+            if (!operationModel.QuantityAdjustment.HasValue || !operationModel.AdjustmentType.HasValue)
+            {
+                result.ErrorMessages.Add("Quantity adjustment and adjustment type are required for stock adjustment operation");
+                return;
+            }
+
+            foreach (var item in items)
+            {
+                try
+                {
+                    var oldQuantity = item.Quantity;
+                    var adjustment = operationModel.QuantityAdjustment.Value;
+
+                    switch (operationModel.AdjustmentType.Value)
+                    {
+                        case StockAdjustmentType.Increase:
+                            item.Quantity += adjustment;
+                            break;
+                        case StockAdjustmentType.Decrease:
+                            item.Quantity = Math.Max(0, item.Quantity - adjustment);
+                            break;
+                        case StockAdjustmentType.SetAbsolute:
+                            item.Quantity = adjustment;
+                            break;
+                    }
+
+                    // Recalculate total value
+                    if (item.UnitCost.HasValue)
+                    {
+                        item.TotalValue = item.UnitCost.Value * item.Quantity;
+                    }
+
+                    item.LastUpdatedDate = DateTime.UtcNow;
+                    item.LastUpdatedByUserId = userId;
+
+                    // Create movement record
+                    var movementType = item.Quantity > oldQuantity ? InventoryMovementType.StockIn : InventoryMovementType.StockOut;
+                    var movement = new InventoryMovement
+                    {
+                        InventoryItemId = item.Id,
+                        MovementType = movementType,
+                        Quantity = Math.Abs(item.Quantity - oldQuantity),
+                        MovementDate = DateTime.UtcNow,
+                        Reason = operationModel.Reason ?? "Bulk stock adjustment",
+                        PerformedByUserId = userId,
+                        CreatedDate = DateTime.UtcNow
+                    };
+                    _context.InventoryMovements.Add(movement);
+
+                    await _auditService.LogAsync(
+                        AuditAction.Update,
+                        "InventoryItem",
+                        item.Id,
+                        userId,
+                        $"Bulk stock adjustment: {oldQuantity} → {item.Quantity}",
+                        new { OldQuantity = oldQuantity },
+                        new { NewQuantity = item.Quantity, AdjustmentType = operationModel.AdjustmentType }
+                    );
+
+                    result.SuccessfulItems++;
+                }
+                catch (Exception ex)
+                {
+                    result.FailedItems++;
+                    result.ErrorMessages.Add($"Failed to adjust stock for item {item.ItemCode}: {ex.Message}");
+                }
+            }
+        }
+
+        public async Task<IEnumerable<AdvancedInventorySearchResult>> GetItemsForBulkOperationAsync(List<int> itemIds)
+        {
+            return await _context.InventoryItems
+                .Where(i => itemIds.Contains(i.Id))
+                .Include(i => i.Location)
+                .Select(i => new AdvancedInventorySearchResult
+                {
+                    Id = i.Id,
+                    ItemCode = i.ItemCode,
+                    Name = i.Name,
+                    Category = i.Category,
+                    Status = i.Status,
+                    Quantity = i.Quantity,
+                    LocationName = i.Location != null ? i.Location.Name : "Unknown"
+                })
+                .ToListAsync();
+        }
+
+        public async Task<bool> ValidateBulkOperationAsync(BulkInventoryOperationModel operationModel)
+        {
+            if (operationModel.SelectedItemIds == null || !operationModel.SelectedItemIds.Any())
+                return false;
+
+            var itemsExist = await _context.InventoryItems
+                .CountAsync(i => operationModel.SelectedItemIds.Contains(i.Id));
+
+            return itemsExist == operationModel.SelectedItemIds.Count;
+        }
+
+        // Stub implementations for new interface methods - will be implemented in later phases
+        public Task<byte[]> ExportInventoryToExcelAsync(AdvancedInventorySearchModel searchModel, bool includeDetails = true)
+        {
+            throw new NotImplementedException("Excel export will be implemented in Phase 2");
+        }
+
+        public Task<byte[]> ExportInventoryToPdfAsync(AdvancedInventorySearchModel searchModel, bool includeDetails = true)
+        {
+            throw new NotImplementedException("PDF export will be implemented in Phase 2");
+        }
+
+        public Task<byte[]> ExportInventoryToCsvAsync(AdvancedInventorySearchModel searchModel)
+        {
+            throw new NotImplementedException("CSV export will be implemented in Phase 2");
+        }
+
+        public Task<InventoryAnalyticsSummary> GetInventoryAnalyticsSummaryAsync()
+        {
+            throw new NotImplementedException("Analytics will be implemented in Phase 2");
+        }
+
+        public Task<IEnumerable<InventoryTrendData>> GetInventoryTrendsAsync(int months = 12)
+        {
+            throw new NotImplementedException("Trend analysis will be implemented in Phase 2");
+        }
+
+        public Task<IEnumerable<InventoryAlertSummary>> GetInventoryAlertSummaryAsync()
+        {
+            throw new NotImplementedException("Alert summary will be implemented in Phase 2");
+        }
+
+        public Task<bool> TransferInventoryAsync(InventoryTransferRequest transferRequest, string userId)
+        {
+            throw new NotImplementedException("Enhanced transfer will be implemented in Phase 2");
+        }
+
+        public Task<bool> StockInAsync(StockInRequest stockInRequest, string userId)
+        {
+            throw new NotImplementedException("Enhanced stock-in will be implemented in Phase 2");
+        }
+
+        #endregion
     }
 }

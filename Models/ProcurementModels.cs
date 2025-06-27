@@ -1,3 +1,4 @@
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -78,6 +79,25 @@ namespace HospitalAssetTracker.Models
         public int PendingQuantity => Math.Max(0, Quantity - QuantityReceived);
     }
 
+    public class ProcurementItemReceived
+    {
+        public int ProcurementItemId { get; set; }
+        public string ItemName { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int OrderedQuantity { get; set; }
+        public int ReceivedQuantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public string? Category { get; set; }
+        public bool IsAsset { get; set; }
+        public int? AssetCategoryId { get; set; }
+        public string? Brand { get; set; }
+        public string? Model { get; set; }
+        public string? SerialNumber { get; set; }
+        public DateTime? WarrantyExpiryDate { get; set; }
+        public string? SupplierName { get; set; }
+        public string? PurchaseOrderNumber { get; set; }
+    }
+
     public class Vendor
     {
         public int Id { get; set; }
@@ -135,7 +155,6 @@ namespace HospitalAssetTracker.Models
 
         // Navigation properties
         public virtual ICollection<VendorQuote> Quotes { get; set; } = new List<VendorQuote>();
-        public virtual ICollection<VendorQuote> VendorQuotes { get; set; } = new List<VendorQuote>();
         public virtual ICollection<ProcurementRequest> ProcurementRequests { get; set; } = new List<ProcurementRequest>();
 
         [NotMapped]
@@ -377,89 +396,5 @@ namespace HospitalAssetTracker.Models
             get => ActionByUserId;
             set => ActionByUserId = value;
         }
-    }
-
-    // Simple parameter class for receiving items
-    public class ProcurementItemReceived
-    {
-        public int ProcurementItemId { get; set; }
-        public int QuantityReceived { get; set; }
-        public string? Notes { get; set; }
-        
-        // Additional properties for compatibility
-        public string ItemName { get; set; } = string.Empty;
-        public string? Description { get; set; }
-        public string? Category { get; set; }
-        public int OrderedQuantity { get; set; }
-        public decimal UnitPrice { get; set; }
-        public string? SerialNumber { get; set; }
-
-        // Compatibility property for ReceivedQuantity
-        public int ReceivedQuantity 
-        { 
-            get => QuantityReceived; 
-            set => QuantityReceived = value; 
-        }
-
-        // Note: ReceivedQuantity is already available as QuantityReceived property
-    }
-
-    // Enums
-    public enum ProcurementApprovalLevel
-    {
-        Supervisor = 1,
-        FinancialManager = 2,
-        ExecutiveManager = 3,
-        Board = 4
-    }
-
-    public enum ProcurementApprovalStatus
-    {
-        Pending = 1,
-        Approved = 2,
-        Rejected = 3,
-        Escalated = 4
-    }
-
-    public enum ProcurementDocumentType
-    {
-        Quote = 1,
-        PurchaseOrder = 2,
-        Invoice = 3,
-        DeliveryNote = 4,
-        WarrantyDocument = 5,
-        Certificate = 6,
-        Specification = 7,
-        Contract = 8,
-        Other = 99
-    }
-
-    public enum ProcurementActivityType
-    {
-        Created = 1,
-        ProcessInitiated = 1, // Alias for Created
-        Updated = 2,
-        Submitted = 3,
-        SubmittedForApproval = 3, // Alias
-        Approved = 4,
-        Rejected = 5,
-        OrderPlaced = 6,
-        Delivered = 7,
-        Received = 8,
-        Completed = 9,
-        Cancelled = 10,
-        VendorSelected = 11,
-        QuoteReceived = 12
-    }
-
-    public enum VendorStatus
-    {
-        Active = 0,
-        Inactive = 1,
-        Pending = 2,
-        Approved = 3,
-        Rejected = 4,
-        Suspended = 5,
-        Blacklisted = 6
     }
 }

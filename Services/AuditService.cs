@@ -81,11 +81,11 @@ namespace HospitalAssetTracker.Services
             {
                 searchTerm = searchTerm.ToLower();
                 query = query.Where(a => 
-                    a.Description.ToLower().Contains(searchTerm) ||
-                    a.EntityType.ToLower().Contains(searchTerm) ||
-                    a.User.FirstName.ToLower().Contains(searchTerm) ||
-                    a.User.LastName.ToLower().Contains(searchTerm) ||
-                    (a.Asset != null && a.Asset.AssetTag.ToLower().Contains(searchTerm)));
+                    (a.Description != null && a.Description.ToLower().Contains(searchTerm)) ||
+                    (a.EntityType != null && a.EntityType.ToLower().Contains(searchTerm)) ||
+                    (a.User != null && a.User.FirstName != null && a.User.FirstName.ToLower().Contains(searchTerm)) ||
+                    (a.User != null && a.User.LastName != null && a.User.LastName.ToLower().Contains(searchTerm)) ||
+                    (a.Asset != null && a.Asset.AssetTag != null && a.Asset.AssetTag.ToLower().Contains(searchTerm)));
             }
 
             if (fromDate.HasValue)

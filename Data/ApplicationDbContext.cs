@@ -26,11 +26,13 @@ namespace HospitalAssetTracker.Data
 
         // Request Management Module
         public DbSet<ITRequest> ITRequests { get; set; }
+        public DbSet<RequestActivity> RequestActivities { get; set; }
         public DbSet<RequestApproval> RequestApprovals { get; set; }
         public DbSet<RequestComment> RequestComments { get; set; }
         public DbSet<RequestAttachment> RequestAttachments { get; set; }
         public DbSet<RequestEscalation> RequestEscalations { get; set; } // Request escalation management
         public DbSet<RequestAction> RequestActions { get; set; }
+        public DbSet<RequestTemplate> RequestTemplates { get; set; } // Request templates for standardized requests
 
         // Procurement Management Module
         public DbSet<ProcurementRequest> ProcurementRequests { get; set; }
@@ -41,6 +43,15 @@ namespace HospitalAssetTracker.Data
         public DbSet<ProcurementApproval> ProcurementApprovals { get; set; }
         public DbSet<ProcurementDocument> ProcurementDocuments { get; set; }
         public DbSet<ProcurementActivity> ProcurementActivities { get; set; }
+
+        // Workflow Orchestration Module
+        public DbSet<WorkflowInstance> WorkflowInstances { get; set; }
+        public DbSet<WorkflowStepInstance> WorkflowStepInstances { get; set; }
+        public DbSet<WorkflowEvent> WorkflowEvents { get; set; }
+
+        // Event and Notification Management
+        public DbSet<EventSubscription> EventSubscriptions { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
 
         // Advanced Warehouse Management
         public DbSet<QualityAssessmentRecord> QualityAssessmentRecords { get; set; }
@@ -220,7 +231,7 @@ namespace HospitalAssetTracker.Data
                 entity.Property(e => e.CreatedDate).HasDefaultValueSql("NOW()");
 
                 entity.HasOne(d => d.InventoryItem)
-                    .WithMany(p => p.MovementsFrom)  // Change to MovementsFrom as primary relationship
+                    .WithMany(p => p.Movements)  // Corrected from MovementsFrom to Movements
                     .HasForeignKey(d => d.InventoryItemId)
                     .OnDelete(DeleteBehavior.Cascade);
 
@@ -355,11 +366,6 @@ namespace HospitalAssetTracker.Data
                     .HasForeignKey(d => d.AssignedToUserId)
                     .OnDelete(DeleteBehavior.SetNull);
 
-                entity.HasOne(d => d.ApprovedByUser)
-                    .WithMany()
-                    .HasForeignKey(d => d.ApprovedByUserId)
-                    .OnDelete(DeleteBehavior.SetNull);
-
                 entity.HasOne(d => d.CompletedByUser)
                     .WithMany()
                     .HasForeignKey(d => d.CompletedByUserId)
@@ -393,14 +399,30 @@ namespace HospitalAssetTracker.Data
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // RequestApproval configuration
+            // RequestActivity configuration
+            builder.Entity<RequestActivity>(entity =>
+            {
+                entity.HasIndex(e => new { e.ITRequestId, e.ActivityDate });
+
+                entity.HasOne(d => d.ITRequest)
+                    .WithMany(p => p.Activities)
+                    .HasForeignKey(d => d.ITRequestId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.User)
+                    .WithMany()
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // RequestApproval configuration - OBSOLETE, to be removed
             builder.Entity<RequestApproval>(entity =>
             {
                 entity.HasIndex(e => new { e.ITRequestId, e.Sequence });
                 entity.Property(e => e.CreatedDate).HasDefaultValueSql("NOW()");
 
                 entity.HasOne(d => d.ITRequest)
-                    .WithMany(p => p.Approvals)
+                    .WithMany()
                     .HasForeignKey(d => d.ITRequestId)
                     .OnDelete(DeleteBehavior.Cascade);
 
@@ -441,6 +463,14 @@ namespace HospitalAssetTracker.Data
                     .WithMany()
                     .HasForeignKey(d => d.UploadedByUserId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // RequestTemplate configuration
+            builder.Entity<RequestTemplate>(entity =>
+            {
+                entity.HasIndex(e => e.Name).IsUnique();
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("NOW()");
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
             });
 
             #endregion
@@ -610,7 +640,7 @@ namespace HospitalAssetTracker.Data
                 entity.Property(e => e.ActionDate).HasDefaultValueSql("NOW()");
 
                 entity.HasOne(d => d.ProcurementRequest)
-                    .WithMany()
+                    .WithMany(p => p.Activities)
                     .HasForeignKey(d => d.ProcurementRequestId)
                     .OnDelete(DeleteBehavior.Cascade);
 
@@ -716,11 +746,6 @@ namespace HospitalAssetTracker.Data
                 if (request.DueDate.HasValue && request.DueDate.Value.Kind != DateTimeKind.Utc)
                 {
                     request.DueDate = DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc);
-                }
-                
-                if (request.ApprovalDate.HasValue && request.ApprovalDate.Value.Kind != DateTimeKind.Utc)
-                {
-                    request.ApprovalDate = DateTime.SpecifyKind(request.ApprovalDate.Value, DateTimeKind.Utc);
                 }
                 
                 if (request.CompletedDate.HasValue && request.CompletedDate.Value.Kind != DateTimeKind.Utc)

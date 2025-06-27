@@ -3,7 +3,7 @@
     ViewData["Title"] = "Dashboard";
     var totalAssets = (int)Model.GetValueOrDefault("TotalAssets", 0);
     var inUseAssets = (int)Model.GetValueOrDefault("InUseAssets", 0);
-    var underRepairAssets = (int)Model.GetValueOrDefault("UnderRepairAssets", 0);
+    var underMaintenanceAssets = (int)Model.GetValueOrDefault("UnderRepairAssets", 0);
     var expiredWarrantyAssets = (int)Model.GetValueOrDefault("ExpiredWarrantyAssets", 0);
     var recentMovements = Model.GetValueOrDefault("RecentMovements") as List<HospitalAssetTracker.Models.AssetMovement> ?? new List<HospitalAssetTracker.Models.AssetMovement>();
     var upcomingMaintenance = Model.GetValueOrDefault("UpcomingMaintenance") as List<HospitalAssetTracker.Models.MaintenanceRecord> ?? new List<HospitalAssetTracker.Models.MaintenanceRecord>();
@@ -62,8 +62,8 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <div class="text-white-75 small">Under Repair</div>
-                        <div class="text-lg font-weight-bold">@underRepairAssets</div>
+                        <div class="text-white-75 small">Under Maintenance</div>
+                        <div class="text-lg font-weight-bold">@underMaintenanceAssets</div>
                     </div>
                     <div class="fa-3x">
                         <i class="bi bi-tools"></i>
@@ -71,7 +71,7 @@
                 </div>
             </div>
             <div class="card-footer d-flex align-items-center justify-content-between">
-                <a class="small text-white stretched-link" asp-controller="Assets" asp-action="Index" asp-route-status="@HospitalAssetTracker.Models.AssetStatus.UnderRepair">View Repair Assets</a>
+                <a class="small text-white stretched-link" asp-controller="Assets" asp-action="Index" asp-route-status="@HospitalAssetTracker.Models.AssetStatus.UnderMaintenance">View Assets Under Maintenance</a>
                 <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
             </div>
         </div>

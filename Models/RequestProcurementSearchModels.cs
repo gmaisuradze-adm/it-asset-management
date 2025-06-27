@@ -110,7 +110,7 @@ namespace HospitalAssetTracker.Models
         }
     }
 
-    public static class ProcurementSearchModels
+    public static class RequestProcurementSearchModels
     {
         public class ProcurementSearchCriteria
         {
@@ -246,38 +246,5 @@ namespace HospitalAssetTracker.Models
             public bool MeetsSpecifications { get; set; }
             public string? Notes { get; set; }
         }
-    }
-    
-    // Simple search models for the basic implementation
-    public class RequestSearchModel
-    {
-        public string? SearchTerm { get; set; }
-        public RequestType? RequestType { get; set; }
-        public RequestStatus? Status { get; set; }
-        public RequestPriority? Priority { get; set; }
-        public string? Department { get; set; }
-        public DateTime? DateFrom { get; set; }
-        public DateTime? DateTo { get; set; }
-        public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 20;
-        public string? SortBy { get; set; }
-        public bool SortDesc { get; set; }
-    }
-
-    public class ProcurementSearchModel
-    {
-        public string? SearchTerm { get; set; }
-        public ProcurementType? ProcurementType { get; set; }
-        public ProcurementStatus? Status { get; set; }
-        public ProcurementPriority? Priority { get; set; }
-        public int? VendorId { get; set; }
-        public decimal? AmountFrom { get; set; }
-        public decimal? AmountTo { get; set; }
-        public DateTime? DateFrom { get; set; }
-        public DateTime? DateTo { get; set; }
-        public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 20;
-        public string? SortBy { get; set; }
-        public bool SortDesc { get; set; }
     }
 }

@@ -1,0 +1,17 @@
+=== DIAGNOSTIC LOG: Investigating Recursive Directory Issue ===
+Issue: Recursive directory structure in Tests/bin/Debug/net9.0/
+Depth check: 35 nested 'Tests' directories found
+Issue: Recursive directory structure in Tests/bin/Debug/net9.0/
+Depth check: 35 nested 'Tests' directories found
+Test project config analysis:
+- Test project references: ../HospitalAssetTracker.csproj
+- Main project excludes: Tests/**/*.cs
+- MSBuild SDK: Microsoft.NET.Sdk (Test) + Microsoft.NET.Sdk.Web (Main)
+Test project config analysis:
+- Test project references: ../HospitalAssetTracker.csproj
+- Main project excludes: Tests/**/*.cs
+- MSBuild SDK: Microsoft.NET.Sdk (Test) + Microsoft.NET.Sdk.Web (Main)
+=== FIXING RECURSIVE DIRECTORY ISSUE ===
+Step 1: Cleaning corrupted build output...
+=== FIXING RECURSIVE DIRECTORY ISSUE ===
+Step 1: Cleaning corrupted build output...

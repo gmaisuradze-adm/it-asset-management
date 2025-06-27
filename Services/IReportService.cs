@@ -12,5 +12,6 @@ namespace HospitalAssetTracker.Services
         Task<Dictionary<AssetCategory, int>> GetAssetsByCategoryAsync();
         Task<Dictionary<AssetStatus, int>> GetAssetsByStatusAsync();
         Task<Dictionary<string, int>> GetAssetsByLocationAsync();
+        Task<IEnumerable<Asset>> GetExpiredWarrantyAssetsReportAsync(); // Added for reports module
     }
 }

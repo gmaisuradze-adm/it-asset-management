@@ -48,6 +48,8 @@ namespace HospitalAssetTracker.Models
         [Required]
         public int Quantity { get; set; }
 
+        public int ReservedQuantity { get; set; } = 0;
+
         [Required]
         public int MinimumStock { get; set; }
         
@@ -163,7 +165,6 @@ namespace HospitalAssetTracker.Models
         
         public virtual ICollection<InventoryTransaction> Transactions { get; set; } = new List<InventoryTransaction>();
         public virtual ICollection<AssetInventoryMapping> AssetMappings { get; set; } = new List<AssetInventoryMapping>();
-        public virtual ICollection<AssetInventoryMapping> AssetInventoryMappings { get; set; } = new List<AssetInventoryMapping>();
 
         // Computed property
         [NotMapped]

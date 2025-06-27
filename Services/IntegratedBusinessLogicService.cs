@@ -5,33 +5,8 @@ using Microsoft.Extensions.Logging;
 
 namespace HospitalAssetTracker.Services
 {
-    /// <summary>
-    /// Integrated Business Logic Service - Hospital IT Asset Tracking System
-    /// Orchestrates cross-module business processes and ensures data consistency
-    /// </summary>
-    public interface IIntegratedBusinessLogicService
-    {
-        // Cross-module workflow operations
-        Task<bool> ProcessRequestApprovalWorkflowAsync(int requestId, string approverId, bool approved, string? comments = null);
-        Task<bool> ExecuteRequestFulfillmentAsync(int requestId, string fulfillmentUserId);
-        Task<bool> TriggerAutomaticProcurementAsync(int inventoryItemId, string initiatedByUserId);
-        Task<bool> ProcessAssetDeploymentWorkflowAsync(int assetId, int requestId, string deployedByUserId);
-        Task<bool> ProcessAssetReturnWorkflowAsync(int assetId, string returnReason, string processedByUserId);
-        
-        // Stock management automation
-        Task<IEnumerable<InventoryItem>> CheckAndTriggerReorderPointsAsync();
-        Task<bool> AutomaticallyAllocateInventoryAsync(int requestId);
-        Task<bool> ProcessInventoryReceiptAsync(int procurementRequestId, Dictionary<int, int> receivedItems, string receivedByUserId);
-        
-        // Business rule validation
-        Task<ValidationResult> ValidateRequestBusinessRulesAsync(ITRequest request);
-        Task<ValidationResult> ValidateAssetDeploymentRulesAsync(int assetId, int targetLocationId);
-        Task<ValidationResult> ValidateProcurementBusinessRulesAsync(ProcurementRequest procurement);
-        
-        // Integration health checks
-        Task<IntegrationHealthStatus> CheckModuleIntegrationHealthAsync();
-        Task<IEnumerable<BusinessLogicAlert>> GetBusinessLogicAlertsAsync();
-    }
+    // The interface IIntegratedBusinessLogicService is defined in IIntegratedBusinessLogicService.cs
+    // Removing the embedded definition from this file.
 
     public class IntegratedBusinessLogicService : IIntegratedBusinessLogicService
     {
@@ -61,6 +36,10 @@ namespace HospitalAssetTracker.Services
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        // This entire method is now obsolete due to the removal of the approval workflow.
+        // It needs to be re-evaluated and potentially re-implemented if a similar
+        // functionality is required under the new simplified request management process.
+        /*
         public async Task<bool> ProcessRequestApprovalWorkflowAsync(int requestId, string approverId, bool approved, string? comments = null)
         {
             _logger.LogInformation("Processing request approval workflow for Request {RequestId}", requestId);
@@ -144,6 +123,7 @@ namespace HospitalAssetTracker.Services
                 throw;
             }
         }
+        */
 
         public async Task<bool> ExecuteRequestFulfillmentAsync(int requestId, string fulfillmentUserId)
         {
@@ -166,23 +146,23 @@ namespace HospitalAssetTracker.Services
                 switch (request.RequestType)
                 {
                     case RequestType.NewEquipment:
-                        await FulfillNewEquipmentRequestAsync(request, fulfillmentUserId);
+                        FulfillNewEquipmentRequest(request, fulfillmentUserId); // Removed await and Async suffix
                         break;
                     case RequestType.HardwareReplacement:
-                        await FulfillReplacementRequestAsync(request, fulfillmentUserId);
+                        await FulfillReplacementRequestAsync(request, fulfillmentUserId); // Remains async
                         break;
                     case RequestType.HardwareRepair:
-                        await FulfillRepairRequestAsync(request, fulfillmentUserId);
+                        await FulfillRepairRequestAsync(request, fulfillmentUserId); // Remains async
                         break;
                     case RequestType.UserAccessRights:
-                        await FulfillAccessRequestAsync(request, fulfillmentUserId);
+                        FulfillAccessRequest(request, fulfillmentUserId); // Removed await and Async suffix
                         break;
                     case RequestType.SoftwareInstallation:
                     case RequestType.SoftwareUpgrade:
-                        await FulfillSoftwareRequestAsync(request, fulfillmentUserId);
+                        FulfillSoftwareRequest(request, fulfillmentUserId); // Removed await and Async suffix
                         break;
                     default:
-                        await FulfillGenericRequestAsync(request, fulfillmentUserId);
+                        FulfillGenericRequest(request, fulfillmentUserId); // Removed await and Async suffix
                         break;
                 }
 
@@ -520,19 +500,19 @@ namespace HospitalAssetTracker.Services
             }
 
             // Reserve the item
-            var success = await _inventoryService.CheckAvailabilityAndReserveAsync(
-                availableItem.ItemCode,
+            var result = await _inventoryService.CheckAvailabilityAndReserveAsync(
+                availableItem.Id,
                 1, // Usually 1 item per request
-                requestId,
+                $"Allocation for Request #{requestId}",
                 "SYSTEM");
 
-            if (success)
+            if (result.Success)
             {
-                _logger.LogInformation("Successfully allocated inventory item {ItemCode} to Request {RequestId}", 
+                _logger.LogInformation("Successfully allocated inventory item {ItemCode} to Request {RequestId}",
                     availableItem.ItemCode, requestId);
             }
 
-            return success;
+            return result.Success;
         }
 
         public async Task<bool> ProcessInventoryReceiptAsync(int procurementRequestId, Dictionary<int, int> receivedItems, string receivedByUserId)
@@ -544,6 +524,7 @@ namespace HospitalAssetTracker.Services
             {
                 var procurementRequest = await _context.ProcurementRequests
                     .Include(p => p.Items)
+                    .Include(p => p.SelectedVendor)
                     .FirstOrDefaultAsync(p => p.Id == procurementRequestId);
 
                 if (procurementRequest == null)
@@ -570,8 +551,6 @@ namespace HospitalAssetTracker.Services
                             ActivityDetails = $"Received {quantityReceived} units",
                             ActionDate = DateTime.UtcNow,
                             ActionByUserId = receivedByUserId,
-                            // Quantity = quantityReceived, // Remove this property
-                            // Notes = $"Received from supplier for {procurementItem.ItemName}" // Remove this property
                         };
 
                         _context.ProcurementActivities.Add(activity);
@@ -580,10 +559,10 @@ namespace HospitalAssetTracker.Services
                         // Update inventory
                         await _inventoryService.ReceiveStockFromProcurementAsync(
                             inventoryItemId,
-                            activity.Id,
                             quantityReceived,
-                            procurementItem.UnitPrice,
-                            DateTime.UtcNow,
+                            procurementItem.EstimatedUnitPrice,
+                            procurementRequest.SelectedVendor?.Name ?? "N/A",
+                            procurementRequest.ProcurementNumber,
                             receivedByUserId);
                     }
                 }
@@ -614,7 +593,7 @@ namespace HospitalAssetTracker.Services
             // Rule 1: Check if user has reached maximum concurrent requests
             var userActiveRequests = await _context.ITRequests
                 .CountAsync(r => r.RequestedByUserId == request.RequestedByUserId &&
-                               (r.Status == RequestStatus.Pending || r.Status == RequestStatus.InProgress));
+                               (r.Status == RequestStatus.Submitted || r.Status == RequestStatus.InProgress)); // Changed Pending to Submitted
 
             if (userActiveRequests >= 5) // Configurable limit
             {
@@ -766,7 +745,7 @@ namespace HospitalAssetTracker.Services
                     status.Issues.Add($"{orphanedAssets} assets have invalid location references");
 
                 var orphanedInventory = await _context.InventoryItems
-                    .Where(i => i.LocationId != null && !_context.Locations.Any(l => l.Id == i.LocationId)) // Use != null instead of HasValue
+                    .Where(i => !_context.Locations.Any(l => l.Id == i.LocationId)) // Use != null instead of HasValue
                     .CountAsync();
 
                 if (orphanedInventory > 0)
@@ -883,14 +862,14 @@ namespace HospitalAssetTracker.Services
             return outOfStockItems.Any();
         }
 
-        private async Task FulfillNewEquipmentRequestAsync(ITRequest request, string fulfillmentUserId)
+        private void FulfillNewEquipmentRequest(ITRequest request, string fulfillmentUserId) // Changed from async Task
         {
             // For new equipment, we typically deploy a new asset
             // This is a simplified implementation
             _logger.LogInformation("Fulfilling new equipment request {RequestId}", request.Id);
         }
 
-        private async Task FulfillReplacementRequestAsync(ITRequest request, string fulfillmentUserId)
+        private async Task FulfillReplacementRequestAsync(ITRequest request, string fulfillmentUserId) // This one still has an await
         {
             if (request.RelatedAssetId.HasValue)
             {
@@ -899,7 +878,7 @@ namespace HospitalAssetTracker.Services
             }
         }
 
-        private async Task FulfillRepairRequestAsync(ITRequest request, string fulfillmentUserId)
+        private async Task FulfillRepairRequestAsync(ITRequest request, string fulfillmentUserId) // This one still has an await
         {
             if (request.RelatedAssetId.HasValue)
             {
@@ -913,19 +892,19 @@ namespace HospitalAssetTracker.Services
             }
         }
 
-        private async Task FulfillAccessRequestAsync(ITRequest request, string fulfillmentUserId)
+        private void FulfillAccessRequest(ITRequest request, string fulfillmentUserId) // Changed from async Task
         {
             // Handle access/permission requests
             _logger.LogInformation("Fulfilling access request {RequestId}", request.Id);
         }
 
-        private async Task FulfillSoftwareRequestAsync(ITRequest request, string fulfillmentUserId)
+        private void FulfillSoftwareRequest(ITRequest request, string fulfillmentUserId) // Changed from async Task
         {
             // Handle software installation/license requests
             _logger.LogInformation("Fulfilling software request {RequestId}", request.Id);
         }
 
-        private async Task FulfillGenericRequestAsync(ITRequest request, string fulfillmentUserId)
+        private void FulfillGenericRequest(ITRequest request, string fulfillmentUserId) // Changed from async Task
         {
             // Handle other types of requests
             _logger.LogInformation("Fulfilling generic request {RequestId}", request.Id);

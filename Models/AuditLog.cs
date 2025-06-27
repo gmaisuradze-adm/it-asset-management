@@ -12,7 +12,8 @@ namespace HospitalAssetTracker.Models
         Assignment,
         Maintenance,
         Login,
-        Logout
+        Logout,
+        Error
     }
 
     public class AuditLog

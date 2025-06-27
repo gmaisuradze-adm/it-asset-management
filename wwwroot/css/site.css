@@ -150,6 +150,92 @@ html {
 .badge.status-maintenance::before { content: "🔧 "; }
 .badge.status-retired::before { content: "📦 "; }
 
+/* === STANDARDIZED ASSET STATUS BADGES === */
+/* Following consistent design patterns established for IT Requests module */
+
+/* Available - Ready for assignment */
+.badge-asset-status-available {
+  background-color: #0d6efd;
+  color: white;
+}
+
+/* In Use - Actively assigned and in use */
+.badge-asset-status-inuse {
+  background-color: #198754;
+  color: white;
+}
+
+/* Under Maintenance - Currently being serviced */
+.badge-asset-status-maintenance {
+  background-color: #fd7e14;
+  color: white;
+}
+
+/* Maintenance Pending - Scheduled for maintenance */
+.badge-asset-status-maintenance-pending {
+  background-color: #ffc107;
+  color: #000;
+}
+
+/* In Transit - Being moved between locations */
+.badge-asset-status-in-transit {
+  background-color: #6f42c1;
+  color: white;
+}
+
+/* Reserved - Reserved for future deployment */
+.badge-asset-status-reserved {
+  background-color: #0dcaf0;
+  color: #000;
+}
+
+/* Lost - Asset is lost */
+.badge-asset-status-lost {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* Stolen - Asset has been stolen */
+.badge-asset-status-stolen {
+  background-color: #721c24;
+  color: white;
+}
+
+/* Decommissioned - Retired from service */
+.badge-asset-status-decommissioned {
+  background-color: #6c757d;
+  color: white;
+}
+
+/* Pending Approval - Awaiting status change approval */
+.badge-asset-status-pending {
+  background-color: #f8f9fa;
+  color: #6c757d;
+  border: 1px solid #dee2e6;
+}
+
+/* Unknown Status - Fallback for invalid status values */
+.badge-asset-status-unknown {
+  background-color: #e9ecef;
+  color: #495057;
+  border: 1px dashed #adb5bd;
+}
+
+/* Hover effects for interactive badges */
+.badge-asset-status-available:hover,
+.badge-asset-status-inuse:hover,
+.badge-asset-status-maintenance:hover,
+.badge-asset-status-maintenance-pending:hover,
+.badge-asset-status-in-transit:hover,
+.badge-asset-status-reserved:hover,
+.badge-asset-status-lost:hover,
+.badge-asset-status-stolen:hover,
+.badge-asset-status-decommissioned:hover,
+.badge-asset-status-pending:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
 /* Enhanced dashboard and metrics */
 .dashboard-metric {
   text-align: center;
@@ -249,6 +335,26 @@ html {
 .spinner-grow-sm {
   width: 1rem;
   height: 1rem;
+}
+
+/* Spin animation for loading states */
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Loading button animation */
+.btn.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.btn.loading .bi {
+    animation: spin 1s linear infinite;
 }
 
 /* Enhanced DataTables styling */

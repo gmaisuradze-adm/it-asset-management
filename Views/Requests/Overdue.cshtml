@@ -1,6 +1,8 @@
 @model List<ITRequest>
+@inject UserManager<ApplicationUser> UserManager // Added UserManager injection
 @{
     ViewData["Title"] = "Overdue Requests";
+    var currentUserIdOverdue = UserManager.GetUserId(User); // Get current user ID
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -55,12 +57,11 @@
                             };
                             var statusBadge = request.Status switch
                             {
-                                RequestStatus.Pending => "bg-warning text-dark",
-                                RequestStatus.InProgress => "bg-info",
-                                RequestStatus.UnderReview => "bg-primary",
-                                RequestStatus.Approved => "bg-success",
-                                RequestStatus.Rejected => "bg-danger",
-                                RequestStatus.OnHold => "bg-secondary",
+                                RequestStatus.Submitted => "bg-primary", // Standardized
+                                RequestStatus.InProgress => "bg-warning text-dark", // Standardized
+                                RequestStatus.OnHold => "bg-secondary", // Standardized
+                                RequestStatus.Completed => "bg-success", // Standardized (though unlikely for overdue)
+                                RequestStatus.Cancelled => "bg-danger", // Standardized (though unlikely for overdue)
                                 _ => "bg-light text-dark"
                             };
                             
@@ -132,6 +133,33 @@
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         }
+                                        
+                                        @{ // Un-commented and activated the logic for action buttons
+                                            var canAssignOverdue = User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager");
+                                            var canCompleteOverdue = User.IsInRole("Admin") || User.IsInRole("IT Support");
+                                            var isAssignedToCurrentUserOverdue = request.AssignedToUserId == currentUserIdOverdue;
+                                        }
+
+                                        @if (request.Status == RequestStatus.Submitted && canAssignOverdue && request.AssignedToUserId == null)
+                                        {
+                                            <button type="button" class="btn btn-success take-ownership-overdue" data-request-id="@request.Id" title="Take Ownership">
+                                                <i class="bi bi-person-check-fill"></i>
+                                            </button>
+                                        }
+
+                                        @if ((request.Status == RequestStatus.Submitted || request.Status == RequestStatus.InProgress) && canAssignOverdue)
+                                        {
+                                            <button type="button" class="btn btn-primary assign-request-overdue" data-bs-toggle="modal" data-bs-target="#assignRequestModalOverdue" data-request-id="@request.Id" title="@(request.AssignedToUserId == null ? "Assign" : "Re-assign")">
+                                                <i class="bi bi-person-plus-fill"></i>
+                                            </button>
+                                        }
+
+                                        @if (request.Status == RequestStatus.InProgress && canCompleteOverdue && isAssignedToCurrentUserOverdue)
+                                        {
+                                            <button type="button" class="btn btn-success complete-request-overdue" data-request-id="@request.Id" title="Mark as Complete">
+                                                <i class="bi bi-check-circle-fill"></i>
+                                            </button>
+                                        }
                                     </div>
                                 </td>
                             </tr>
@@ -179,4 +207,222 @@ else
             text-decoration: underline !important;
         }
     </style>
+}
+
+<!-- Assign Request Modal -->
+<div class="modal fade" id="assignRequestModalOverdue" tabindex="-1" aria-labelledby="assignRequestModalOverdueLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignRequestModalOverdueLabel">Assign Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="assignRequestOverdueForm">
+                <div class="modal-body">
+                    <input type="hidden" id="assignOverdueRequestId" name="requestId" />
+                    <div class="mb-3">
+                        <label for="assignOverdueUserId" class="form-label">Assign to:</label>
+                        <select id="assignOverdueUserId" name="assignedToUserId" class="form-select" asp-items="ViewBag.AssignableUsers" required>
+                            <option value="">Select User...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Assign Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Event delegation for Take Ownership buttons in the table
+            $('table').on('click', '.take-ownership-overdue', function () {
+                const btn = $(this);
+                const specificRequestId = btn.data('request-id'); // Get requestId from data attribute
+
+                Swal.fire({
+                    title: 'Take Ownership?',
+                    text: "Do you want to assign this request (#" + specificRequestId + ") to yourself?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, take it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Assuming handleAjax is globally available or defined elsewhere (e.g., in site.js or layout)
+                        // If not, its definition would need to be included or adapted here.
+                        handleAjax({
+                            url: `/Requests/TakeOwnership/${specificRequestId}`,
+                            button: btn,
+                            successCallback: function(response) {
+                                if(response.success) {
+                                    showToast('success', response.message || 'Request assigned to you.');
+                                    var row = btn.closest('tr');
+                                    // Update status badge - find badge that is either for Submitted (bg-info) or InProgress (bg-warning)
+                                    row.find('.badge.bg-info, .badge.bg-warning').removeClass('bg-info bg-warning text-dark').addClass('bg-warning text-dark').text('InProgress');
+                                    row.find('td:nth-child(9)').html(response.assignedUserName || 'You (Assigned)'); // Use assignedUserName from response
+                                    btn.remove(); 
+                                    row.find('.assign-request-overdue').text('Re-assign');
+                                } else {
+                                    showToast('error', response.message || 'Failed to take ownership.');
+                                }
+                            },
+                            errorCallback: function() {
+                                showToast('error', 'An error occurred while taking ownership.');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Assign request button click
+            $('table').on('click', '.assign-request-overdue', function () {
+                const requestId = $(this).data('request-id');
+                $('#assignOverdueRequestId').val(requestId);
+                // Potentially load assignable users if not already in ViewBag.AssignableUsers or if it needs filtering
+            });
+
+            // Assign request form submission
+            $('#assignRequestOverdueForm').submit(function (e) {
+                e.preventDefault();
+                const btn = $(this).find('button[type="submit"]');
+                const requestId = $('#assignOverdueRequestId').val();
+                const assignedToUserId = $('#assignOverdueUserId').val();
+
+                if (!assignedToUserId) {
+                    showToast('warning', 'Please select a user to assign.');
+                    return;
+                }
+
+                handleAjax({
+                    url: `/Requests/Assign/${requestId}`,
+                    type: 'POST',
+                    data: { assignedToUserId: assignedToUserId }, // Ensure data is sent in a way the controller expects
+                    button: btn,
+                    successCallback: function(response) {
+                        if(response.success) {
+                            showToast('success', response.message || 'Request assigned successfully.');
+                            $('#assignRequestModalOverdue').modal('hide');
+                            var row = $('table tr').filter(function() { return $(this).find('a[href*="/Requests/Details/' + requestId + '"]').length > 0; });
+                            // Update status badge - find badge that is either for Submitted (bg-info) or InProgress (bg-warning)
+                            row.find('.badge.bg-info, .badge.bg-warning').removeClass('bg-info bg-warning text-dark').addClass('bg-warning text-dark').text('InProgress');
+                            row.find('td:nth-child(9)').html(response.assignedUserName || 'User Assigned'); // Use assignedUserName from response
+                            row.find('.take-ownership-overdue').remove(); 
+                            row.find('.assign-request-overdue').text('Re-assign');
+                        } else {
+                            showToast('error', response.message || 'Failed to assign request.');
+                        }
+                    },
+                    errorCallback: function() {
+                        showToast('error', 'An error occurred while assigning the request.');
+                    },
+                    modalToHide: '#assignRequestModalOverdue'
+                });
+            });
+
+            // Complete request button click
+            $('table').on('click', '.complete-request-overdue', function () {
+                const btn = $(this);
+                const requestId = btn.data('request-id');
+
+                Swal.fire({
+                    title: 'Complete Request #' + requestId + ' ?',
+                    input: 'textarea',
+                    inputPlaceholder: 'Enter optional completion notes here...',
+                    showCancelButton: true,
+                    confirmButtonText: 'Complete',
+                    confirmButtonColor: '#28a745',
+                    showLoaderOnConfirm: true,
+                    preConfirm: (comments) => {
+                        return $.ajax({
+                            url: `/Requests/Complete/${requestId}`,
+                            type: 'POST',
+                            data: { comments: comments }, // Controller expects an object with a comments property
+                            headers: {
+                                RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() // Add anti-forgery token if needed
+                            }
+                        })
+                        .fail(function(jqXHR, textStatus, errorThrown) {
+                            Swal.showValidationMessage(`Request failed: ${errorThrown}`);
+                        });
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed && result.value && result.value.success) {
+                        showToast('success', result.value.message || 'Request completed successfully.');
+                        var row = btn.closest('tr');
+                        // Update status badge - find badge that is for InProgress (bg-warning)
+                        row.find('.badge.bg-warning').removeClass('bg-warning text-dark').addClass('bg-success').text('Completed');
+                        btn.remove(); 
+                        row.find('.assign-request-overdue').remove(); 
+                        row.find('.take-ownership-overdue').remove(); // Remove take ownership button
+                    } else if (result.isConfirmed && result.value && !result.value.success) {
+                        showToast('error', result.value.message || 'Failed to complete request.');
+                    }
+                });
+            });
+        });
+
+        // Simplified handleAjax and showToast (ensure these are globally available or uncomment and use these)
+        
+        function handleAjax(options) { // Un-commented this function
+            const btn = options.button;
+            const originalText = btn.html();
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...');
+
+            $.ajax({
+                url: options.url,
+                type: options.type || 'POST',
+                contentType: (options.type === 'POST' && typeof options.data === 'object' && options.data !== null && !(options.data instanceof FormData)) ? 'application/x-www-form-urlencoded; charset=UTF-8' : (options.data instanceof FormData ? false : 'application/json'),
+                data: (options.data instanceof FormData) ? options.data : ((options.type === 'POST' && typeof options.data === 'object' && options.data !== null) ? options.data : JSON.stringify(options.data)),
+                processData: !(options.data instanceof FormData),
+                headers: {
+                    RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                success: function (response) {
+                    if (options.successCallback) {
+                        options.successCallback(response);
+                    } else {
+                        if (response.success) {
+                            showToast('success', response.message || 'Operation successful.');
+                            if(response.redirectUrl) {
+                                window.location.href = response.redirectUrl;
+                            }
+                        } else {
+                            showToast('error', response.message || 'Operation failed.');
+                        }
+                    }
+                },
+                error: function (xhr, status, error) {
+                    if (options.errorCallback) {
+                        options.errorCallback(xhr, status, error);
+                    } else {
+                        showToast('error', `Error: ${xhr.status} - ${error}`);
+                    }
+                },
+                complete: function () {
+                    btn.prop('disabled', false).html(originalText);
+                    if (options.modalToHide) $(options.modalToHide).modal('hide');
+                }
+            });
+        }
+
+        function showToast(icon, title) { // Un-commented this function (Swal version)
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: icon,
+                title: title,
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+        }
+        
+    </script>
 }

@@ -73,6 +73,12 @@
                             <span asp-validation-for="Justification" class="text-danger"></span>
                         </div>
 
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label">Description <span class="text-danger">*</span></label>
+                            <textarea asp-for="Description" class="form-control" rows="3" placeholder="Provide detailed description of the asset condition..." required></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">

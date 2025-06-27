@@ -1,0 +1,19 @@
+@model ITRequest
+
+@if (Model.AssignedToUser != null)
+{
+    <div class="d-flex align-items-center">
+        <i class="bi bi-person-circle fs-3 me-2"></i>
+        <div>
+            <strong>@Model.AssignedToUser.FullName</strong>
+            <br />
+            <small class="text-muted">@Model.AssignedToUser.Email</small>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-muted">
+        <i class="bi bi-person-x"></i> Not yet assigned.
+    </div>
+}

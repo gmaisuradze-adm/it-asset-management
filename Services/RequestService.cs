@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using HospitalAssetTracker.Data;
 using HospitalAssetTracker.Models;
@@ -12,28 +13,46 @@ namespace HospitalAssetTracker.Services
         private readonly IAssetService _assetService;
         private readonly IInventoryService _inventoryService;
         private readonly IProcurementService _procurementService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public RequestService(
             ApplicationDbContext context,
             IAuditService auditService,
             IAssetService assetService,
             IInventoryService inventoryService,
-            IProcurementService procurementService)
+            IProcurementService procurementService,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _auditService = auditService;
             _assetService = assetService;
             _inventoryService = inventoryService;
             _procurementService = procurementService;
+            _userManager = userManager;
         }
 
-        public async Task<PagedResult<ITRequest>> GetRequestsAsync(RequestSearchModel searchModel)
+        public async Task<PagedResult<ITRequest>> GetRequestsAsync(RequestSearchModel searchModel, string userId)
         {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) 
+            {
+                return new PagedResult<ITRequest>(); // Return empty result if user not found
+            }
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var canViewAll = userRoles.Contains("Admin") || userRoles.Contains("IT Support") || userRoles.Contains("Asset Manager");
+
             var query = _context.ITRequests
                 .Include(r => r.RequestedByUser)
                 .Include(r => r.RelatedAsset)
                 .Include(r => r.AssignedToUser)
                 .AsQueryable();
+
+            // If the user is not an admin/support/manager, only show their own requests.
+            if (!canViewAll)
+            {
+                query = query.Where(r => r.RequestedByUserId == userId || r.AssignedToUserId == userId);
+            }
 
             // Apply filters
             if (!string.IsNullOrEmpty(searchModel.SearchTerm))
@@ -110,94 +129,114 @@ namespace HospitalAssetTracker.Services
 
         public async Task<ITRequest> CreateRequestAsync(ITRequest request, string userId)
         {
-            // Generate request number
-            var datePrefix = DateTime.Now.ToString("yyyyMM");
-            var lastRequest = await _context.ITRequests
-                .Where(r => r.RequestNumber.StartsWith($"REQ-{datePrefix}"))
-                .OrderByDescending(r => r.RequestNumber)
-                .FirstOrDefaultAsync();
+            request.RequestNumber = await GenerateRequestNumberAsync(); // Use the dedicated method
 
-            int sequence = 1;
-            if (lastRequest != null)
-            {
-                var lastSequence = lastRequest.RequestNumber.Split('-').Last();
-                if (int.TryParse(lastSequence, out int lastNum))
-                {
-                    sequence = lastNum + 1;
-                }
-            }
-
-            request.RequestNumber = $"REQ-{datePrefix}-{sequence:D4}";
             request.RequestedByUserId = userId;
             request.RequestDate = DateTime.UtcNow;
-            request.CreatedDate = DateTime.UtcNow;
-            request.Status = RequestStatus.Submitted;
+            request.LastUpdatedDate = DateTime.UtcNow;
+            request.LastUpdatedByUserId = userId;
 
-            // Ensure all DateTime fields are UTC
+            if (!string.IsNullOrEmpty(request.AssignedToUserId))
+            {
+                request.Status = RequestStatus.InProgress;
+            }
+            else
+            {
+                request.Status = RequestStatus.Submitted;
+            }
+
+            if (request.RequiredInventoryItemId.HasValue && request.RequiredInventoryItemId > 0)
+            {
+                var inventoryItem = await _context.InventoryItems.FindAsync(request.RequiredInventoryItemId.Value);
+                if (inventoryItem == null || inventoryItem.Quantity <= 0)
+                {
+                    request.RequiredInventoryItemId = null; 
+                }
+            }
+            else
+            {
+                request.RequiredInventoryItemId = null;
+            }
+
             if (request.RequiredByDate.HasValue && request.RequiredByDate.Value.Kind != DateTimeKind.Utc)
             {
                 request.RequiredByDate = DateTime.SpecifyKind(request.RequiredByDate.Value, DateTimeKind.Utc);
             }
-            
-            if (request.DueDate.HasValue && request.DueDate.Value.Kind != DateTimeKind.Utc)
-            {
-                request.DueDate = DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc);
-            }
-            
-            if (request.ApprovalDate.HasValue && request.ApprovalDate.Value.Kind != DateTimeKind.Utc)
-            {
-                request.ApprovalDate = DateTime.SpecifyKind(request.ApprovalDate.Value, DateTimeKind.Utc);
-            }
-            
-            if (request.CompletedDate.HasValue && request.CompletedDate.Value.Kind != DateTimeKind.Utc)
-            {
-                request.CompletedDate = DateTime.SpecifyKind(request.CompletedDate.Value, DateTimeKind.Utc);
-            }
-            
-            if (request.LastModifiedDate.HasValue && request.LastModifiedDate.Value.Kind != DateTimeKind.Utc)
-            {
-                request.LastModifiedDate = DateTime.SpecifyKind(request.LastModifiedDate.Value, DateTimeKind.Utc);
-            }
-
-            // Set automatic priority based on request type and asset criticality
-            await SetAutomaticPriorityAsync(request);
 
             _context.ITRequests.Add(request);
             await _context.SaveChangesAsync();
 
-            // Check if auto-approval is applicable
-            if (await IsEligibleForAutoApprovalAsync(request))
-            {
-                await ProcessAutoApprovalAsync(request, userId);
-            }
-
-            await _context.SaveChangesAsync();
-
-            await _auditService.LogAsync(AuditAction.Create, "ITRequest", request.Id, userId, 
-                $"IT request {request.RequestNumber} created");
+            await _auditService.LogAsync(AuditAction.Create, "ITRequest", request.Id, userId,
+                $"IT request {request.RequestNumber} created. Status: {request.Status}" +
+                (string.IsNullOrEmpty(request.AssignedToUserId) ? "" : $", Assigned to: {request.AssignedToUserId}") +
+                (request.RequiredInventoryItemId.HasValue ? $", Linked Inventory ID: {request.RequiredInventoryItemId.Value}" : "")
+                );
 
             return request;
         }
 
         public async Task<ITRequest> UpdateRequestAsync(ITRequest request, string userId)
         {
-            var existingRequest = await GetRequestByIdAsync(request.Id);
+            var existingRequest = await _context.ITRequests
+                                        .Include(r => r.RequestedByUser) 
+                                        .FirstOrDefaultAsync(r => r.Id == request.Id);
+
             if (existingRequest == null)
                 throw new InvalidOperationException("Request not found");
 
-            // Update fields
             existingRequest.Title = request.Title;
             existingRequest.Description = request.Description;
+            existingRequest.RequestType = request.RequestType;
             existingRequest.Priority = request.Priority;
             existingRequest.RequiredByDate = request.RequiredByDate;
             existingRequest.BusinessJustification = request.BusinessJustification;
+            existingRequest.RequestedItemCategory = request.RequestedItemCategory;
+            existingRequest.RequestedItemSpecifications = request.RequestedItemSpecifications;
+            existingRequest.LocationId = request.LocationId;
+            existingRequest.RelatedAssetId = request.RelatedAssetId;
+
+            if (existingRequest.AssignedToUserId != request.AssignedToUserId)
+            {
+                existingRequest.AssignedToUserId = request.AssignedToUserId;
+                if (!string.IsNullOrEmpty(request.AssignedToUserId) && existingRequest.Status == RequestStatus.Submitted)
+                {
+                    existingRequest.Status = RequestStatus.InProgress;
+                }
+                else if (string.IsNullOrEmpty(request.AssignedToUserId) && existingRequest.Status == RequestStatus.InProgress)
+                {
+                     existingRequest.Status = RequestStatus.Submitted;
+                }
+            }
+            
+            existingRequest.RequiredInventoryItemId = request.RequiredInventoryItemId;
+            if (request.RequiredInventoryItemId.HasValue && request.RequiredInventoryItemId > 0)
+            {
+                var inventoryItem = await _context.InventoryItems.FindAsync(request.RequiredInventoryItemId.Value);
+                if (inventoryItem == null || inventoryItem.Quantity <= 0)
+                {
+                }
+            } else {
+                 existingRequest.RequiredInventoryItemId = null;
+            }
+
+            existingRequest.DamagedAssetId = request.DamagedAssetId;
+            existingRequest.DisposalNotesForUnmanagedAsset = request.DisposalNotesForUnmanagedAsset;
+
             existingRequest.LastUpdatedDate = DateTime.UtcNow;
             existingRequest.LastUpdatedByUserId = userId;
+            
+            if (existingRequest.RequiredByDate.HasValue && existingRequest.RequiredByDate.Value.Kind != DateTimeKind.Utc)
+            {
+                existingRequest.RequiredByDate = DateTime.SpecifyKind(existingRequest.RequiredByDate.Value, DateTimeKind.Utc);
+            }
 
             await _context.SaveChangesAsync();
 
-            await _auditService.LogAsync(AuditAction.Update, "ITRequest", request.Id, userId, 
-                $"IT request {existingRequest.RequestNumber} updated");
+            await _auditService.LogAsync(AuditAction.Update, "ITRequest", request.Id, userId,
+                $"IT request {existingRequest.RequestNumber} updated. Status: {existingRequest.Status}" +
+                (string.IsNullOrEmpty(existingRequest.AssignedToUserId) ? "" : $", Assigned to: {existingRequest.AssignedToUserId}") +
+                (existingRequest.RequiredInventoryItemId.HasValue ? $", Linked Inventory ID: {existingRequest.RequiredInventoryItemId.Value}" : "")
+                );
 
             return existingRequest;
         }
@@ -208,9 +247,14 @@ namespace HospitalAssetTracker.Services
             if (request == null) return false;
 
             request.AssignedToUserId = assignedToUserId;
-            request.Status = RequestStatus.InProgress;
+            if(request.Status == RequestStatus.Submitted)
+            {
+                request.Status = RequestStatus.InProgress;
+            }
             request.LastUpdatedDate = DateTime.UtcNow;
             request.LastUpdatedByUserId = currentUserId;
+
+            await AddActivityAsync(requestId, currentUserId, $"Request assigned to user {assignedToUserId}");
 
             await _context.SaveChangesAsync();
 
@@ -220,72 +264,20 @@ namespace HospitalAssetTracker.Services
             return true;
         }
 
-        public async Task<bool> ApproveRequestAsync(int requestId, string approverId, string? comments = null)
+        public async Task<bool> CancelRequestAsync(int requestId, string userId, string? reason = null)
         {
             var request = await GetRequestByIdAsync(requestId);
-            if (request == null) return false;
+            if (request == null || request.Status == RequestStatus.Completed || request.Status == RequestStatus.Cancelled) return false;
 
-            // Create approval record
-            var approval = new RequestApproval
-            {
-                ITRequestId = requestId,
-                ApproverId = approverId,
-                DecisionDate = DateTime.UtcNow,
-                Status = ApprovalStatus.Approved,
-                Comments = comments,
-                CreatedDate = DateTime.UtcNow,
-                ApprovalLevel = ApprovalLevel.Supervisor,
-                Sequence = 1
-            };
-            _context.RequestApprovals.Add(approval);
-
-            // Update request status based on approval workflow
-            if (await IsFullyApprovedAsync(requestId))
-            {
-                request.Status = RequestStatus.Approved;
-                
-                // Trigger next phase based on request type
-                await ProcessApprovedRequestAsync(request, approverId);
-            }
-
+            request.Status = RequestStatus.Cancelled;
             request.LastUpdatedDate = DateTime.UtcNow;
-            request.LastUpdatedByUserId = approverId;
+            request.LastUpdatedByUserId = userId;
+
+            var activityDescription = string.IsNullOrEmpty(reason) ? "Request cancelled." : $"Request cancelled. Reason: {reason}";
+            await AddActivityAsync(requestId, userId, activityDescription);
 
             await _context.SaveChangesAsync();
-
-            await _auditService.LogAsync(AuditAction.Update, "ITRequest", requestId, approverId, 
-                $"Request {request.RequestNumber} approved");
-
-            return true;
-        }
-
-        public async Task<bool> RejectRequestAsync(int requestId, string rejectionReason)
-        {
-            var request = await GetRequestByIdAsync(requestId);
-            if (request == null) return false;
-
-            // Create rejection record
-            var rejection = new RequestApproval
-            {
-                ITRequestId = requestId,
-                ApproverId = "system", // System rejection
-                DecisionDate = DateTime.UtcNow,
-                Status = ApprovalStatus.Rejected,
-                Comments = rejectionReason,
-                CreatedDate = DateTime.UtcNow,
-                ApprovalLevel = ApprovalLevel.Supervisor,
-                Sequence = 1
-            };
-            _context.RequestApprovals.Add(rejection);
-
-            // Update request status
-            request.Status = RequestStatus.Rejected;
-            request.LastUpdatedDate = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            await _auditService.LogAsync(AuditAction.Update, "ITRequest", requestId, "system", 
-                $"Request {request.RequestNumber} rejected: {rejectionReason}");
+            await _auditService.LogAsync(AuditAction.Update, "ITRequest", requestId, userId, $"Request {request.RequestNumber} cancelled");
 
             return true;
         }
@@ -302,8 +294,9 @@ namespace HospitalAssetTracker.Services
             request.LastUpdatedDate = DateTime.UtcNow;
             request.LastUpdatedByUserId = completedById;
 
-            // Update related asset status if applicable
-            if (request.AssetId.HasValue)
+            await AddActivityAsync(requestId, completedById, $"Request completed. Notes: {completionNotes}");
+
+            if (request.RelatedAssetId.HasValue)
             {
                 await UpdateAssetStatusAfterCompletion(request, completedById);
             }
@@ -316,62 +309,98 @@ namespace HospitalAssetTracker.Services
             return true;
         }
 
-        public async Task<RequestDashboardData> GetRequestDashboardDataAsync()
+        public async Task<bool> PlaceRequestOnHoldAsync(int requestId, string userId, string reason)
         {
-            var totalRequests = await _context.ITRequests.CountAsync();
-            var openRequests = await _context.ITRequests.CountAsync(r => 
-                r.Status == RequestStatus.Submitted || 
-                r.Status == RequestStatus.InProgress || 
-                r.Status == RequestStatus.PendingApproval);
-            var completedToday = await _context.ITRequests.CountAsync(r => 
-                r.CompletedDate.HasValue && r.CompletedDate.Value.Date == DateTime.UtcNow.Date);
-            var overdue = await _context.ITRequests.CountAsync(r => 
-                r.RequiredByDate.HasValue && r.RequiredByDate.Value < DateTime.UtcNow && 
-                r.Status != RequestStatus.Completed && r.Status != RequestStatus.Cancelled);
+            var request = await GetRequestByIdAsync(requestId);
+            if (request == null || request.Status != RequestStatus.InProgress) return false;
 
-            // Get request by type counts
-            var requestsByType = await _context.ITRequests
-                .GroupBy(r => r.RequestType)
-                .Select(g => new { Type = g.Key, Count = g.Count() })
-                .ToListAsync();
+            request.Status = RequestStatus.OnHold;
+            request.LastUpdatedDate = DateTime.UtcNow;
+            request.LastUpdatedByUserId = userId;
+            
+            await AddActivityAsync(requestId, userId, $"Request placed on hold. Reason: {reason}");
 
-            // Get request by priority counts
-            var requestsByPriority = await _context.ITRequests
-                .GroupBy(r => r.Priority)
-                .Select(g => new { Priority = g.Key, Count = g.Count() })
-                .ToListAsync();
+            await _context.SaveChangesAsync();
+            await _auditService.LogAsync(AuditAction.Update, "ITRequest", requestId, userId, $"Request {request.RequestNumber} placed on hold");
 
-            // Get recent requests
-            var recentRequestsData = await _context.ITRequests
-                .Include(r => r.RequestedByUser)
-                .Include(r => r.AssignedToUser)
-                .OrderByDescending(r => r.RequestDate)
-                .Take(10)
-                .ToListAsync();
+            return true;
+        }
 
-            var recentRequests = recentRequestsData.Select(r => new RequestSummaryViewModel
+        public async Task<bool> ResumeRequestAsync(int requestId, string userId, string? comments = null) // Added comments parameter
+        {
+            var request = await GetRequestByIdAsync(requestId);
+            if (request == null || request.Status != RequestStatus.OnHold) return false;
+
+            // Ensure the user taking action is the one assigned or an Admin/IT Support
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return false;
+            var userRoles = await _userManager.GetRolesAsync(user);
+            bool isAdminOrSupport = userRoles.Contains("Admin") || userRoles.Contains("IT Support");
+
+            if (request.AssignedToUserId != userId && !isAdminOrSupport)
             {
-                Id = r.Id,
-                RequestNumber = r.RequestNumber,
-                Title = r.Title,
-                RequestType = r.RequestType.ToString(),
-                Priority = r.Priority,
-                Status = r.Status,
-                RequestDate = r.RequestDate,
-                RequesterName = r.RequestedByUser?.FirstName + " " + r.RequestedByUser?.LastName,
-                AssignedToName = r.AssignedToUser?.FirstName + " " + r.AssignedToUser?.LastName
-            }).ToList();
+                // If not assigned to current user and user is not Admin/Support, deny action
+                return false;
+            }
 
-            return new RequestDashboardData
+            request.Status = RequestStatus.InProgress;
+            request.LastUpdatedDate = DateTime.UtcNow;
+            request.LastUpdatedByUserId = userId;
+
+            var activityDescription = "Request resumed.";
+            if (!string.IsNullOrWhiteSpace(comments))
             {
-                TotalRequests = totalRequests,
-                OpenRequests = openRequests,
-                CompletedToday = completedToday,
-                OverdueRequests = overdue,
-                RequestsByType = requestsByType.ToDictionary(x => x.Type.ToString(), x => x.Count),
-                RequestsByPriority = requestsByPriority.ToDictionary(x => x.Priority.ToString(), x => x.Count),
-                RecentRequests = recentRequests
-            };
+                activityDescription += $" Comments: {comments}";
+            }
+            await AddActivityAsync(requestId, userId, activityDescription);
+
+            await _context.SaveChangesAsync();
+            await _auditService.LogAsync(AuditAction.Update, "ITRequest", requestId, userId, $"Request {request.RequestNumber} resumed");
+
+            return true;
+        }
+
+        public async Task<bool> UpdateRequestStatusAsync(int requestId, RequestStatus newStatus, string userId, string? notes = null)
+        {
+            var request = await GetRequestByIdAsync(requestId);
+            if (request == null)
+            {
+                // Consider logging this or throwing a specific exception
+                return false;
+            }
+
+            // Optional: Add more sophisticated logic here to check if the status transition is valid
+            // For example, can't go from Completed to InProgress without specific permissions or logic.
+            // Can't change status if user is not authorized (e.g., not assigned and not Admin/Support)
+
+            var oldStatus = request.Status;
+            request.Status = newStatus;
+            request.LastUpdatedDate = DateTime.UtcNow;
+            request.LastUpdatedByUserId = userId;
+
+            // Add activity log
+            var activityDescription = $"Status changed from {oldStatus} to {newStatus}.";
+            if (!string.IsNullOrWhiteSpace(notes))
+            {
+                activityDescription += $" Notes: {notes}";
+            }
+            await AddActivityAsync(requestId, userId, activityDescription);
+
+            // Specific logic for certain status changes
+            if (newStatus == RequestStatus.Completed)
+            {
+                request.CompletedDate = DateTime.UtcNow;
+                request.CompletedByUserId = userId;
+                if (!string.IsNullOrWhiteSpace(notes))
+                {
+                    request.CompletionNotes = notes;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            await _auditService.LogAsync(AuditAction.Update, "ITRequest", requestId, userId, $"Request {request.RequestNumber} status updated to {newStatus}. Notes: {notes}");
+
+            return true;
         }
 
         public async Task<List<ITRequest>> GetOverdueRequestsAsync()
@@ -393,177 +422,313 @@ namespace HospitalAssetTracker.Services
                 .Include(r => r.RelatedAsset)
                 .Include(r => r.AssignedToUser)
                 .Where(r => r.RequestedByUserId == userId)
-                .OrderByDescending(r => r.CreatedDate)
+                .OrderByDescending(r => r.RequestDate)
                 .ToListAsync();
         }
 
         public async Task<List<ITRequest>> GetAssignedRequestsAsync(string userId)
         {
             return await _context.ITRequests
+                .Where(r => r.AssignedToUserId == userId)
                 .Include(r => r.RequestedByUser)
-                .Include(r => r.RelatedAsset)
-                .Where(r => r.AssignedToUserId == userId && 
-                           r.Status != RequestStatus.Completed && 
-                           r.Status != RequestStatus.Cancelled)
-                .OrderBy(r => r.Priority)
-                .ThenBy(r => r.RequiredByDate)
+                .OrderByDescending(r => r.RequestDate)
                 .ToListAsync();
         }
 
-        // Private methods for business logic
-
-        private async Task SetAutomaticPriorityAsync(ITRequest request)
+        public async Task<int> GetPendingRequestsCountAsync()
         {
-            // Set priority based on request type and asset criticality
-            if (request.RelatedAssetId.HasValue)
-            {
-                var asset = await _assetService.GetAssetByIdAsync(request.RelatedAssetId.Value);
-                if (asset != null && asset.IsCritical)
+            return await _context.ITRequests
+                .CountAsync(r => r.Status == RequestStatus.Submitted);
+        }
+
+        public async Task<int> GetMyActiveRequestsCountAsync(string userId)
+        {
+            return await _context.ITRequests
+                .CountAsync(r => r.AssignedToUserId == userId &&
+                               (r.Status != RequestStatus.Completed && r.Status != RequestStatus.Cancelled));
+        }
+
+        public async Task<RequestDashboardData> GetRequestDashboardDataAsync()
+        {
+            var totalRequests = await _context.ITRequests.CountAsync();
+            var submittedRequests = await _context.ITRequests.CountAsync(r => r.Status == RequestStatus.Submitted);
+            var inProgressRequests = await _context.ITRequests.CountAsync(r => r.Status == RequestStatus.InProgress);
+            var onHoldRequests = await _context.ITRequests.CountAsync(r => r.Status == RequestStatus.OnHold);
+            var completedRequests = await _context.ITRequests.CountAsync(r => r.Status == RequestStatus.Completed);
+            var cancelledRequests = await _context.ITRequests.CountAsync(r => r.Status == RequestStatus.Cancelled);
+
+            var requestsByType = await _context.ITRequests
+                .GroupBy(r => r.RequestType)
+                .ToDictionaryAsync(g => g.Key.ToString(), g => g.Count());
+
+            var requestsByPriority = await _context.ITRequests
+                .GroupBy(r => r.Priority)
+                .ToDictionaryAsync(g => g.Key.ToString(), g => g.Count());
+
+            var recentRequests = await _context.ITRequests
+                .Include(r => r.RequestedByUser)
+                .Include(r => r.AssignedToUser)
+                .OrderByDescending(r => r.RequestDate)
+                .Take(5)
+                .Select(r => new RequestSummaryViewModel
                 {
-                    request.Priority = RequestPriority.Critical;
-                    return;
+                    Id = r.Id,
+                    RequestNumber = r.RequestNumber,
+                    Title = r.Title,
+                    RequestType = r.RequestType.ToString(),
+                    Status = r.Status.ToString(),
+                    Priority = r.Priority.ToString(),
+                    RequesterName = r.RequestedByUser.FullName,
+                    AssignedToName = r.AssignedToUser != null ? r.AssignedToUser.FullName : "Unassigned",
+                    RequestDate = r.RequestDate,
+                    DueDate = r.RequiredByDate
+                })
+                .ToListAsync();
+
+            var overdueRequests = await GetOverdueRequestsAsync();
+            var completedTodayCount = await _context.ITRequests.CountAsync(r => r.Status == RequestStatus.Completed && r.CompletedDate.HasValue && r.CompletedDate.Value.Date == DateTime.UtcNow.Date);
+
+            var highPriorityActiveRequests = await _context.ITRequests
+                .Include(r => r.RequestedByUser)
+                .Where(r => (r.Priority == RequestPriority.High || r.Priority == RequestPriority.Critical) &&
+                             r.Status != RequestStatus.Completed && r.Status != RequestStatus.Cancelled)
+                .OrderByDescending(r => r.Priority) // Show critical first, then high
+                .ThenBy(r => r.RequiredByDate)    // Then by due date
+                .Take(10) // Limit to 10 for the dashboard view
+                .Select(r => new RequestSummaryViewModel
+                {
+                    Id = r.Id,
+                    RequestNumber = r.RequestNumber,
+                    Title = r.Title,
+                    Description = r.Description, // Added description for display
+                    RequestType = r.RequestType.ToString(),
+                    Status = r.Status.ToString(),
+                    Priority = r.Priority.ToString(),
+                    RequesterName = r.RequestedByUser.FullName,
+                    AssignedToName = r.AssignedToUser != null ? r.AssignedToUser.FullName : "Unassigned",
+                    RequestDate = r.RequestDate,
+                    DueDate = r.RequiredByDate
+                })
+                .ToListAsync();
+
+            return new RequestDashboardData
+            {
+                TotalRequests = totalRequests,
+                SubmittedRequests = submittedRequests,
+                InProgressRequests = inProgressRequests,
+                OnHoldRequests = onHoldRequests,
+                CompletedRequests = completedRequests,
+                CancelledRequests = cancelledRequests,
+                RequestsByType = requestsByType,
+                RequestsByPriority = requestsByPriority,
+                RecentRequests = recentRequests,
+                OverdueRequests = overdueRequests.Count,
+                CompletedToday = completedTodayCount,
+                HighPriorityRequests = highPriorityActiveRequests // Populate the new property
+            };
+        }
+
+        public async Task<string> GenerateRequestNumberAsync()
+        {
+            // Generate a unique request number based on current year and sequence
+            var currentYear = DateTime.UtcNow.Year;
+            var lastRequest = await _context.ITRequests
+                .Where(r => r.RequestNumber.StartsWith($"REQ-{currentYear}-"))
+                .OrderByDescending(r => r.RequestNumber)
+                .FirstOrDefaultAsync();
+
+            int sequence = 1;
+            if (lastRequest != null)
+            {
+                var lastSequence = lastRequest.RequestNumber.Split('-').LastOrDefault();
+                if (int.TryParse(lastSequence, out int lastNum))
+                {
+                    sequence = lastNum + 1;
                 }
             }
 
-            // Default priorities by request type
-            request.Priority = request.RequestType switch
-            {
-                RequestType.HardwareReplacement => RequestPriority.High,
-                RequestType.NetworkConnectivity => RequestPriority.High,
-                RequestType.MaintenanceService => RequestPriority.Medium,
-                RequestType.NewEquipment => RequestPriority.Medium,
-                RequestType.SoftwareInstallation => RequestPriority.Low,
-                RequestType.UserAccessRights => RequestPriority.Low,
-                RequestType.ITConsultation => RequestPriority.Low,
-                RequestType.Training => RequestPriority.Low,
-                _ => RequestPriority.Medium
-            };
+            return $"REQ-{currentYear}-{sequence:D4}";
         }
 
-        private async Task<bool> IsEligibleForAutoApprovalAsync(ITRequest request)
+        public async Task<IEnumerable<ApplicationUser>> GetAssignableITStaffAsync()
         {
-            // Auto-approve standard consumables under certain value
-            if (request.RequestType == RequestType.SoftwareInstallation && 
-                request.EstimatedCost <= 500)
-                return true;
+            var itRoles = new[] { "Admin", "IT Support" }; // Define roles that can be assigned requests
+            var itStaff = new List<ApplicationUser>();
 
-            // Auto-approve like-for-like replacements for critical systems
-            if (request.RequestType == RequestType.HardwareReplacement && 
-                request.RelatedAssetId.HasValue)
+            foreach (var roleName in itRoles)
             {
-                var asset = await _assetService.GetAssetByIdAsync(request.RelatedAssetId.Value);
-                return asset?.IsCritical == true;
+                var usersInRole = await _userManager.GetUsersInRoleAsync(roleName);
+                itStaff.AddRange(usersInRole);
             }
-
-            return false;
-        }
-
-        private Task ProcessAutoApprovalAsync(ITRequest request, string userId)
-        {
-            request.Status = RequestStatus.Approved;
-            request.ApprovedByUserId = userId;
-            request.ApprovalDate = DateTime.UtcNow;
             
-            var approval = new RequestApproval
+            // Return distinct users, ordered by name, who are active
+            return itStaff.Where(u => u.IsActive).DistinctBy(u => u.Id).OrderBy(u => u.LastName).ThenBy(u => u.FirstName).ToList();
+        }
+
+        public async Task<IEnumerable<InventoryItem>> GetRelevantInventoryItemsAsync(string? category = null, string? searchTerm = null)
+        {
+            var query = _context.InventoryItems
+                .Where(i => i.Status == InventoryStatus.InStock && i.Quantity > 0); // Only available items
+
+            if (!string.IsNullOrEmpty(category) && Enum.TryParse<InventoryCategory>(category, true, out var invCategory))
             {
-                ITRequestId = request.Id,
-                ApproverId = userId,
-                DecisionDate = DateTime.UtcNow,
-                Status = ApprovalStatus.Approved,
-                Comments = "Auto-approved based on system rules",
-                CreatedDate = DateTime.UtcNow,
-                ApprovalLevel = ApprovalLevel.Supervisor,
-                Sequence = 1
+                query = query.Where(i => i.Category == invCategory);
+            }
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                var term = searchTerm.ToLower();
+                query = query.Where(i => 
+                    (i.Name != null && i.Name.ToLower().Contains(term)) ||
+                    (i.ItemCode != null && i.ItemCode.ToLower().Contains(term)) ||
+                    (i.Description != null && i.Description.ToLower().Contains(term)) ||
+                    (i.Brand != null && i.Brand.ToLower().Contains(term)) ||
+                    (i.Model != null && i.Model.ToLower().Contains(term))
+                );
+            }
+
+            return await query.OrderBy(i => i.Name).Take(100).ToListAsync(); // Limit results for performance
+        }
+
+        public async Task ProcessAssetReplacementFromInventoryAsync(int requestId, int replacementInventoryItemId, int? damagedAssetIdToUpdate, string? disposalNotesForUnmanagedAsset, string userId)
+        {
+            var request = await _context.ITRequests
+                .Include(r => r.RequestedByUser) // Needed for new asset assignment
+                .Include(r => r.Location) // Needed for new asset assignment
+                .FirstOrDefaultAsync(r => r.Id == requestId);
+
+            if (request == null)
+                throw new KeyNotFoundException("Request not found.");
+
+            var replacementInventoryItem = await _inventoryService.GetInventoryItemByIdAsync(replacementInventoryItemId);
+            if (replacementInventoryItem == null || replacementInventoryItem.Quantity <= 0)
+                throw new InvalidOperationException("Selected replacement inventory item is not available or not found.");
+
+            // 1. Create a new Asset from the replacement inventory item
+            var newAsset = new Asset
+            {
+                AssetTag = await _assetService.GenerateAssetTagAsync(), 
+                Category = (AssetCategory)replacementInventoryItem.Category, // May need mapping
+                Brand = replacementInventoryItem.Brand,
+                Model = replacementInventoryItem.Model,
+                SerialNumber = replacementInventoryItem.SerialNumber ?? string.Empty, // Handle possible null from inventory item
+                Description = replacementInventoryItem.Description ?? $"Deployed from inventory item {replacementInventoryItem.ItemCode}",
+                Status = AssetStatus.InUse, // New asset is immediately in use
+                LocationId = request.LocationId, // Assign to request's location; if null, asset's location is null
+                AssignedToUserId = request.RequestedByUserId, // Assign to the original requester
+                Department = request.Department,
+                PurchasePrice = replacementInventoryItem.UnitCost,
+                WarrantyExpiry = replacementInventoryItem.WarrantyExpiry,
+                InstallationDate = DateTime.UtcNow, // Or a specific date if provided
             };
-            _context.RequestApprovals.Add(approval);
+            var createdAsset = await _assetService.CreateAssetAsync(newAsset, userId);
+            request.RelatedAssetId = createdAsset.Id; // Link the new asset that fulfilled the request
+            request.ProvidedInventoryItemId = replacementInventoryItemId;
+
+            // 2. Update the inventory: reduce stock for the used item
+            await _inventoryService.StockOutAsync(replacementInventoryItemId, 1, $"Deployed to fulfill request {request.RequestNumber}", userId);
+
+            // 3. Handle the damaged asset
+            if (damagedAssetIdToUpdate.HasValue)
+            {
+                var damagedAsset = await _assetService.GetAssetByIdAsync(damagedAssetIdToUpdate.Value);
+                if (damagedAsset != null)
+                {
+                    await _assetService.ChangeAssetStatusAsync(damagedAsset.Id, AssetStatus.Decommissioned, $"Replaced by request {request.RequestNumber}", userId);
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(disposalNotesForUnmanagedAsset))
+            {
+                request.DisposalNotesForUnmanagedAsset = disposalNotesForUnmanagedAsset;
+                await _auditService.LogAsync(AuditAction.Update, "ITRequest", request.Id, userId, $"Disposal notes for unmanaged item: {disposalNotesForUnmanagedAsset}");
+            }
             
-            return Task.CompletedTask;
-        }
-
-        private async Task<bool> IsFullyApprovedAsync(int requestId)
-        {
-            var request = await GetRequestByIdAsync(requestId);
-            if (request == null) return false;
-
-            // Check if all required approvals are received based on request value and type
-            var approvals = await _context.RequestApprovals
-                .Where(a => a.ITRequestId == requestId && a.Status == ApprovalStatus.Approved)
-                .CountAsync();
-
-            // Simple approval logic - can be enhanced based on complex business rules
-            return approvals >= GetRequiredApprovalCount(request);
-        }
-
-        private int GetRequiredApprovalCount(ITRequest request)
-        {
-            if (request.EstimatedCost <= 500) return 1;
-            if (request.EstimatedCost <= 5000) return 2;
-            return 3;
-        }
-
-        private async Task ProcessApprovedRequestAsync(ITRequest request, string approverId)
-        {
-            switch (request.RequestType)
+            if(request.DamagedAssetId == null && damagedAssetIdToUpdate.HasValue)
             {
-                case RequestType.HardwareReplacement:
-                    await ProcessHardwareReplacementAsync(request, approverId);
-                    break;
-                case RequestType.NewEquipment:
-                    await ProcessNewEquipmentAsync(request, approverId);
-                    break;
-                // Add other request type processing logic
+                request.DamagedAssetId = damagedAssetIdToUpdate;
             }
+
+
+            // 4. Update the request status
+            request.Status = RequestStatus.Completed;
+            request.CompletedDate = DateTime.UtcNow;
+            request.CompletedByUserId = userId;
+            request.CompletionNotes = $"Fulfilled from inventory item {replacementInventoryItem.ItemCode}. New asset {createdAsset.AssetTag} deployed. " +
+                                    (damagedAssetIdToUpdate.HasValue ? $"Old asset ID {damagedAssetIdToUpdate.Value} marked for disposal." : "") +
+                                    (!string.IsNullOrWhiteSpace(disposalNotesForUnmanagedAsset) ? $" Disposal notes: {disposalNotesForUnmanagedAsset}" : "");
+            request.LastUpdatedDate = DateTime.UtcNow;
+            request.LastUpdatedByUserId = userId;
+
+            await _context.SaveChangesAsync();
+            await _auditService.LogAsync(AuditAction.Update, "ITRequest", request.Id, userId, $"Request completed. Fulfilled from inventory. New Asset: {createdAsset.AssetTag}.");
         }
 
-        private async Task ProcessHardwareReplacementAsync(ITRequest request, string approverId)
+        public async Task ProcessAssetReplacementViaProcurementAsync(int requestId, int? damagedAssetIdToUpdate, string? disposalNotesForUnmanagedAsset, string userId)
         {
-            if (!request.AssetId.HasValue) return;
+            var request = await _context.ITRequests.FindAsync(requestId);
+            if (request == null)
+                throw new KeyNotFoundException("Request not found.");
 
-            // Check inventory for replacement
-            var replacementAvailable = await _inventoryService.CheckAvailabilityAsync(
-                request.RequestedItemCategory ?? "Unknown", 1);
+            // 1. Handle the damaged asset
+            if (damagedAssetIdToUpdate.HasValue)
+            {
+                var damagedAsset = await _assetService.GetAssetByIdAsync(damagedAssetIdToUpdate.Value);
+                if (damagedAsset != null)
+                {
+                    await _assetService.ChangeAssetStatusAsync(damagedAsset.Id, AssetStatus.Decommissioned, $"Awaiting replacement via procurement for request {request.RequestNumber}", userId);
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(disposalNotesForUnmanagedAsset))
+            {
+                request.DisposalNotesForUnmanagedAsset = disposalNotesForUnmanagedAsset;
+                await _auditService.LogAsync(AuditAction.Update, "ITRequest", request.Id, userId, $"Disposal notes for unmanaged item (procurement path): {disposalNotesForUnmanagedAsset}");
+            }
+            
+            if(request.DamagedAssetId == null && damagedAssetIdToUpdate.HasValue)
+            {
+                request.DamagedAssetId = damagedAssetIdToUpdate;
+            }
 
-            if (replacementAvailable)
-            {
-                // Update asset status to maintenance pending
-                await _assetService.UpdateAssetStatusAsync(request.AssetId.Value, 
-                    AssetStatus.MaintenancePending, approverId);
-            }
-            else
-            {
-                // Trigger procurement
-                await _procurementService.CreateProcurementFromRequestAsync(request.Id, approverId);
-            }
+            // 2. Trigger Procurement
+            await _procurementService.CreateProcurementFromRequestAsync(requestId, userId);
+
+            request.Status = RequestStatus.InProgress; // Set to InProgress as procurement is underway
+            request.LastUpdatedDate = DateTime.UtcNow;
+            request.LastUpdatedByUserId = userId;
+
+            await _context.SaveChangesAsync();
+            await _auditService.LogAsync(AuditAction.Update, "ITRequest", request.Id, userId, $"Procurement initiated for request {request.RequestNumber}.");
         }
 
-        private async Task ProcessNewEquipmentAsync(ITRequest request, string approverId)
+        public async Task AddActivityAsync(int requestId, string userId, string description)
         {
-            // Check inventory first
-            var available = await _inventoryService.CheckAvailabilityAsync(
-                request.RequestedItemCategory ?? "Unknown", 1);
-
-            if (!available)
+            var activity = new RequestActivity
             {
-                // Trigger procurement
-                await _procurementService.CreateProcurementFromRequestAsync(request.Id, approverId);
-            }
+                ITRequestId = requestId,
+                UserId = userId,
+                Description = description,
+                ActivityDate = DateTime.UtcNow
+            };
+            _context.RequestActivities.Add(activity);
+            await _context.SaveChangesAsync();
         }
+
+
+        // Private methods for business logic
 
         private async Task UpdateAssetStatusAfterCompletion(ITRequest request, string completedById)
         {
-            if (!request.AssetId.HasValue) return;
+            if (!request.RelatedAssetId.HasValue) return;
 
             switch (request.RequestType)
             {
                 case RequestType.HardwareReplacement:
-                    // Asset should be back in service or written off
-                    await _assetService.UpdateAssetStatusAsync(request.AssetId.Value, 
-                        AssetStatus.InUse, completedById);
+                    await _assetService.ChangeAssetStatusAsync(request.RelatedAssetId.Value, 
+                        AssetStatus.InUse, $"Asset back in service after request {request.RequestNumber}", completedById);
                     break;
                 case RequestType.MaintenanceService:
-                    // Asset maintenance completed
-                    await _assetService.UpdateAssetStatusAsync(request.AssetId.Value, 
-                        AssetStatus.InUse, completedById);
+                    await _assetService.ChangeAssetStatusAsync(request.RelatedAssetId.Value, 
+                        AssetStatus.InUse, $"Maintenance completed via request {request.RequestNumber}", completedById);
                     break;
             }
         }

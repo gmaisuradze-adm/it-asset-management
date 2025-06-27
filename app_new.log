@@ -1,0 +1,597 @@
+nohup: ignoring input
+Using launch settings from /home/gadmin/it_system_new_gen/Properties/launchSettings.json...
+Building...
+{
+  "Timestamp": "2025-06-27 10:45:47",
+  "EventId": 20402,
+  "LogLevel": "Information",
+  "Category": "Microsoft.EntityFrameworkCore.Migrations",
+  "Message": "Applying migration \u002720250627100756_UnifiedBusinessLogicSupport\u0027.",
+  "State": {
+    "Message": "Applying migration \u002720250627100756_UnifiedBusinessLogicSupport\u0027.",
+    "migration": "20250627100756_UnifiedBusinessLogicSupport",
+    "{OriginalFormat}": "Applying migration \u0027{migration}\u0027."
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:45:47",
+  "EventId": 20102,
+  "LogLevel": "Error",
+  "Category": "Microsoft.EntityFrameworkCore.Database.Command",
+  "Message": "Failed executing DbCommand (3ms) [Parameters=[], CommandType=\u0027Text\u0027, CommandTimeout=\u002730\u0027]\nALTER TABLE \u0022AutomationRules\u0022 RENAME COLUMN \u0022Conditions\u0022 TO \u0022TriggerType\u0022;",
+  "State": {
+    "Message": "Failed executing DbCommand (3ms) [Parameters=[], CommandType=\u0027Text\u0027, CommandTimeout=\u002730\u0027]\nALTER TABLE \u0022AutomationRules\u0022 RENAME COLUMN \u0022Conditions\u0022 TO \u0022TriggerType\u0022;",
+    "elapsed": "3",
+    "parameters": "",
+    "commandType": "Text",
+    "commandTimeout": 30,
+    "newLine": "\n",
+    "commandText": "ALTER TABLE \u0022AutomationRules\u0022 RENAME COLUMN \u0022Conditions\u0022 TO \u0022TriggerType\u0022;",
+    "{OriginalFormat}": "Failed executing DbCommand ({elapsed}ms) [Parameters=[{parameters}], CommandType=\u0027{commandType}\u0027, CommandTimeout=\u0027{commandTimeout}\u0027]{newLine}{commandText}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:45:47",
+  "EventId": 0,
+  "LogLevel": "Error",
+  "Category": "Program",
+  "Message": "An error occurred creating the DB.",
+  "Exception": "Npgsql.PostgresException (0x80004005): 42703: column \u0022Conditions\u0022 does not exist\n   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)\n   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder\u00601.StateMachineBox\u00601.System.Threading.Tasks.Sources.IValueTaskSource\u003CTResult\u003E.GetResult(Int16 token)\n   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)\n   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)\n   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)\n   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)\n   at Npgsql.NpgsqlCommand.ExecuteNonQuery(Boolean async, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList\u00601 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable\u00601 isolationLevel, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList\u00601 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable\u00601 isolationLevel, CancellationToken cancellationToken)\n   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func\u00604 operation, Func\u00604 verifySucceeded, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteNonQueryAsync(IReadOnlyList\u00601 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean commitTransaction, Nullable\u00601 isolationLevel, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.\u003C\u003Ec.\u003C\u003CMigrateAsync\u003Eb__22_1\u003Ed.MoveNext()\n--- End of stack trace from previous location ---\n   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func\u00604 operation, Func\u00604 verifySucceeded, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)\n   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlMigrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)\n   at Program.\u003CMain\u003E$(String[] args) in /home/gadmin/it_system_new_gen/Program.cs:line 136\n  Exception data:\n    Severity: ERROR\n    SqlState: 42703\n    MessageText: column \u0022Conditions\u0022 does not exist\n    File: tablecmds.c\n    Line: 3653\n    Routine: renameatt_internal",
+  "State": {
+    "Message": "An error occurred creating the DB.",
+    "{OriginalFormat}": "An error occurred creating the DB."
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:45:47",
+  "EventId": 14,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Now listening on: http://localhost:8080",
+  "State": {
+    "Message": "Now listening on: http://localhost:8080",
+    "address": "http://localhost:8080",
+    "{OriginalFormat}": "Now listening on: {address}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:45:47",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Application started. Press Ctrl\u002BC to shut down.",
+  "State": {
+    "Message": "Application started. Press Ctrl\u002BC to shut down.",
+    "{OriginalFormat}": "Application started. Press Ctrl\u002BC to shut down."
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:45:47",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Hosting environment: Development",
+  "State": {
+    "Message": "Hosting environment: Development",
+    "EnvName": "Development",
+    "{OriginalFormat}": "Hosting environment: {EnvName}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:45:47",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Content root path: /home/gadmin/it_system_new_gen",
+  "State": {
+    "Message": "Content root path: /home/gadmin/it_system_new_gen",
+    "ContentRoot": "/home/gadmin/it_system_new_gen",
+    "{OriginalFormat}": "Content root path: {ContentRoot}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:47:10",
+  "EventId": 1,
+  "LogLevel": "Error",
+  "Category": "Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware",
+  "Message": "An unhandled exception has occurred while executing the request.",
+  "Exception": "System.NullReferenceException: Object reference not set to an instance of an object.\n   at HospitalAssetTracker.Pages.UnifiedBusinessLogic.Views_UnifiedBusinessLogic_Dashboard.ExecuteAsync() in /home/gadmin/it_system_new_gen/Views/UnifiedBusinessLogic/Dashboard.cshtml:line 4\n   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageCoreAsync(IRazorPage page, ViewContext context)\n   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageAsync(IRazorPage page, ViewContext context, Boolean invokeViewStarts)\n   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderAsync(ViewContext context)\n   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable\u00601 statusCode)\n   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable\u00601 statusCode)\n   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ActionContext actionContext, IView view, ViewDataDictionary viewData, ITempDataDictionary tempData, String contentType, Nullable\u00601 statusCode)\n   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor.ExecuteAsync(ActionContext context, ViewResult result)\n   at Microsoft.AspNetCore.Mvc.ViewResult.ExecuteResultAsync(ActionContext context)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.\u003CInvokeNextResultFilterAsync\u003Eg__Awaited|30_0[TFilter,TFilterAsync](ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResultExecutedContextSealed context)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.ResultNext[TFilter,TFilterAsync](State\u0026 next, Scope\u0026 scope, Object\u0026 state, Boolean\u0026 isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters()\n--- End of stack trace from previous location ---\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.\u003CInvokeNextResourceFilter\u003Eg__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State\u0026 next, Scope\u0026 scope, Object\u0026 state, Boolean\u0026 isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeFilterPipelineAsync()\n--- End of stack trace from previous location ---\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.\u003CInvokeAsync\u003Eg__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.\u003CInvokeAsync\u003Eg__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)\n   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)\n   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)\n   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)",
+  "State": {
+    "Message": "An unhandled exception has occurred while executing the request.",
+    "{OriginalFormat}": "An unhandled exception has occurred while executing the request."
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:141453625cf294c7, TraceId:2f3b94180a25e912bd350c36e38db195, ParentId:0000000000000000",
+      "SpanId": "141453625cf294c7",
+      "TraceId": "2f3b94180a25e912bd350c36e38db195",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI83D",
+      "ConnectionId": "0HNDLCVNEI83D"
+    },
+    {
+      "Message": "RequestPath:/UnifiedBusinessLogic/Dashboard RequestId:0HNDLCVNEI83D:00000002",
+      "RequestId": "0HNDLCVNEI83D:00000002",
+      "RequestPath": "/UnifiedBusinessLogic/Dashboard"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:47:33",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "HospitalAssetTracker.Controllers.AssetDashboardController",
+  "Message": "Loading Asset Dashboard for user febc96a7-8e84-4698-bb15-69e8fdbb6e8d with role Admin",
+  "State": {
+    "Message": "Loading Asset Dashboard for user febc96a7-8e84-4698-bb15-69e8fdbb6e8d with role Admin",
+    "UserId": "febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+    "UserRole": "Admin",
+    "{OriginalFormat}": "Loading Asset Dashboard for user {UserId} with role {UserRole}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:8955751b6c32d0cb, TraceId:4a70e035a1d77f6b81ec7b54e4a79d41, ParentId:0000000000000000",
+      "SpanId": "8955751b6c32d0cb",
+      "TraceId": "4a70e035a1d77f6b81ec7b54e4a79d41",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI83G",
+      "ConnectionId": "0HNDLCVNEI83G"
+    },
+    {
+      "Message": "RequestPath:/AssetDashboard/Index RequestId:0HNDLCVNEI83G:00000001",
+      "RequestId": "0HNDLCVNEI83G:00000001",
+      "RequestPath": "/AssetDashboard/Index"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)",
+      "ActionId": "a28b6fb2-02dd-42ba-8795-224eccfb2512",
+      "ActionName": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:47:33",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "HospitalAssetTracker.Services.AssetBusinessLogicService",
+  "Message": "Getting asset dashboard data for user: febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+  "State": {
+    "Message": "Getting asset dashboard data for user: febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+    "UserId": "febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+    "{OriginalFormat}": "Getting asset dashboard data for user: {UserId}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:8955751b6c32d0cb, TraceId:4a70e035a1d77f6b81ec7b54e4a79d41, ParentId:0000000000000000",
+      "SpanId": "8955751b6c32d0cb",
+      "TraceId": "4a70e035a1d77f6b81ec7b54e4a79d41",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI83G",
+      "ConnectionId": "0HNDLCVNEI83G"
+    },
+    {
+      "Message": "RequestPath:/AssetDashboard/Index RequestId:0HNDLCVNEI83G:00000001",
+      "RequestId": "0HNDLCVNEI83G:00000001",
+      "RequestPath": "/AssetDashboard/Index"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)",
+      "ActionId": "a28b6fb2-02dd-42ba-8795-224eccfb2512",
+      "ActionName": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:47:33",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "HospitalAssetTracker.Services.AssetBusinessLogicService",
+  "Message": "Getting asset alerts for user: febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+  "State": {
+    "Message": "Getting asset alerts for user: febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+    "UserId": "febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+    "{OriginalFormat}": "Getting asset alerts for user: {UserId}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:8955751b6c32d0cb, TraceId:4a70e035a1d77f6b81ec7b54e4a79d41, ParentId:0000000000000000",
+      "SpanId": "8955751b6c32d0cb",
+      "TraceId": "4a70e035a1d77f6b81ec7b54e4a79d41",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI83G",
+      "ConnectionId": "0HNDLCVNEI83G"
+    },
+    {
+      "Message": "RequestPath:/AssetDashboard/Index RequestId:0HNDLCVNEI83G:00000001",
+      "RequestId": "0HNDLCVNEI83G:00000001",
+      "RequestPath": "/AssetDashboard/Index"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)",
+      "ActionId": "a28b6fb2-02dd-42ba-8795-224eccfb2512",
+      "ActionName": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:47:33",
+  "EventId": 10102,
+  "LogLevel": "Warning",
+  "Category": "Microsoft.EntityFrameworkCore.Query",
+  "Message": "The query uses a row limiting operator (\u0027Skip\u0027/\u0027Take\u0027) without an \u0027OrderBy\u0027 operator. This may lead to unpredictable results. If the \u0027Distinct\u0027 operator is used after \u0027OrderBy\u0027, then make sure to use the \u0027OrderBy\u0027 operator after \u0027Distinct\u0027 as the ordering would otherwise get erased.",
+  "State": {
+    "Message": "The query uses a row limiting operator (\u0027Skip\u0027/\u0027Take\u0027) without an \u0027OrderBy\u0027 operator. This may lead to unpredictable results. If the \u0027Distinct\u0027 operator is used after \u0027OrderBy\u0027, then make sure to use the \u0027OrderBy\u0027 operator after \u0027Distinct\u0027 as the ordering would otherwise get erased.",
+    "{OriginalFormat}": "The query uses a row limiting operator (\u0027Skip\u0027/\u0027Take\u0027) without an \u0027OrderBy\u0027 operator. This may lead to unpredictable results. If the \u0027Distinct\u0027 operator is used after \u0027OrderBy\u0027, then make sure to use the \u0027OrderBy\u0027 operator after \u0027Distinct\u0027 as the ordering would otherwise get erased."
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:8955751b6c32d0cb, TraceId:4a70e035a1d77f6b81ec7b54e4a79d41, ParentId:0000000000000000",
+      "SpanId": "8955751b6c32d0cb",
+      "TraceId": "4a70e035a1d77f6b81ec7b54e4a79d41",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI83G",
+      "ConnectionId": "0HNDLCVNEI83G"
+    },
+    {
+      "Message": "RequestPath:/AssetDashboard/Index RequestId:0HNDLCVNEI83G:00000001",
+      "RequestId": "0HNDLCVNEI83G:00000001",
+      "RequestPath": "/AssetDashboard/Index"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)",
+      "ActionId": "a28b6fb2-02dd-42ba-8795-224eccfb2512",
+      "ActionName": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:47:33",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "HospitalAssetTracker.Controllers.AssetDashboardController",
+  "Message": "Asset Dashboard loaded successfully. Total assets: 15",
+  "State": {
+    "Message": "Asset Dashboard loaded successfully. Total assets: 15",
+    "TotalAssets": 15,
+    "{OriginalFormat}": "Asset Dashboard loaded successfully. Total assets: {TotalAssets}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:8955751b6c32d0cb, TraceId:4a70e035a1d77f6b81ec7b54e4a79d41, ParentId:0000000000000000",
+      "SpanId": "8955751b6c32d0cb",
+      "TraceId": "4a70e035a1d77f6b81ec7b54e4a79d41",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI83G",
+      "ConnectionId": "0HNDLCVNEI83G"
+    },
+    {
+      "Message": "RequestPath:/AssetDashboard/Index RequestId:0HNDLCVNEI83G:00000001",
+      "RequestId": "0HNDLCVNEI83G:00000001",
+      "RequestPath": "/AssetDashboard/Index"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)",
+      "ActionId": "a28b6fb2-02dd-42ba-8795-224eccfb2512",
+      "ActionName": "HospitalAssetTracker.Controllers.AssetDashboardController.Index (HospitalAssetTracker)"
+    }
+  ]
+}
+Total assets in database: 15
+Assets with warranty dates: 12
+Asset DESK-001: Warranty 2028-06-18 - Expired: False
+Asset DESK-395: Warranty 2028-06-17 - Expired: False
+Asset DESK-474: Warranty 2028-06-17 - Expired: False
+Asset DESK-790: Warranty 2028-06-17 - Expired: False
+Asset DESK-8409872: Warranty 2025-07-02 - Expired: False
+Asset DESK-903: Warranty 2028-06-17 - Expired: False
+Asset DESK-OLD-001: Warranty 2024-06-18 - Expired: True
+Asset LAP-001: Warranty 2028-06-18 - Expired: False
+Asset LAP-OLD-001: Warranty 2024-12-18 - Expired: True
+Asset PRT-001: Warranty 2027-06-18 - Expired: False
+ExpiredWarranties: Found 4 assets with expired warranties
+{
+  "Timestamp": "2025-06-27 10:48:26",
+  "EventId": 1,
+  "LogLevel": "Error",
+  "Category": "Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddleware",
+  "Message": "An unhandled exception has occurred while executing the request.",
+  "Exception": "System.NullReferenceException: Object reference not set to an instance of an object.\n   at HospitalAssetTracker.Pages.UnifiedBusinessLogic.Views_UnifiedBusinessLogic_Dashboard.ExecuteAsync() in /home/gadmin/it_system_new_gen/Views/UnifiedBusinessLogic/Dashboard.cshtml:line 4\n   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageCoreAsync(IRazorPage page, ViewContext context)\n   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageAsync(IRazorPage page, ViewContext context, Boolean invokeViewStarts)\n   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderAsync(ViewContext context)\n   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable\u00601 statusCode)\n   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ViewContext viewContext, String contentType, Nullable\u00601 statusCode)\n   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewExecutor.ExecuteAsync(ActionContext actionContext, IView view, ViewDataDictionary viewData, ITempDataDictionary tempData, String contentType, Nullable\u00601 statusCode)\n   at Microsoft.AspNetCore.Mvc.ViewFeatures.ViewResultExecutor.ExecuteAsync(ActionContext context, ViewResult result)\n   at Microsoft.AspNetCore.Mvc.ViewResult.ExecuteResultAsync(ActionContext context)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.\u003CInvokeNextResultFilterAsync\u003Eg__Awaited|30_0[TFilter,TFilterAsync](ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResultExecutedContextSealed context)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.ResultNext[TFilter,TFilterAsync](State\u0026 next, Scope\u0026 scope, Object\u0026 state, Boolean\u0026 isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeResultFilters()\n--- End of stack trace from previous location ---\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.\u003CInvokeNextResourceFilter\u003Eg__Awaited|25_0(ResourceInvoker invoker, Task lastTask, State next, Scope scope, Object state, Boolean isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Rethrow(ResourceExecutedContextSealed context)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.Next(State\u0026 next, Scope\u0026 scope, Object\u0026 state, Boolean\u0026 isCompleted)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.InvokeFilterPipelineAsync()\n--- End of stack trace from previous location ---\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.\u003CInvokeAsync\u003Eg__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)\n   at Microsoft.AspNetCore.Mvc.Infrastructure.ResourceInvoker.\u003CInvokeAsync\u003Eg__Awaited|17_0(ResourceInvoker invoker, Task task, IDisposable scope)\n   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)\n   at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)\n   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)",
+  "State": {
+    "Message": "An unhandled exception has occurred while executing the request.",
+    "{OriginalFormat}": "An unhandled exception has occurred while executing the request."
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:93f66f138eb4e290, TraceId:0c4cf101a0af5dc6cf14b49805ac494f, ParentId:0000000000000000",
+      "SpanId": "93f66f138eb4e290",
+      "TraceId": "0c4cf101a0af5dc6cf14b49805ac494f",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI843",
+      "ConnectionId": "0HNDLCVNEI843"
+    },
+    {
+      "Message": "RequestPath:/UnifiedBusinessLogic/Dashboard RequestId:0HNDLCVNEI843:00000005",
+      "RequestId": "0HNDLCVNEI843:00000005",
+      "RequestPath": "/UnifiedBusinessLogic/Dashboard"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:49:51",
+  "EventId": 0,
+  "LogLevel": "Warning",
+  "Category": "HospitalAssetTracker.Controllers.RequestsController",
+  "Message": "Edit ITRequest 19 failed due to invalid ModelState. User: admin@hospital.com",
+  "State": {
+    "Message": "Edit ITRequest 19 failed due to invalid ModelState. User: admin@hospital.com",
+    "RequestId": 19,
+    "User": "admin@hospital.com",
+    "{OriginalFormat}": "Edit ITRequest {RequestId} failed due to invalid ModelState. User: {User}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:f15d57bca26ebf86, TraceId:baf76d0d4d8e32812a76c83224831239, ParentId:0000000000000000",
+      "SpanId": "f15d57bca26ebf86",
+      "TraceId": "baf76d0d4d8e32812a76c83224831239",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI849",
+      "ConnectionId": "0HNDLCVNEI849"
+    },
+    {
+      "Message": "RequestPath:/Requests/Edit/19 RequestId:0HNDLCVNEI849:00000001",
+      "RequestId": "0HNDLCVNEI849:00000001",
+      "RequestPath": "/Requests/Edit/19"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.RequestsController.Edit (HospitalAssetTracker)",
+      "ActionId": "179f82e1-44af-4c6f-9b86-17e6caa916db",
+      "ActionName": "HospitalAssetTracker.Controllers.RequestsController.Edit (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:49:58",
+  "EventId": 0,
+  "LogLevel": "Warning",
+  "Category": "HospitalAssetTracker.Controllers.RequestsController",
+  "Message": "Edit ITRequest 19 failed due to invalid ModelState. User: admin@hospital.com",
+  "State": {
+    "Message": "Edit ITRequest 19 failed due to invalid ModelState. User: admin@hospital.com",
+    "RequestId": 19,
+    "User": "admin@hospital.com",
+    "{OriginalFormat}": "Edit ITRequest {RequestId} failed due to invalid ModelState. User: {User}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:ff5ca916e2817da4, TraceId:f6fa8b7f274f23fb08fe5cbfd8a4ce75, ParentId:0000000000000000",
+      "SpanId": "ff5ca916e2817da4",
+      "TraceId": "f6fa8b7f274f23fb08fe5cbfd8a4ce75",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI84A",
+      "ConnectionId": "0HNDLCVNEI84A"
+    },
+    {
+      "Message": "RequestPath:/Requests/Edit/19 RequestId:0HNDLCVNEI84A:00000001",
+      "RequestId": "0HNDLCVNEI84A:00000001",
+      "RequestPath": "/Requests/Edit/19"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.RequestsController.Edit (HospitalAssetTracker)",
+      "ActionId": "179f82e1-44af-4c6f-9b86-17e6caa916db",
+      "ActionName": "HospitalAssetTracker.Controllers.RequestsController.Edit (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:50:00",
+  "EventId": 0,
+  "LogLevel": "Warning",
+  "Category": "HospitalAssetTracker.Controllers.RequestsController",
+  "Message": "Edit ITRequest 19 failed due to invalid ModelState. User: admin@hospital.com",
+  "State": {
+    "Message": "Edit ITRequest 19 failed due to invalid ModelState. User: admin@hospital.com",
+    "RequestId": 19,
+    "User": "admin@hospital.com",
+    "{OriginalFormat}": "Edit ITRequest {RequestId} failed due to invalid ModelState. User: {User}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:82275082b16b2ae5, TraceId:e6cac51119b4aee8ee7aef35ac7dcc67, ParentId:0000000000000000",
+      "SpanId": "82275082b16b2ae5",
+      "TraceId": "e6cac51119b4aee8ee7aef35ac7dcc67",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI84A",
+      "ConnectionId": "0HNDLCVNEI84A"
+    },
+    {
+      "Message": "RequestPath:/Requests/Edit/19 RequestId:0HNDLCVNEI84A:00000005",
+      "RequestId": "0HNDLCVNEI84A:00000005",
+      "RequestPath": "/Requests/Edit/19"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.RequestsController.Edit (HospitalAssetTracker)",
+      "ActionId": "179f82e1-44af-4c6f-9b86-17e6caa916db",
+      "ActionName": "HospitalAssetTracker.Controllers.RequestsController.Edit (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:50:04",
+  "EventId": 0,
+  "LogLevel": "Warning",
+  "Category": "HospitalAssetTracker.Controllers.RequestsController",
+  "Message": "Edit ITRequest 19 failed due to invalid ModelState. User: admin@hospital.com",
+  "State": {
+    "Message": "Edit ITRequest 19 failed due to invalid ModelState. User: admin@hospital.com",
+    "RequestId": 19,
+    "User": "admin@hospital.com",
+    "{OriginalFormat}": "Edit ITRequest {RequestId} failed due to invalid ModelState. User: {User}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:a71fed83a2a28252, TraceId:6356af27103147e6fb5a6c22c568aaa2, ParentId:0000000000000000",
+      "SpanId": "a71fed83a2a28252",
+      "TraceId": "6356af27103147e6fb5a6c22c568aaa2",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI84C",
+      "ConnectionId": "0HNDLCVNEI84C"
+    },
+    {
+      "Message": "RequestPath:/Requests/Edit/19 RequestId:0HNDLCVNEI84C:00000001",
+      "RequestId": "0HNDLCVNEI84C:00000001",
+      "RequestPath": "/Requests/Edit/19"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.RequestsController.Edit (HospitalAssetTracker)",
+      "ActionId": "179f82e1-44af-4c6f-9b86-17e6caa916db",
+      "ActionName": "HospitalAssetTracker.Controllers.RequestsController.Edit (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:50:10",
+  "EventId": 0,
+  "LogLevel": "Warning",
+  "Category": "HospitalAssetTracker.Controllers.RequestsController",
+  "Message": "Edit ITRequest 19 failed due to invalid ModelState. User: admin@hospital.com",
+  "State": {
+    "Message": "Edit ITRequest 19 failed due to invalid ModelState. User: admin@hospital.com",
+    "RequestId": 19,
+    "User": "admin@hospital.com",
+    "{OriginalFormat}": "Edit ITRequest {RequestId} failed due to invalid ModelState. User: {User}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:e8d90c058a14ed5d, TraceId:2c36e73ac1061e414897f5e161ea8150, ParentId:0000000000000000",
+      "SpanId": "e8d90c058a14ed5d",
+      "TraceId": "2c36e73ac1061e414897f5e161ea8150",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI84D",
+      "ConnectionId": "0HNDLCVNEI84D"
+    },
+    {
+      "Message": "RequestPath:/Requests/Edit/19 RequestId:0HNDLCVNEI84D:00000003",
+      "RequestId": "0HNDLCVNEI84D:00000003",
+      "RequestPath": "/Requests/Edit/19"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.RequestsController.Edit (HospitalAssetTracker)",
+      "ActionId": "179f82e1-44af-4c6f-9b86-17e6caa916db",
+      "ActionName": "HospitalAssetTracker.Controllers.RequestsController.Edit (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:50:21",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "HospitalAssetTracker.Controllers.RequestsController",
+  "Message": "Request 19 placed on hold by User febc96a7-8e84-4698-bb15-69e8fdbb6e8d. Comments: \u10E1\u10D0\u10E7\u10D8\u10D3\u10D4\u10DA\u10D8\u10D0",
+  "State": {
+    "Message": "Request 19 placed on hold by User febc96a7-8e84-4698-bb15-69e8fdbb6e8d. Comments: \u10E1\u10D0\u10E7\u10D8\u10D3\u10D4\u10DA\u10D8\u10D0",
+    "RequestId": 19,
+    "UserId": "febc96a7-8e84-4698-bb15-69e8fdbb6e8d",
+    "Comments": "\u10E1\u10D0\u10E7\u10D8\u10D3\u10D4\u10DA\u10D8\u10D0",
+    "{OriginalFormat}": "Request {RequestId} placed on hold by User {UserId}. Comments: {Comments}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:3ddd7c5dc0bafd6a, TraceId:50dd77d770dbb88c9b4c8211d79911b5, ParentId:0000000000000000",
+      "SpanId": "3ddd7c5dc0bafd6a",
+      "TraceId": "50dd77d770dbb88c9b4c8211d79911b5",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI84F",
+      "ConnectionId": "0HNDLCVNEI84F"
+    },
+    {
+      "Message": "RequestPath:/Requests/PlaceOnHold/19 RequestId:0HNDLCVNEI84F:00000001",
+      "RequestId": "0HNDLCVNEI84F:00000001",
+      "RequestPath": "/Requests/PlaceOnHold/19"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.RequestsController.PlaceOnHold (HospitalAssetTracker)",
+      "ActionId": "fbf85db6-06fd-4009-bfe9-5c7417c0f572",
+      "ActionName": "HospitalAssetTracker.Controllers.RequestsController.PlaceOnHold (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:50:21",
+  "EventId": 0,
+  "LogLevel": "Error",
+  "Category": "HospitalAssetTracker.Controllers.RequestsController",
+  "Message": "Error updating management section for request 19",
+  "Exception": "System.NullReferenceException: Object reference not set to an instance of an object.\n   at HospitalAssetTracker.Pages.Requests.Views_Requests__RequestManagementPartial.ExecuteAsync() in /home/gadmin/it_system_new_gen/Views/Requests/_RequestManagementPartial.cshtml:line 14\n   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageCoreAsync(IRazorPage page, ViewContext context)\n   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderPageAsync(IRazorPage page, ViewContext context, Boolean invokeViewStarts)\n   at Microsoft.AspNetCore.Mvc.Razor.RazorView.RenderAsync(ViewContext context)\n   at HospitalAssetTracker.Extensions.ControllerExtensions.RenderViewToStringAsync[TModel](Controller controller, String viewName, TModel model) in /home/gadmin/it_system_new_gen/Extensions/ControllerExtensions.cs:line 37\n   at HospitalAssetTracker.Controllers.RequestsController.GetManagementSectionUpdate(Int32 requestId, Boolean success, String message) in /home/gadmin/it_system_new_gen/Controllers/RequestsController.cs:line 712",
+  "State": {
+    "Message": "Error updating management section for request 19",
+    "RequestId": 19,
+    "{OriginalFormat}": "Error updating management section for request {RequestId}"
+  },
+  "Scopes": [
+    {
+      "Message": "SpanId:3ddd7c5dc0bafd6a, TraceId:50dd77d770dbb88c9b4c8211d79911b5, ParentId:0000000000000000",
+      "SpanId": "3ddd7c5dc0bafd6a",
+      "TraceId": "50dd77d770dbb88c9b4c8211d79911b5",
+      "ParentId": "0000000000000000"
+    },
+    {
+      "Message": "ConnectionId:0HNDLCVNEI84F",
+      "ConnectionId": "0HNDLCVNEI84F"
+    },
+    {
+      "Message": "RequestPath:/Requests/PlaceOnHold/19 RequestId:0HNDLCVNEI84F:00000001",
+      "RequestId": "0HNDLCVNEI84F:00000001",
+      "RequestPath": "/Requests/PlaceOnHold/19"
+    },
+    {
+      "Message": "HospitalAssetTracker.Controllers.RequestsController.PlaceOnHold (HospitalAssetTracker)",
+      "ActionId": "fbf85db6-06fd-4009-bfe9-5c7417c0f572",
+      "ActionName": "HospitalAssetTracker.Controllers.RequestsController.PlaceOnHold (HospitalAssetTracker)"
+    }
+  ]
+}
+{
+  "Timestamp": "2025-06-27 10:50:40",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Application is shutting down...",
+  "State": {
+    "Message": "Application is shutting down...",
+    "{OriginalFormat}": "Application is shutting down..."
+  },
+  "Scopes": []
+}

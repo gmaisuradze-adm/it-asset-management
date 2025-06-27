@@ -1,419 +1,470 @@
-@model HospitalAssetTracker.Models.UnifiedDashboardViewModel
+@model HospitalAssetTracker.Models.UnifiedDashboardData
 @{
     ViewData["Title"] = "Unified Business Logic Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- Page Header -->
-    <div class="row mb-4">
+    <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-2">Unified Business Logic Dashboard</h1>
-                    <p class="text-muted">Comprehensive overview of IT Asset Management operations</p>
+            <h1 class="display-4">Unified Business Logic Dashboard</h1>
+            <p class="lead">Intelligent automation and unified workflow management for hospital IT operations</p>
+        </div>
+    </div>
+
+    <!-- Key Metrics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-75 small">Total Requests</div>
+                            <div class="text-lg font-weight-bold">@Model.TotalRequests</div>
+                        </div>
+                        <div class="fa-3x">
+                            <i class="bi bi-clipboard-data"></i>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <button class="btn btn-outline-primary me-2" onclick="refreshDashboard()">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                    <span class="text-muted small">Last updated: <span id="lastUpdated">@DateTime.Now.ToString("HH:mm")</span></span>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="#" onclick="showAllRequests(); return false;">View All Requests</a>
+                    <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-75 small">Pending Approvals</div>
+                            <div class="text-lg font-weight-bold">@Model.PendingApprovals</div>
+                        </div>
+                        <div class="fa-3x">
+                            <i class="bi bi-person-check"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="#" onclick="showManagerActions(); return false;">View Pending Approvals</a>
+                    <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-75 small">Completed Today</div>
+                            <div class="text-lg font-weight-bold">@Model.CompletedToday</div>
+                        </div>
+                        <div class="fa-3x">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="#" onclick="showCompletedActions(); return false;">View Completed Today</a>
+                    <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-info text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="text-white-75 small">Automation Efficiency</div>
+                            <div class="text-lg font-weight-bold">@Model.AutomationEfficiency.ToString("P1")</div>
+                        </div>
+                        <div class="fa-3x">
+                            <i class="bi bi-robot"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="#" onclick="showAutomationSuggestions(); return false;">View Automation Details</a>
+                    <div class="small text-white"><i class="bi bi-arrow-right"></i></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Alerts Section -->
-    @if (Model.PendingAlerts.Any())
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-bar-chart-fill me-1"></i>
+                    Workflow Performance
+                </div>
+                <div class="card-body">
+                    <canvas id="workflowChart" width="100%" height="40"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-pie-chart-fill me-1"></i>
+                    Asset Management Overview
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h3 text-warning mb-1">@Model.AssetsNeedingAttention</div>
+                            <small class="text-muted">Assets Need Attention</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h3 text-danger mb-1">@Model.LowStockItems</div>
+                            <small class="text-muted">Low Stock Items</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <button class="btn btn-sm btn-outline-warning w-100" onclick="showAssetsNeedingAttention()">
+                                <i class="bi bi-exclamation-triangle me-1"></i>View Assets
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-sm btn-outline-danger w-100" onclick="showLowStockItems()">
+                                <i class="bi bi-box me-1"></i>View Inventory
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="row">
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-person-badge me-1"></i>
+                    Manager Actions Required
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Count</th>
+                                    <th>Priority</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Pending Decisions</td>
+                                    <td>@Model.PendingDecisions</td>
+                                    <td><span class="badge bg-warning">High</span></td>
+                                    <td><button class="btn btn-sm btn-outline-primary" onclick="showManagerActions()">View</button></td>
+                                </tr>
+                                <tr>
+                                    <td>Recommendations</td>
+                                    <td>@Model.RecentRecommendations</td>
+                                    <td><span class="badge bg-info">Medium</span></td>
+                                    <td><button class="btn btn-sm btn-outline-info" onclick="showRecommendations()">View</button></td>
+                                </tr>
+                                <tr>
+                                    <td>Manager Actions</td>
+                                    <td>@Model.ManagerActions</td>
+                                    <td><span class="badge bg-primary">Normal</span></td>
+                                    <td><button class="btn btn-sm btn-outline-primary" onclick="showAllManagerActions()">View</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a class="btn btn-sm btn-outline-primary" href="/UnifiedBusinessLogic/Actions">View All Manager Actions</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-tools me-1"></i>
+                    IT Support Activities
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Count</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Auto-Fulfilled</td>
+                                    <td>@Model.AutoFulfilledToday</td>
+                                    <td><span class="badge bg-success">Completed</span></td>
+                                    <td><button class="btn btn-sm btn-outline-success" onclick="showAutoFulfilled()">View</button></td>
+                                </tr>
+                                <tr>
+                                    <td>Cross-Module</td>
+                                    <td>@Model.CrossModuleActions</td>
+                                    <td><span class="badge bg-warning">Pending</span></td>
+                                    <td><button class="btn btn-sm btn-outline-warning" onclick="showCrossModule()">View</button></td>
+                                </tr>
+                                <tr>
+                                    <td>IT Support Actions</td>
+                                    <td>@Model.ITSupportActions</td>
+                                    <td><span class="badge bg-info">In Progress</span></td>
+                                    <td><button class="btn btn-sm btn-outline-info" onclick="showITSupportActions()">View</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a class="btn btn-sm btn-outline-primary" href="/UnifiedBusinessLogic/Actions">View All IT Support Actions</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Alerts -->
+    @if (Model.SystemAlerts > 0)
     {
         <div class="row mb-4">
             <div class="col-12">
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Pending Alerts</h6>
-                    <div class="row">
-                        @foreach (var alert in Model.PendingAlerts.Take(3))
-                        {
-                            <div class="col-md-4">
-                                <div class="d-flex align-items-center">
-                                    <i class="@alert.Icon me-2 text-@alert.ColorClass"></i>
-                                    <div>
-                                        <strong>@alert.Title</strong><br>
-                                        <small>@alert.Message</small>
-                                    </div>
-                                </div>
-                            </div>
-                        }
+                <div class="alert alert-warning shadow" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle me-2 fs-4"></i>
+                        <div class="flex-grow-1">
+                            <strong>System Alerts:</strong> There are @Model.SystemAlerts active system alerts requiring attention.
+                        </div>
+                        <button class="btn btn-sm btn-outline-warning" onclick="showSystemAlerts()">
+                            <i class="bi bi-eye me-1"></i>View Alerts
+                        </button>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             </div>
         </div>
     }
 
-    <!-- Summary Cards Row -->
-    <div class="row mb-4">
-        <!-- Assets Summary Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Assets</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.AssetSummary.TotalAssets</div>
-                            <div class="text-xs text-success">
-                                <i class="fas fa-check-circle"></i> @Model.AssetSummary.ActiveAssets Active
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-desktop fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Requests Summary Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Pending Requests</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.RequestSummary.PendingRequests</div>
-                            <div class="text-xs text-info">
-                                <i class="fas fa-clock"></i> @Model.RequestSummary.TotalRequests Total
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Procurement Summary Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Procurement Value</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">$@Model.ProcurementSummary.TotalPOValue.ToString("N0")</div>
-                            <div class="text-xs text-warning">
-                                <i class="fas fa-shopping-cart"></i> @Model.ProcurementSummary.PendingPOs Pending
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Inventory Summary Card -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Low Stock Items</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.InventorySummary.LowStockItems</div>
-                            <div class="text-xs text-danger">
-                                <i class="fas fa-exclamation-triangle"></i> Needs Attention
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-boxes fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Charts and Analytics Row -->
-    <div class="row mb-4">
-        <!-- Asset Status Chart -->
-        <div class="col-xl-6 col-lg-7">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Asset Status Distribution</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-area">
-                        <canvas id="assetStatusChart" style="height: 320px;"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Performance Metrics -->
-        <div class="col-xl-6 col-lg-5">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Performance Metrics</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <div class="text-center">
-                                <div class="progress-circle" data-percentage="@Math.Round(Model.PerformanceMetrics.AssetUtilizationRate, 0)">
-                                    <span class="progress-text">@Math.Round(Model.PerformanceMetrics.AssetUtilizationRate, 0)%</span>
-                                </div>
-                                <small class="text-muted">Asset Utilization</small>
-                            </div>
-                        </div>
-                        <div class="col-6 mb-3">
-                            <div class="text-center">
-                                <div class="progress-circle" data-percentage="@Math.Round(Model.PerformanceMetrics.MaintenanceComplianceRate, 0)">
-                                    <span class="progress-text">@Math.Round(Model.PerformanceMetrics.MaintenanceComplianceRate, 0)%</span>
-                                </div>
-                                <small class="text-muted">Maintenance Compliance</small>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="metric-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <span>Avg Request Processing</span>
-                                <span class="badge bg-info">@Math.Round(Model.PerformanceMetrics.AverageRequestProcessingTime, 1)h</span>
-                            </div>
-                            <div class="metric-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <span>Procurement Efficiency</span>
-                                <span class="badge bg-success">@Math.Round(Model.PerformanceMetrics.ProcurementEfficiency, 1)%</span>
-                            </div>
-                            <div class="metric-item d-flex justify-content-between align-items-center py-2">
-                                <span>User Satisfaction</span>
-                                <span class="badge bg-primary">@Model.PerformanceMetrics.UserSatisfactionScore/10</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Content Row -->
+    <!-- Recent Asset Recommendations -->
     <div class="row">
-        <!-- Recent Activities -->
-        <div class="col-xl-8 col-lg-7">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Recent Activities</h6>
-                    <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-lightbulb me-1"></i>
+                    Recent Asset Recommendations
                 </div>
                 <div class="card-body">
-                    @if (Model.RecentActivities.Any())
+                    @if (Model.RecentRecommendationsList?.Any() == true)
                     {
-                        <div class="activity-timeline">
-                            @foreach (var activity in Model.RecentActivities.Take(8))
-                            {
-                                <div class="activity-item d-flex align-items-start mb-3">
-                                    <div class="activity-icon me-3">
-                                        <i class="@activity.Icon text-@activity.ColorClass"></i>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="activity-content">
-                                            <strong>@activity.Action</strong> by @activity.UserName
-                                        </div>
-                                        <div class="activity-description text-muted small">
-                                            @activity.Description
-                                        </div>
-                                        <div class="activity-time text-muted small">
-                                            @activity.Timestamp.ToString("MMM dd, yyyy HH:mm")
-                                        </div>
-                                    </div>
-                                </div>
-                            }
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Recommendation</th>
+                                        <th>Reasoning</th>
+                                        <th>Confidence</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var recommendation in Model.RecentRecommendationsList.Take(5))
+                                    {
+                                        <tr>
+                                            <td><span class="badge bg-info">Asset #@recommendation.AssetId</span></td>
+                                            <td>
+                                                <span class="badge bg-@GetRecommendationBadgeClass(recommendation.RecommendedAction)">
+                                                    @recommendation.RecommendedAction
+                                                </span>
+                                            </td>
+                                            <td>@recommendation.Reasoning</td>
+                                            <td>@recommendation.ConfidenceScore.ToString("P0")</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary" 
+                                                        onclick="viewAssetDetails(@recommendation.AssetId)">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
                         </div>
                     }
                     else
                     {
-                        <div class="text-center text-muted py-4">
-                            <i class="fas fa-history fa-3x mb-3 opacity-25"></i>
-                            <p>No recent activities to display</p>
+                        <div class="text-center py-4">
+                            <i class="bi bi-lightbulb text-muted display-4 mb-3"></i>
+                            <h6 class="text-muted">No recent recommendations available</h6>
+                            <p class="text-muted mb-3">The AI system will analyze assets and provide recommendations here.</p>
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshRecommendations()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Check for Recommendations
+                            </button>
                         </div>
                     }
                 </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions & Workflow -->
-        <div class="col-xl-4 col-lg-5">
-            <!-- Quick Actions -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        @foreach (var action in Model.AvailableActions.Take(4))
-                        {
-                            <div class="col-6 mb-3">
-                                <a href="@action.ActionUrl" class="btn btn-outline-@action.ColorClass btn-sm w-100 text-start">
-                                    <i class="@action.Icon me-2"></i>
-                                    <div class="small">@action.Title</div>
-                                </a>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <!-- Workflow Summary -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Workflow Status</h6>
-                </div>
-                <div class="card-body">
-                    <div class="workflow-stats">
-                        <div class="stat-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span><i class="fas fa-clock text-warning me-2"></i>Pending Approvals</span>
-                            <span class="badge bg-warning">@Model.WorkflowSummary.PendingApprovals</span>
-                        </div>
-                        <div class="stat-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span><i class="fas fa-cogs text-info me-2"></i>Active Workflows</span>
-                            <span class="badge bg-info">@Model.WorkflowSummary.ActiveWorkflows</span>
-                        </div>
-                        <div class="stat-item d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span><i class="fas fa-check text-success me-2"></i>Completed Today</span>
-                            <span class="badge bg-success">@Model.WorkflowSummary.CompletedToday</span>
-                        </div>
-                        <div class="stat-item d-flex justify-content-between align-items-center py-2">
-                            <span><i class="fas fa-exclamation-circle text-danger me-2"></i>Overdue Items</span>
-                            <span class="badge bg-danger">@Model.WorkflowSummary.OverdueItems</span>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <a href="@Url.Action("Actions", "UnifiedBusinessLogic")" class="btn btn-primary btn-sm w-100">
-                            <i class="fas fa-tasks me-2"></i>View Action Items
-                        </a>
-                    </div>
+                <div class="card-footer">
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshRecommendations()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Custom CSS -->
-<style>
-    .card.border-left-primary {
-        border-left: 0.25rem solid #4e73df !important;
+@functions {
+    private string GetRecommendationBadgeClass(AssetLifecycleAction action)
+    {
+        return action switch
+        {
+            AssetLifecycleAction.Maintain => "success",
+            AssetLifecycleAction.Repair => "warning",
+            AssetLifecycleAction.Replace => "primary",
+            AssetLifecycleAction.WriteOff => "danger",
+            AssetLifecycleAction.Monitor => "info",
+            _ => "secondary"
+        };
     }
-    .card.border-left-success {
-        border-left: 0.25rem solid #1cc88a !important;
-    }
-    .card.border-left-info {
-        border-left: 0.25rem solid #36b9cc !important;
-    }
-    .card.border-left-warning {
-        border-left: 0.25rem solid #f6c23e !important;
-    }
-    
-    .progress-circle {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: conic-gradient(#007bff 0deg, #007bff calc(var(--percentage) * 3.6deg), #e9ecef calc(var(--percentage) * 3.6deg), #e9ecef 360deg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto;
-        position: relative;
-    }
-    
-    .progress-circle::before {
-        content: '';
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: white;
-        position: absolute;
-    }
-    
-    .progress-text {
-        position: relative;
-        z-index: 1;
-        font-weight: bold;
-        font-size: 14px;
-    }
-    
-    .activity-timeline .activity-item {
-        padding-left: 0;
-    }
-    
-    .activity-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: #f8f9fc;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-    
-    .chart-area {
-        position: relative;
-        height: 320px;
-    }
-    
-    .metric-item:last-child {
-        border-bottom: none !important;
-    }
-</style>
+}
+
+@section Styles {
+    <style>
+        .recommendation-item {
+            background-color: #f8f9fa;
+            transition: background-color 0.2s;
+        }
+        .recommendation-item:hover {
+            background-color: #e9ecef;
+        }
+        .text-white-75 {
+            color: rgba(255, 255, 255, 0.75);
+        }
+        .text-lg {
+            font-size: 1.25rem;
+        }
+        .fa-3x {
+            font-size: 3em;
+        }
+    </style>
+}
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="~/js/unified-dashboard.js"></script>
     <script>
-        // Initialize progress circles
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.progress-circle').forEach(circle => {
-                const percentage = circle.getAttribute('data-percentage');
-                circle.style.setProperty('--percentage', percentage);
-            });
-            
-            // Initialize asset status chart
-            initializeAssetChart(@Html.Raw(Json.Serialize(Model.AssetSummary.AssetsByStatus)));
-        });
-        
-        function refreshDashboard() {
-            location.reload();
-        }
-        
-        function initializeAssetChart(data) {
-            const ctx = document.getElementById('assetStatusChart');
-            if (!ctx) return;
-            
-            const labels = Object.keys(data);
-            const values = Object.values(data);
-            const colors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'];
-            
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: colors.slice(0, labels.length),
-                        borderWidth: 2,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true
-                            }
-                        }
+        // Workflow Performance Chart
+        const workflowCtx = document.getElementById('workflowChart').getContext('2d');
+        const workflowData = {
+            'Successful': @Model.SuccessfulWorkflows,
+            'Failed': @Model.FailedWorkflows
+        };
+        const workflowLabels = Object.keys(workflowData);
+        const workflowValues = Object.values(workflowData);
+
+        new Chart(workflowCtx, {
+            type: 'doughnut',
+            data: {
+                labels: workflowLabels,
+                datasets: [{
+                    data: workflowValues,
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(220, 53, 69, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
                     }
                 }
-            });
+            }
+        });
+
+        // Action Functions
+        function showAllRequests() {
+            window.location.href = '/UnifiedBusinessLogic/Actions?filter=all';
+        }
+
+        function showCompletedActions() {
+            window.location.href = '/UnifiedBusinessLogic/Actions?filter=completed';
+        }
+
+        function showManagerActions() {
+            window.location.href = '/UnifiedBusinessLogic/Actions?filter=manager';
+        }
+
+        function showITSupportActions() {
+            window.location.href = '/UnifiedBusinessLogic/Actions?filter=itsupport';
+        }
+
+        function showAutomationSuggestions() {
+            window.location.href = '/UnifiedBusinessLogic/Actions?filter=automation';
+        }
+
+        function showAssetsNeedingAttention() {
+            window.location.href = '/Assets?filter=needsAttention';
+        }
+
+        function showLowStockItems() {
+            window.location.href = '/Inventory?filter=lowStock';
+        }
+
+        function showRecommendations() {
+            window.location.href = '/UnifiedBusinessLogic/Actions?filter=recommendations';
+        }
+
+        function showAllManagerActions() {
+            window.location.href = '/UnifiedBusinessLogic/Actions?role=manager';
+        }
+
+        function showAutoFulfilled() {
+            window.location.href = '/UnifiedBusinessLogic/Actions?filter=autofulfilled';
+        }
+
+        function showCrossModule() {
+            window.location.href = '/UnifiedBusinessLogic/Actions?filter=crossmodule';
+        }
+
+        function showSystemAlerts() {
+            window.location.href = '/UnifiedBusinessLogic/Actions?filter=alerts';
+        }
+
+        function refreshRecommendations() {
+            const container = document.getElementById('recommendationsContainer');
+            if (!container) return;
+            
+            container.innerHTML = '<div class="text-center"><i class="bi bi-arrow-clockwise spinner-border spinner-border-sm me-2"></i> Loading...</div>';
+            
+            fetch('/UnifiedBusinessLogic/GetRecentRecommendations')
+                .then(response => response.text())
+                .then(data => {
+                    container.innerHTML = data;
+                })
+                .catch(error => {
+                    console.error('Error loading recommendations:', error);
+                    container.innerHTML = '<div class="text-danger text-center">Failed to load recommendations</div>';
+                });
+        }
+
+        function viewAssetDetails(assetId) {
+            window.open('/Assets/Details/' + assetId, '_blank');
         }
     </script>
 }

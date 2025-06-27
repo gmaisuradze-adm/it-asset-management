@@ -58,8 +58,8 @@
                                                     case AssetStatus.InUse:
                                                         <span class="badge bg-primary">In Use</span>
                                                         break;
-                                                    case AssetStatus.Maintenance:
-                                                        <span class="badge bg-warning">Maintenance</span>
+                                                    case AssetStatus.UnderMaintenance:
+                                                        <span class="badge bg-warning">Under Maintenance</span>
                                                         break;
                                                     default:
                                                         <span class="badge bg-light text-dark">@asset.Status</span>
@@ -92,11 +92,11 @@
                                                     <a asp-controller="Assets" asp-action="Details" asp-route-id="@asset.Id" class="btn btn-outline-primary btn-sm">
                                                         <i class="bi bi-eye"></i> View
                                                     </a>
-                                                    @if (asset.Status != AssetStatus.Maintenance)
+                                                    @if (asset.Status != AssetStatus.UnderMaintenance)
                                                     {
                                                         <form asp-controller="Assets" asp-action="ChangeStatus" method="post" class="d-inline">
                                                             <input type="hidden" name="id" value="@asset.Id" />
-                                                            <input type="hidden" name="newStatus" value="@((int)AssetStatus.Maintenance)" />
+                                                            <input type="hidden" name="newStatus" value="@((int)AssetStatus.UnderMaintenance)" />
                                                             <input type="hidden" name="reason" value="Scheduled maintenance" />
                                                             <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Mark this asset for maintenance?');">
                                                                 <i class="bi bi-tools"></i> Maintenance

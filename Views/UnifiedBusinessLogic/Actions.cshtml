@@ -1,375 +1,180 @@
-@model HospitalAssetTracker.Models.UnifiedActionViewModel
-@using HospitalAssetTracker.Models
+@model HospitalAssetTracker.Models.UnifiedActionModel
 @{
-    ViewData["Title"] = "Action Items";
+    ViewData["Title"] = "Smart Actions - Unified Business Logic";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
-    <!-- Page Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-2">Action Items</h1>
-                    <p class="text-muted">Tasks and items requiring your attention</p>
-                </div>
-                <div>
-                    <button class="btn btn-outline-primary me-2" onclick="refreshActions()">
-                        <i class="fas fa-sync-alt"></i> Refresh
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-cogs text-primary mr-2"></i>
+            Smart Actions & Workflow Management
+        </h1>
+        <div class="btn-group" role="group">
+            <a href="@Url.Action("Dashboard", "UnifiedBusinessLogic")" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="refreshActions()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Role-Based Action Tabs -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Role-Based Action Centers</h6>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs" id="actionTabs" role="tablist">
+                @if (User.IsInRole("Asset Manager") || User.IsInRole("Admin"))
+                {
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="manager-tab" data-bs-toggle="tab" data-bs-target="#manager-actions" type="button" role="tab">
+                            <i class="fas fa-user-tie"></i> Manager Actions
+                        </button>
+                    </li>
+                }
+                @if (User.IsInRole("IT Support") || User.IsInRole("Admin"))
+                {
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link @(User.IsInRole("Asset Manager") || User.IsInRole("Admin") ? "" : "active")" id="itsupport-tab" data-bs-toggle="tab" data-bs-target="#itsupport-actions" type="button" role="tab">
+                            <i class="fas fa-tools"></i> IT Support Actions
+                        </button>
+                    </li>
+                }
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="automation-tab" data-bs-toggle="tab" data-bs-target="#automation-actions" type="button" role="tab">
+                        <i class="fas fa-robot"></i> Automation Rules
                     </button>
-                    <span class="text-muted small">Last updated: <span id="lastUpdated">@DateTime.Now.ToString("HH:mm")</span></span>
-                </div>
-            </div>
-        </div>
-    </div>
+                </li>
+            </ul>
 
-    <!-- Summary Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending Approvals</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.PendingApprovals.Count</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+            <div class="tab-content" id="actionTabsContent">
+                @if (User.IsInRole("Asset Manager") || User.IsInRole("Admin"))
+                {
+                    <!-- Manager Actions Tab -->
+                    <div class="tab-pane fade show active" id="manager-actions" role="tabpanel">
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="card border-left-warning">
+                                    <div class="card-header">
+                                        <h6 class="font-weight-bold text-warning">Pending Approvals</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="pendingApprovalsList" class="list-group">
+                                            <!-- Dynamic content loaded via AJAX -->
+                                        </div>
+                                        <button class="btn btn-warning btn-sm mt-2" onclick="loadPendingApprovals()">
+                                            <i class="fas fa-refresh"></i> Refresh Approvals
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-left-info">
+                                    <div class="card-header">
+                                        <h6 class="font-weight-bold text-info">Strategic Decisions</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="strategicDecisionsList" class="list-group">
+                                            <!-- Dynamic content loaded via AJAX -->
+                                        </div>
+                                        <button class="btn btn-info btn-sm mt-2" onclick="loadStrategicDecisions()">
+                                            <i class="fas fa-lightbulb"></i> View Recommendations
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                }
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Scheduled Tasks</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ScheduledTasks.Count</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar-alt fa-2x text-gray-300"></i>
+                @if (User.IsInRole("IT Support") || User.IsInRole("Admin"))
+                {
+                    <!-- IT Support Actions Tab -->
+                    <div class="tab-pane fade @(User.IsInRole("Asset Manager") || User.IsInRole("Admin") ? "" : "show active")" id="itsupport-actions" role="tabpanel">
+                        <div class="row mt-3">
+                            <div class="col-md-4">
+                                <div class="card border-left-success">
+                                    <div class="card-header">
+                                        <h6 class="font-weight-bold text-success">Asset Assignments</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="assetAssignmentsList" class="list-group">
+                                            <!-- Dynamic content loaded via AJAX -->
+                                        </div>
+                                        <button class="btn btn-success btn-sm mt-2" onclick="loadAssetAssignments()">
+                                            <i class="fas fa-laptop"></i> Load Assignments
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-left-primary">
+                                    <div class="card-header">
+                                        <h6 class="font-weight-bold text-primary">Maintenance Tasks</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="maintenanceTasksList" class="list-group">
+                                            <!-- Dynamic content loaded via AJAX -->
+                                        </div>
+                                        <button class="btn btn-primary btn-sm mt-2" onclick="loadMaintenanceTasks()">
+                                            <i class="fas fa-tools"></i> Load Tasks
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-left-danger">
+                                    <div class="card-header">
+                                        <h6 class="font-weight-bold text-danger">Urgent Issues</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="urgentIssuesList" class="list-group">
+                                            <!-- Dynamic content loaded via AJAX -->
+                                        </div>
+                                        <button class="btn btn-danger btn-sm mt-2" onclick="loadUrgentIssues()">
+                                            <i class="fas fa-exclamation-triangle"></i> Load Issues
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                }
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Overdue Items</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.OverdueItems.Count</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Assignments</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.PendingAssignments.Count</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-check fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Action Items Tabs -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header">
-                    <ul class="nav nav-tabs card-header-tabs" id="actionTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="approvals-tab" data-bs-toggle="tab" data-bs-target="#approvals" type="button" role="tab">
-                                <i class="fas fa-clock me-2"></i>Pending Approvals (@Model.PendingApprovals.Count)
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab">
-                                <i class="fas fa-tasks me-2"></i>Scheduled Tasks (@Model.ScheduledTasks.Count)
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="overdue-tab" data-bs-toggle="tab" data-bs-target="#overdue" type="button" role="tab">
-                                <i class="fas fa-exclamation-triangle me-2"></i>Overdue Items (@Model.OverdueItems.Count)
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments" type="button" role="tab">
-                                <i class="fas fa-user-check me-2"></i>Assignments (@Model.PendingAssignments.Count)
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-                <div class="card-body">
-                    <div class="tab-content" id="actionTabsContent">
-                        <!-- Pending Approvals Tab -->
-                        <div class="tab-pane fade show active" id="approvals" role="tabpanel">
-                            @if (Model.PendingApprovals.Any())
-                            {
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Type</th>
-                                                <th>Title</th>
-                                                <th>Requestor</th>
-                                                <th>Submitted</th>
-                                                <th>Priority</th>
-                                                <th>Amount</th>
-                                                <th>Waiting</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var approval in Model.PendingApprovals)
-                                            {
-                                                <tr class="@(approval.IsOverdue ? "table-warning" : "")">
-                                                    <td>
-                                                        <span class="badge bg-secondary">@approval.Type</span>
-                                                    </td>
-                                                    <td>
-                                                        <strong>@approval.Title</strong>
-                                                    </td>
-                                                    <td>@approval.Requestor</td>
-                                                    <td>@approval.SubmittedDate.ToString("MMM dd, yyyy")</td>
-                                                    <td>
-                                                        <span class="badge bg-@GetPriorityColor(approval.Priority)">@approval.Priority</span>
-                                                    </td>
-                                                    <td>
-                                                        @if (approval.Amount.HasValue)
-                                                        {
-                                                            <text>$@approval.Amount.Value.ToString("N0")</text>
-                                                        }
-                                                        else
-                                                        {
-                                                            <text>-</text>
-                                                        }
-                                                    </td>
-                                                    <td>
-                                                        <span class="@(approval.DaysWaiting > 7 ? "text-danger" : approval.DaysWaiting > 3 ? "text-warning" : "text-muted")">
-                                                            @approval.DaysWaiting days
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <a href="@approval.ActionUrl" class="btn btn-sm btn-outline-primary">
-                                                            <i class="fas fa-eye"></i> Review
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
+                <!-- Automation Rules Tab -->
+                <div class="tab-pane fade" id="automation-actions" role="tabpanel">
+                    <div class="row mt-3">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="font-weight-bold text-dark">Automation Rules Management</h6>
+                                    <button class="btn btn-success btn-sm" onclick="createNewAutomationRule()">
+                                        <i class="fas fa-plus"></i> New Rule
+                                    </button>
                                 </div>
-                            }
-                            else
-                            {
-                                <div class="text-center text-muted py-5">
-                                    <i class="fas fa-check-circle fa-3x mb-3 opacity-25"></i>
-                                    <h5>No pending approvals</h5>
-                                    <p>All items have been reviewed and processed.</p>
-                                </div>
-                            }
-                        </div>
-
-                        <!-- Scheduled Tasks Tab -->
-                        <div class="tab-pane fade" id="tasks" role="tabpanel">
-                            @if (Model.ScheduledTasks.Any())
-                            {
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Type</th>
-                                                <th>Title</th>
-                                                <th>Description</th>
-                                                <th>Scheduled Date</th>
-                                                <th>Assigned To</th>
-                                                <th>Priority</th>
-                                                <th>Status</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var task in Model.ScheduledTasks)
-                                            {
-                                                <tr class="@(task.IsOverdue ? "table-danger" : "")">
-                                                    <td>
-                                                        <span class="badge bg-info">@task.Type</span>
-                                                    </td>
-                                                    <td>
-                                                        <strong>@task.Title</strong>
-                                                    </td>
-                                                    <td>@task.Description</td>
-                                                    <td>@task.ScheduledDate.ToString("MMM dd, yyyy")</td>
-                                                    <td>@task.AssignedTo</td>
-                                                    <td>
-                                                        <span class="badge bg-@GetPriorityColor(task.Priority)">@task.Priority</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-@GetTaskStatusColor(task.Status)">@task.Status</span>
-                                                    </td>
-                                                    <td>
-                                                        <a href="@task.ActionUrl" class="btn btn-sm btn-outline-primary">
-                                                            <i class="fas fa-eye"></i> View
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="text-center text-muted py-5">
-                                    <i class="fas fa-calendar-check fa-3x mb-3 opacity-25"></i>
-                                    <h5>No scheduled tasks</h5>
-                                    <p>All tasks are up to date.</p>
-                                </div>
-                            }
-                        </div>
-
-                        <!-- Overdue Items Tab -->
-                        <div class="tab-pane fade" id="overdue" role="tabpanel">
-                            @if (Model.OverdueItems.Any())
-                            {
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Type</th>
-                                                <th>Title</th>
-                                                <th>Due Date</th>
-                                                <th>Days Overdue</th>
-                                                <th>Assigned To</th>
-                                                <th>Priority</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var item in Model.OverdueItems)
-                                            {
-                                                <tr class="table-danger">
-                                                    <td>
-                                                        <span class="badge bg-danger">@item.Type</span>
-                                                    </td>
-                                                    <td>
-                                                        <strong>@item.Title</strong>
-                                                    </td>
-                                                    <td>@item.DueDate.ToString("MMM dd, yyyy")</td>
-                                                    <td>
-                                                        <span class="badge bg-danger">@item.DaysOverdue days</span>
-                                                    </td>
-                                                    <td>@item.AssignedTo</td>
-                                                    <td>
-                                                        <span class="badge bg-@GetPriorityColor(item.Priority)">@item.Priority</span>
-                                                    </td>
-                                                    <td>
-                                                        <a href="@item.ActionUrl" class="btn btn-sm btn-danger">
-                                                            <i class="fas fa-exclamation-triangle"></i> Urgent
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="text-center text-muted py-5">
-                                    <i class="fas fa-thumbs-up fa-3x mb-3 opacity-25"></i>
-                                    <h5>No overdue items</h5>
-                                    <p>Everything is on track!</p>
-                                </div>
-                            }
-                        </div>
-
-                        <!-- Assignments Tab -->
-                        <div class="tab-pane fade" id="assignments" role="tabpanel">
-                            @if (Model.PendingAssignments.Any())
-                            {
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Type</th>
-                                                <th>Title</th>
-                                                <th>Assigned To</th>
-                                                <th>Assigned By</th>
-                                                <th>Assigned Date</th>
-                                                <th>Due Date</th>
-                                                <th>Priority</th>
-                                                <th>Status</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (var assignment in Model.PendingAssignments)
-                                            {
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered" id="automationRulesTable">
+                                            <thead class="thead-light">
                                                 <tr>
-                                                    <td>
-                                                        <span class="badge bg-success">@assignment.Type</span>
-                                                    </td>
-                                                    <td>
-                                                        <strong>@assignment.Title</strong>
-                                                    </td>
-                                                    <td>@assignment.AssignedTo</td>
-                                                    <td>@assignment.AssignedBy</td>
-                                                    <td>@assignment.AssignedDate.ToString("MMM dd, yyyy")</td>
-                                                    <td>
-                                                        @if (assignment.DueDate.HasValue)
-                                                        {
-                                                            <text>@assignment.DueDate.Value.ToString("MMM dd, yyyy")</text>
-                                                        }
-                                                        else
-                                                        {
-                                                            <text>-</text>
-                                                        }
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-@GetPriorityColor(assignment.Priority)">@assignment.Priority</span>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-warning">@assignment.Status</span>
-                                                    </td>
-                                                    <td>
-                                                        <a href="@assignment.ActionUrl" class="btn btn-sm btn-outline-primary">
-                                                            <i class="fas fa-eye"></i> View
-                                                        </a>
-                                                    </td>
+                                                    <th>Rule Name</th>
+                                                    <th>Trigger</th>
+                                                    <th>Action</th>
+                                                    <th>Status</th>
+                                                    <th>Success Rate</th>
+                                                    <th>Actions</th>
                                                 </tr>
-                                            }
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Dynamic content loaded via AJAX -->
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                            }
-                            else
-                            {
-                                <div class="text-center text-muted py-5">
-                                    <i class="fas fa-user-check fa-3x mb-3 opacity-25"></i>
-                                    <h5>No pending assignments</h5>
-                                    <p>All assignments have been completed.</p>
-                                </div>
-                            }
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -377,111 +182,116 @@
         </div>
     </div>
 
-    <!-- Workflow Statistics -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header">
-                    <h6 class="m-0 font-weight-bold text-primary">Workflow Statistics</h6>
-                </div>
-                <div class="card-body">
+    <!-- Quick Action Buttons -->
+    <div class="row">
+        <div class="col-md-3">
+            <button class="btn btn-outline-primary btn-block mb-2" onclick="performBulkAssetUpdate()">
+                <i class="fas fa-laptop"></i> Bulk Asset Update
+            </button>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-outline-success btn-block mb-2" onclick="triggerInventoryAudit()">
+                <i class="fas fa-clipboard-check"></i> Inventory Audit
+            </button>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-outline-warning btn-block mb-2" onclick="generateRecommendations()">
+                <i class="fas fa-lightbulb"></i> Generate Recommendations
+            </button>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-outline-info btn-block mb-2" onclick="optimizeWorkflows()">
+                <i class="fas fa-chart-line"></i> Optimize Workflows
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for New Automation Rule -->
+<div class="modal fade" id="newAutomationRuleModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Automation Rule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newAutomationRuleForm">
                     <div class="row">
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="stat-card text-center">
-                                <div class="h4 mb-1 text-primary">@Model.WorkflowStats.TotalWorkflows</div>
-                                <div class="small text-muted">Total Workflows</div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="ruleName">Rule Name</label>
+                                <input type="text" class="form-control" id="ruleName" name="RuleName" required>
                             </div>
                         </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="stat-card text-center">
-                                <div class="h4 mb-1 text-info">@Model.WorkflowStats.ActiveWorkflows</div>
-                                <div class="small text-muted">Active Workflows</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="stat-card text-center">
-                                <div class="h4 mb-1 text-success">@Model.WorkflowStats.CompletedThisWeek</div>
-                                <div class="small text-muted">Completed This Week</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <div class="stat-card text-center">
-                                <div class="h4 mb-1 text-warning">@Math.Round(Model.WorkflowStats.AverageCompletionTime, 1)h</div>
-                                <div class="small text-muted">Avg Completion Time</div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="ruleCategory">Category</label>
+                                <select class="form-control" id="ruleCategory" name="Category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Asset">Asset Management</option>
+                                    <option value="Request">Request Processing</option>
+                                    <option value="Inventory">Inventory Management</option>
+                                    <option value="Maintenance">Maintenance Scheduling</option>
+                                </select>
                             </div>
                         </div>
                     </div>
-                </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="triggerType">Trigger Type</label>
+                                <select class="form-control" id="triggerType" name="TriggerType" required>
+                                    <option value="">Select Trigger</option>
+                                    <option value="Time">Time-based</option>
+                                    <option value="Event">Event-based</option>
+                                    <option value="Condition">Condition-based</option>
+                                    <option value="Manual">Manual</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="actionType">Action Type</label>
+                                <select class="form-control" id="actionType" name="ActionType" required>
+                                    <option value="">Select Action</option>
+                                    <option value="AutoApprove">Auto-Approve Request</option>
+                                    <option value="AutoAssign">Auto-Assign Asset</option>
+                                    <option value="SendNotification">Send Notification</option>
+                                    <option value="UpdateStatus">Update Status</option>
+                                    <option value="GenerateReport">Generate Report</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="ruleDescription">Description</label>
+                        <textarea class="form-control" id="ruleDescription" name="Description" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="isActive" name="IsActive" checked>
+                                <label class="form-check-label" for="isActive">Active</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="requiresApproval" name="RequiresApproval">
+                                <label class="form-check-label" for="requiresApproval">Requires Approval</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveAutomationRule()">Save Rule</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Custom CSS -->
-<style>
-    .card.border-left-warning {
-        border-left: 0.25rem solid #f6c23e !important;
-    }
-    .card.border-left-info {
-        border-left: 0.25rem solid #36b9cc !important;
-    }
-    .card.border-left-danger {
-        border-left: 0.25rem solid #e74a3b !important;
-    }
-    .card.border-left-success {
-        border-left: 0.25rem solid #1cc88a !important;
-    }
-    
-    .stat-card {
-        padding: 1rem;
-        border-left: 3px solid #dee2e6;
-    }
-    
-    .table-hover tbody tr:hover {
-        background-color: rgba(0,0,0,.03);
-    }
-    
-    .opacity-25 {
-        opacity: 0.25;
-    }
-</style>
-
 @section Scripts {
-    <script>
-        function refreshActions() {
-            location.reload();
-        }
-        
-        // Auto-refresh every 30 seconds
-        setInterval(function() {
-            document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        }, 30000);
-    </script>
-}
-
-@functions {
-    string GetPriorityColor(RequestPriority priority)
-    {
-        return priority switch
-        {
-            RequestPriority.Critical => "danger",
-            RequestPriority.High => "warning",
-            RequestPriority.Medium => "info",
-            RequestPriority.Low => "secondary",
-            _ => "secondary"
-        };
-    }
-    
-    string GetTaskStatusColor(HospitalAssetTracker.Models.TaskStatus status)
-    {
-        return status switch
-        {
-            HospitalAssetTracker.Models.TaskStatus.Pending => "warning",
-            HospitalAssetTracker.Models.TaskStatus.InProgress => "info",
-            HospitalAssetTracker.Models.TaskStatus.Completed => "success",
-            HospitalAssetTracker.Models.TaskStatus.Cancelled => "secondary",
-            HospitalAssetTracker.Models.TaskStatus.Overdue => "danger",
-            _ => "secondary"
-        };
-    }
+    <script src="~/js/unified-actions.js"></script>
 }

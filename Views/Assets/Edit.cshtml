@@ -3,11 +3,152 @@
     ViewData["Title"] = "Edit Asset";
 }
 
+<style>
+    /* Enhanced Professional Styling for Edit Form */
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        transition: box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .card-header {
+        border-radius: 12px 12px 0 0 !important;
+        border-bottom: none;
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+    
+    .card-header h5 {
+        margin: 0;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        transition: all 0.2s ease;
+    }
+    
+    .form-control:hover, .form-select:hover {
+        border-color: #86b7fe;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 6px;
+    }
+    
+    .btn {
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+    
+    .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .alert {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .asset-tag-display {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border: 1px solid #2196f3;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 1rem;
+    }
+    
+    .asset-tag-display h6 {
+        margin: 0;
+        color: #1976d2;
+        font-weight: 600;
+    }
+    
+    .asset-tag-display .asset-tag {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #0d47a1;
+    }
+    
+    /* Status indicator styles */
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .status-available { background-color: #d1ecf1; color: #0c5460; }
+    .status-inuse { background-color: #d4edda; color: #155724; }
+    .status-undermaintenance { background-color: #fff3cd; color: #856404; }
+    .status-decommissioned { background-color: #f8d7da; color: #721c24; }
+    .status-lost { background-color: #e2e3e5; color: #383d41; }
+    .status-stolen { background-color: #f5c6cb; color: #721c24; }
+    
+    /* Enhanced form sections */
+    .form-section {
+        background: #fff;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid #e9ecef;
+    }
+    
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    /* Change tracking styles */
+    .field-changed {
+        background-color: #fff3cd !important;
+        border-color: #ffc107 !important;
+    }
+    
+    .change-indicator {
+        color: #856404;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Edit Asset - @Model.AssetTag</h1>
+    <div>
+        <h1>Edit Asset</h1>
+        <div class="asset-tag-display">
+            <h6>Asset Tag</h6>
+            <div class="asset-tag">@Model.AssetTag</div>
+        </div>
+    </div>
     <div>
         <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-info">
             <i class="bi bi-eye"></i> View Details
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary ms-2">
+            <i class="bi bi-list"></i> Back to List
         </a>
     </div>
 </div>
@@ -30,7 +171,7 @@
             </div>
         }
         
-        <form asp-action="Edit" class="needs-validation" novalidate>
+        <form asp-action="Edit" class="needs-validation" novalidate id="editAssetForm">
             <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
             <input type="hidden" asp-for="Id" />
             <input type="hidden" asp-for="CreatedDate" />
@@ -39,23 +180,25 @@
             <input type="hidden" asp-for="DocumentPaths" />
             <input type="hidden" asp-for="ImagePaths" />
             
+            <!-- Basic Information Card -->
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="bi bi-info-circle"></i> Basic Information</h5>
+                    <h5><i class="bi bi-info-circle text-primary"></i> Basic Information</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="AssetTag" class="form-label">Asset Tag *</label>
-                                <input asp-for="AssetTag" class="form-control" placeholder="e.g., DESK-001" required />
+                                <input asp-for="AssetTag" class="form-control" placeholder="e.g., DESK-001" required readonly />
+                                <div class="form-text">Asset Tag cannot be changed after creation</div>
                                 <span asp-validation-for="AssetTag" class="text-danger"></span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="Category" class="form-label">Category *</label>
-                                <select asp-for="Category" class="form-select" asp-items="@ViewBag.Categories" required>
+                                <select asp-for="Category" class="form-select" asp-items="@ViewBag.Categories" required onchange="trackFieldChange(this)">
                                     <option value="">Select Category</option>
                                 </select>
                                 <span asp-validation-for="Category" class="text-danger"></span>
@@ -67,14 +210,14 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="Brand" class="form-label">Brand *</label>
-                                <input asp-for="Brand" class="form-control" placeholder="e.g., Dell, HP, Canon" required />
+                                <input asp-for="Brand" class="form-control" placeholder="e.g., Dell, HP, Canon" required onchange="trackFieldChange(this)" />
                                 <span asp-validation-for="Brand" class="text-danger"></span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="Model" class="form-label">Model *</label>
-                                <input asp-for="Model" class="form-control" placeholder="e.g., OptiPlex 7090" required />
+                                <input asp-for="Model" class="form-control" placeholder="e.g., OptiPlex 7090" required onchange="trackFieldChange(this)" />
                                 <span asp-validation-for="Model" class="text-danger"></span>
                             </div>
                         </div>
@@ -84,48 +227,55 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="SerialNumber" class="form-label">Serial Number</label>
-                                <input asp-for="SerialNumber" class="form-control" placeholder="Serial number" />
+                                <input asp-for="SerialNumber" class="form-control" placeholder="Serial number" onchange="trackFieldChange(this)" />
                                 <span asp-validation-for="SerialNumber" class="text-danger"></span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="Status" class="form-label">Status *</label>
-                                <select asp-for="Status" class="form-select" asp-items="@ViewBag.Statuses" required>
+                                <select asp-for="Status" class="form-select" asp-items="@ViewBag.Statuses" required onchange="trackFieldChange(this); updateStatusIndicator(this.value)">
                                     <option value="">Select Status</option>
                                 </select>
                                 <span asp-validation-for="Status" class="text-danger"></span>
+                                <div id="statusHelp" class="form-text"></div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="mb-3">
                         <label asp-for="Description" class="form-label">Description</label>
-                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Brief description of the asset"></textarea>
+                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Brief description of the asset" onchange="trackFieldChange(this)"></textarea>
                         <span asp-validation-for="Description" class="text-danger"></span>
                     </div>
                 </div>
             </div>
 
+            <!-- Location & Assignment Card -->
             <div class="card mt-3">
                 <div class="card-header">
-                    <h5><i class="bi bi-geo-alt"></i> Location & Assignment</h5>
+                    <h5><i class="bi bi-geo-alt text-primary"></i> Location & Assignment</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="LocationId" class="form-label">Location</label>
-                                <select asp-for="LocationId" class="form-select" asp-items="@ViewBag.Locations">
-                                    <option value="">Select Location</option>
-                                </select>
+                                <div class="input-group">
+                                    <select asp-for="LocationId" id="locationSelect" class="form-select" asp-items="@ViewBag.Locations" onchange="trackFieldChange(this)">
+                                        <option value="">Select Location</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-primary" id="addLocationBtn" title="Add New Location">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </button>
+                                </div>
                                 <span asp-validation-for="LocationId" class="text-danger"></span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="AssignedToUserId" class="form-label">Assigned To</label>
-                                <select asp-for="AssignedToUserId" class="form-select" asp-items="@ViewBag.Users">
+                                <select asp-for="AssignedToUserId" class="form-select" asp-items="@ViewBag.Users" onchange="trackFieldChange(this)">
                                     <option value="">Unassigned</option>
                                 </select>
                                 <span asp-validation-for="AssignedToUserId" class="text-danger"></span>
@@ -137,14 +287,14 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="ResponsiblePerson" class="form-label">Responsible Person</label>
-                                <input asp-for="ResponsiblePerson" class="form-control" placeholder="Person responsible for this asset" />
+                                <input asp-for="ResponsiblePerson" class="form-control" placeholder="Person responsible for this asset" onchange="trackFieldChange(this)" />
                                 <span asp-validation-for="ResponsiblePerson" class="text-danger"></span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="Department" class="form-label">Department</label>
-                                <input asp-for="Department" class="form-control" placeholder="e.g., ICU, Emergency, Administration" />
+                                <input asp-for="Department" class="form-control" placeholder="e.g., ICU, Emergency, Administration" onchange="trackFieldChange(this)" />
                                 <span asp-validation-for="Department" class="text-danger"></span>
                             </div>
                         </div>
@@ -152,24 +302,26 @@
                 </div>
             </div>
 
+            <!-- Dates & Warranty Card -->
             <div class="card mt-3">
                 <div class="card-header">
-                    <h5><i class="bi bi-calendar"></i> Dates & Warranty</h5>
+                    <h5><i class="bi bi-calendar text-primary"></i> Dates & Warranty</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="InstallationDate" class="form-label">Installation Date</label>
-                                <input asp-for="InstallationDate" class="form-control" type="date" asp-format="{0:yyyy-MM-dd}" />
+                                <input asp-for="InstallationDate" class="form-control" type="date" asp-format="{0:yyyy-MM-dd}" onchange="trackFieldChange(this)" />
                                 <span asp-validation-for="InstallationDate" class="text-danger"></span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="WarrantyExpiry" class="form-label">Warranty Expiry</label>
-                                <input asp-for="WarrantyExpiry" class="form-control" type="date" asp-format="{0:yyyy-MM-dd}" />
+                                <input asp-for="WarrantyExpiry" class="form-control" type="date" asp-format="{0:yyyy-MM-dd}" onchange="trackFieldChange(this); checkWarrantyStatus(this.value)" />
                                 <span asp-validation-for="WarrantyExpiry" class="text-danger"></span>
+                                <div id="warrantyStatus" class="form-text"></div>
                             </div>
                         </div>
                     </div>
@@ -178,7 +330,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label asp-for="Supplier" class="form-label">Supplier</label>
-                                <input asp-for="Supplier" class="form-control" placeholder="Supplier/Vendor name" />
+                                <input asp-for="Supplier" class="form-control" placeholder="Supplier/Vendor name" onchange="trackFieldChange(this)" />
                                 <span asp-validation-for="Supplier" class="text-danger"></span>
                             </div>
                         </div>
@@ -187,7 +339,7 @@
                                 <label asp-for="PurchasePrice" class="form-label">Purchase Price</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input asp-for="PurchasePrice" class="form-control" type="number" step="0.01" min="0" placeholder="0.00" />
+                                    <input asp-for="PurchasePrice" class="form-control" type="number" step="0.01" placeholder="0.00" onchange="trackFieldChange(this)" />
                                 </div>
                                 <span asp-validation-for="PurchasePrice" class="text-danger"></span>
                             </div>
@@ -196,124 +348,435 @@
                 </div>
             </div>
 
+            <!-- Additional Information Card -->
             <div class="card mt-3">
                 <div class="card-header">
-                    <h5><i class="bi bi-chat-text"></i> Additional Information</h5>
+                    <h5><i class="bi bi-chat-text text-primary"></i> Additional Information</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
                         <label asp-for="Notes" class="form-label">Notes</label>
-                        <textarea asp-for="Notes" class="form-control" rows="4" placeholder="Additional notes, configurations, or special requirements"></textarea>
+                        <textarea asp-for="Notes" class="form-control" rows="4" placeholder="Additional notes, configurations, or special requirements" onchange="trackFieldChange(this)"></textarea>
                         <span asp-validation-for="Notes" class="text-danger"></span>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-4">
-                <button type="submit" class="btn btn-success btn-lg">
-                    <i class="bi bi-save"></i> Save Changes
-                </button>
-                <a class="btn btn-secondary btn-lg ms-2" asp-action="Details" asp-route-id="@Model.Id">
-                    <i class="bi bi-arrow-left"></i> Back to Details
-                </a>
-                <a class="btn btn-outline-secondary btn-lg ms-2" asp-action="Index">
-                    <i class="bi bi-list"></i> Back to List
-                </a>
+            <!-- Action Buttons -->
+            <div class="mt-4 d-flex justify-content-between">
+                <div>
+                    <button type="submit" class="btn btn-primary btn-lg" id="saveBtn">
+                        <i class="bi bi-check-circle"></i> Save Changes
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-lg ms-2" onclick="previewChanges()">
+                        <i class="bi bi-eye"></i> Preview Changes
+                    </button>
+                </div>
+                <div>
+                    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-arrow-left"></i> Cancel
+                    </a>
+                </div>
             </div>
         </form>
     </div>
     
+    <!-- Sidebar with Edit Guidelines -->
     <div class="col-md-4">
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5><i class="bi bi-info-circle"></i> Asset Information</h5>
+        <div class="card shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="bi bi-pencil-square me-2"></i>Edit Guidelines
+                </h6>
             </div>
             <div class="card-body">
-                <p><strong>Internal Serial:</strong><br>
-                <code>@(Model.InternalSerialNumber ?? "Not Generated")</code></p>
+                <!-- Change Summary -->
+                <div id="changeSummary" class="mb-3">
+                    <h6 class="text-primary"><i class="bi bi-clock-history"></i> Changes Made</h6>
+                    <div id="changesList" class="small">
+                        <em class="text-muted">No changes yet</em>
+                    </div>
+                </div>
                 
-                <p><strong>Created:</strong><br>
-                @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</p>
+                <hr>
                 
-                <p><strong>Last Updated:</strong><br>
-                @(Model.LastUpdated == DateTime.MinValue ? "Never" : Model.LastUpdated.ToString("dd/MM/yyyy HH:mm"))</p>
-            </div>
-        </div>
-        
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="bi bi-exclamation-triangle"></i> Edit Guidelines</h5>
-            </div>
-            <div class="card-body">
-                <h6>Asset Tag</h6>
-                <p class="small text-muted">Must remain unique across all assets. Changing this may affect references.</p>
+                <h6 class="text-primary"><i class="bi bi-shield-check"></i> Best Practices</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-2"><i class="bi bi-check text-success"></i> Verify information accuracy before saving</li>
+                    <li class="mb-2"><i class="bi bi-check text-success"></i> Update warranty information regularly</li>
+                    <li class="mb-2"><i class="bi bi-check text-success"></i> Keep location information current</li>
+                    <li class="mb-2"><i class="bi bi-check text-success"></i> Document significant changes in notes</li>
+                </ul>
                 
-                <h6>Status Changes</h6>
-                <p class="small text-muted">Status changes will be tracked in the movement history.</p>
+                <hr>
                 
-                <h6>Location & Assignment</h6>
-                <p class="small text-muted">Changes to location or assignment will create movement records.</p>
+                <h6 class="text-primary"><i class="bi bi-exclamation-triangle"></i> Important Notes</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-1">• Asset Tag cannot be modified</li>
+                    <li class="mb-1">• Status changes may trigger workflows</li>
+                    <li class="mb-1">• All changes are automatically logged</li>
+                    <li class="mb-1">• Email notifications may be sent</li>
+                </ul>
                 
-                <div class="alert alert-warning small">
-                    <i class="bi bi-info-circle"></i> All changes are tracked and will appear in the audit log.
+                <hr>
+                
+                <div class="d-grid">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="resetForm()">
+                        <i class="bi bi-arrow-clockwise"></i> Reset Changes
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-@section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+<!-- Add New Location Modal (reuse from Create.cshtml) -->
+<div class="modal fade" id="addLocationModal" tabindex="-1" aria-labelledby="addLocationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addLocationModalLabel">
+                    <i class="bi bi-geo-alt-fill text-primary"></i> Add New Location
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addLocationForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newLocationName" class="form-label">Location Name *</label>
+                                <input type="text" class="form-control" id="newLocationName" required 
+                                       placeholder="e.g., Server Room A1, Emergency Ward">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newLocationBuilding" class="form-label">Building</label>
+                                <input type="text" class="form-control" id="newLocationBuilding" 
+                                       placeholder="e.g., Main Building, Tower A">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newLocationFloor" class="form-label">Floor</label>
+                                <input type="text" class="form-control" id="newLocationFloor" 
+                                       placeholder="e.g., Ground Floor, 2nd Floor">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="newLocationRoom" class="form-label">Room</label>
+                                <input type="text" class="form-control" id="newLocationRoom" 
+                                       placeholder="e.g., Room 201, Suite A">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newLocationDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="newLocationDescription" rows="3" 
+                                placeholder="Brief description of this location (optional)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveLocationBtn">
+                    <i class="bi bi-check-circle"></i> Add Location
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Store original values for change tracking
+let originalValues = {};
+let changedFields = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Store original form values
+    const form = document.getElementById('editAssetForm');
+    const formData = new FormData(form);
+    for (let [key, value] of formData.entries()) {
+        originalValues[key] = value;
+    }
     
-    <script>
-        // Enhanced form validation and debugging
-        (function() {
-            'use strict';
-            window.addEventListener('load', function() {
-                var forms = document.getElementsByClassName('needs-validation');
-                var validation = Array.prototype.filter.call(forms, function(form) {
-                    form.addEventListener('submit', function(event) {
-                        console.log('Form submission attempt...');
-                        
-                        // Debug: Log form data before submission
-                        var formData = new FormData(form);
-                        console.log('Form data:');
-                        for (var pair of formData.entries()) {
-                            console.log(pair[0] + ': ' + pair[1]);
-                        }
-                        
-                        if (form.checkValidity() === false) {
-                            console.log('Form validation failed');
-                            event.preventDefault();
-                            event.stopPropagation();
-                        } else {
-                            console.log('Form validation passed');
-                        }
-                        form.classList.add('was-validated');
-                    }, false);
-                });
-            }, false);
-        })();
-        
-        // Format date inputs on load
-        $(document).ready(function() {
-            console.log('Document ready - processing date inputs...');
-            
-            // Ensure date inputs have proper format
-            $('input[type="date"]').each(function() {
-                var val = $(this).val();
-                console.log('Processing date input:', $(this).attr('name'), 'value:', val);
-                if (val && val.indexOf('T') > -1) {
-                    var dateOnly = val.split('T')[0];
-                    $(this).val(dateOnly);
-                    console.log('Formatted date to:', dateOnly);
-                }
-            });
-            
-            // Add change handlers for debugging
-            $('select, input').on('change', function() {
-                console.log('Field changed:', $(this).attr('name'), 'new value:', $(this).val());
-            });
+    // Initialize form validation
+    const forms = document.querySelectorAll('.needs-validation');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            form.classList.add('was-validated');
         });
-    </script>
+    });
+    
+    // Check warranty status on load
+    const warrantyInput = document.querySelector('[name="WarrantyExpiry"]');
+    if (warrantyInput && warrantyInput.value) {
+        checkWarrantyStatus(warrantyInput.value);
+    }
+    
+    // Update status indicator on load
+    const statusSelect = document.querySelector('[name="Status"]');
+    if (statusSelect && statusSelect.value) {
+        updateStatusIndicator(statusSelect.value);
+    }
+    
+    // Add Location functionality
+    setupLocationModal();
+});
+
+// Track field changes
+function trackFieldChange(element) {
+    const fieldName = element.name;
+    const currentValue = element.value;
+    const originalValue = originalValues[fieldName] || '';
+    
+    if (currentValue !== originalValue) {
+        // Field has changed
+        changedFields[fieldName] = {
+            original: originalValue,
+            current: currentValue,
+            label: element.previousElementSibling.textContent.replace('*', '').trim()
+        };
+        element.classList.add('field-changed');
+        
+        // Add change indicator
+        let indicator = element.parentElement.querySelector('.change-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.className = 'change-indicator';
+            element.parentElement.appendChild(indicator);
+        }
+        indicator.textContent = 'Modified';
+    } else {
+        // Field reverted to original
+        delete changedFields[fieldName];
+        element.classList.remove('field-changed');
+        
+        const indicator = element.parentElement.querySelector('.change-indicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+    
+    updateChangeSummary();
 }
+
+// Update change summary
+function updateChangeSummary() {
+    const changesList = document.getElementById('changesList');
+    const changedCount = Object.keys(changedFields).length;
+    
+    if (changedCount === 0) {
+        changesList.innerHTML = '<em class="text-muted">No changes yet</em>';
+    } else {
+        let html = `<div class="text-success fw-bold">${changedCount} field(s) modified:</div>`;
+        for (let [fieldName, change] of Object.entries(changedFields)) {
+            html += `<div class="mt-1">
+                <strong>${change.label}:</strong><br>
+                <small class="text-muted">From: ${change.original || '(empty)'}</small><br>
+                <small class="text-primary">To: ${change.current || '(empty)'}</small>
+            </div>`;
+        }
+        changesList.innerHTML = html;
+    }
+}
+
+// Status indicator update
+function updateStatusIndicator(statusValue) {
+    const statusHelp = document.getElementById('statusHelp');
+    const statusMessages = {
+        '0': { text: 'Asset is available for assignment', class: 'text-info' },
+        '1': { text: 'Asset is currently in use', class: 'text-success' },
+        '2': { text: 'Asset is under maintenance or repair', class: 'text-warning' },
+        '3': { text: 'Asset has been decommissioned', class: 'text-danger' },
+        '4': { text: 'Asset is reported as lost', class: 'text-secondary' },
+        '5': { text: 'Asset is reported as stolen', class: 'text-danger' }
+    };
+    
+    if (statusValue && statusMessages[statusValue]) {
+        const message = statusMessages[statusValue];
+        statusHelp.innerHTML = `<i class="bi bi-info-circle"></i> ${message.text}`;
+        statusHelp.className = `form-text ${message.class}`;
+    } else {
+        statusHelp.innerHTML = '';
+    }
+}
+
+// Warranty status check
+function checkWarrantyStatus(warrantyDate) {
+    const warrantyStatus = document.getElementById('warrantyStatus');
+    if (!warrantyDate) {
+        warrantyStatus.innerHTML = '';
+        return;
+    }
+    
+    const today = new Date();
+    const warranty = new Date(warrantyDate);
+    const diffTime = warranty - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+        warrantyStatus.innerHTML = `<i class="bi bi-exclamation-triangle text-danger"></i> Warranty expired ${Math.abs(diffDays)} days ago`;
+        warrantyStatus.className = 'form-text text-danger';
+    } else if (diffDays <= 30) {
+        warrantyStatus.innerHTML = `<i class="bi bi-clock text-warning"></i> Warranty expires in ${diffDays} days`;
+        warrantyStatus.className = 'form-text text-warning';
+    } else {
+        warrantyStatus.innerHTML = `<i class="bi bi-shield-check text-success"></i> Warranty valid for ${diffDays} days`;
+        warrantyStatus.className = 'form-text text-success';
+    }
+}
+
+// Preview changes
+function previewChanges() {
+    if (Object.keys(changedFields).length === 0) {
+        showToast('No changes to preview', 'info');
+        return;
+    }
+    
+    let preview = 'Changes to be saved:\n\n';
+    for (let [fieldName, change] of Object.entries(changedFields)) {
+        preview += `${change.label}:\n`;
+        preview += `  From: ${change.original || '(empty)'}\n`;
+        preview += `  To: ${change.current || '(empty)'}\n\n`;
+    }
+    
+    alert(preview);
+}
+
+// Reset form
+function resetForm() {
+    if (Object.keys(changedFields).length === 0) {
+        showToast('No changes to reset', 'info');
+        return;
+    }
+    
+    if (confirm('Are you sure you want to reset all changes? This action cannot be undone.')) {
+        // Reset all changed fields to original values
+        for (let [fieldName, change] of Object.entries(changedFields)) {
+            const element = document.querySelector(`[name="${fieldName}"]`);
+            if (element) {
+                element.value = change.original;
+                element.classList.remove('field-changed');
+                
+                const indicator = element.parentElement.querySelector('.change-indicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+            }
+        }
+        
+        changedFields = {};
+        updateChangeSummary();
+        showToast('All changes have been reset', 'success');
+    }
+}
+
+// Location modal setup
+function setupLocationModal() {
+    const addLocationBtn = document.getElementById('addLocationBtn');
+    const addLocationModal = new bootstrap.Modal(document.getElementById('addLocationModal'));
+    const saveLocationBtn = document.getElementById('saveLocationBtn');
+    const locationSelect = document.getElementById('locationSelect');
+    const newLocationNameInput = document.getElementById('newLocationName');
+    
+    addLocationBtn.addEventListener('click', function() {
+        addLocationModal.show();
+        setTimeout(() => {
+            newLocationNameInput.focus();
+        }, 500);
+    });
+    
+    saveLocationBtn.addEventListener('click', function() {
+        const locationName = newLocationNameInput.value.trim();
+        const locationDescription = document.getElementById('newLocationDescription').value.trim();
+        const locationBuilding = document.getElementById('newLocationBuilding').value.trim();
+        const locationFloor = document.getElementById('newLocationFloor').value.trim();
+        const locationRoom = document.getElementById('newLocationRoom').value.trim();
+        
+        if (!locationName) {
+            showToast('Please enter a location name.', 'warning');
+            newLocationNameInput.focus();
+            return;
+        }
+        
+        fetch('/Assets/AddLocation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                name: locationName,
+                description: locationDescription,
+                building: locationBuilding,
+                floor: locationFloor,
+                room: locationRoom
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const newOption = document.createElement('option');
+                newOption.value = data.location.value;
+                newOption.textContent = data.location.text;
+                newOption.selected = true;
+                
+                locationSelect.appendChild(newOption);
+                trackFieldChange(locationSelect);
+                
+                addLocationModal.hide();
+                document.getElementById('addLocationForm').reset();
+                
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message, 'warning');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred while adding the location.', 'error');
+        });
+    });
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'warning' ? 'warning' : type === 'error' ? 'danger' : 'info'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = toastContainer.lastElementChild;
+    
+    if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
+    }
+    
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+</script>

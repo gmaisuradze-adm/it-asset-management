@@ -51,7 +51,7 @@ namespace HospitalAssetTracker.Services
             var vendors = await vendorsQuery
                 .Include(v => v.ProcurementRequests.Where(p => p.RequestDate >= cutoffDate))
                 .ThenInclude(p => p.Items)
-                .Include(v => v.VendorQuotes.Where(q => q.CreatedDate >= cutoffDate))
+                .Include(v => v.Quotes.Where(q => q.CreatedDate >= cutoffDate))
                 .ToListAsync();
 
             var analysis = new VendorPerformanceAnalysis
@@ -63,7 +63,7 @@ namespace HospitalAssetTracker.Services
 
             foreach (var vendor in vendors)
             {
-                var metrics = await CalculateVendorMetricsAsync(vendor, cutoffDate);
+                var metrics = CalculateVendorMetrics(vendor, cutoffDate); // Removed await, changed method name
                 analysis.VendorMetrics.Add(metrics);
             }
 
@@ -93,7 +93,7 @@ namespace HospitalAssetTracker.Services
             var applicableVendors = await _context.Vendors
                 .Where(v => v.Status == VendorStatus.Active)
                 .Include(v => v.ProcurementRequests.Where(p => p.RequestDate >= DateTime.UtcNow.AddMonths(-6)))
-                .Include(v => v.VendorQuotes.Where(q => q.CreatedDate >= DateTime.UtcNow.AddMonths(-3)))
+                .Include(v => v.Quotes.Where(q => q.CreatedDate >= DateTime.UtcNow.AddMonths(-3)))
                 .ToListAsync();
 
             var vendorScores = new List<VendorSelectionScore>();
@@ -140,7 +140,7 @@ namespace HospitalAssetTracker.Services
 
             var vendor = await _context.Vendors
                 .Include(v => v.ProcurementRequests.Where(p => p.RequestDate >= DateTime.UtcNow.AddMonths(-12)))
-                .Include(v => v.VendorQuotes.Where(q => q.CreatedDate >= DateTime.UtcNow.AddMonths(-6)))
+                .Include(v => v.Quotes.Where(q => q.CreatedDate >= DateTime.UtcNow.AddMonths(-6)))
                 .FirstOrDefaultAsync(v => v.Id == vendorId);
 
             if (vendor == null)
@@ -203,7 +203,7 @@ namespace HospitalAssetTracker.Services
             // Calculate budget requirements
             forecast.BudgetRequirements = forecast.CategoryForecasts.Select(c => new BudgetRequirement 
             { 
-                CategoryName = c.Category,
+                CategoryName = c.Category ?? "Unknown",
                 RequiredBudget = c.ForecastedValue 
             }).ToList();
             forecast.TotalForecastedValue = forecast.CategoryForecasts.Sum(c => c.ForecastedValue);
@@ -566,7 +566,7 @@ namespace HospitalAssetTracker.Services
 
         #region Private Helper Methods
 
-        private async Task<VendorMetrics> CalculateVendorMetricsAsync(Vendor vendor, DateTime cutoffDate)
+        private VendorMetrics CalculateVendorMetrics(Vendor vendor, DateTime cutoffDate) // Changed from async Task<VendorMetrics>
         {
             var completedOrders = vendor.ProcurementRequests
                 .Where(p => p.Status == ProcurementStatus.Completed)
@@ -581,13 +581,13 @@ namespace HospitalAssetTracker.Services
                 AverageOrderValue = completedOrders.Any() ? (double)completedOrders.Average(p => p.ActualCost ?? p.EstimatedBudget) : 0,
                 OnTimeDeliveryRate = CalculateOnTimeDeliveryRate(completedOrders),
                 QualityScore = CalculateQualityScore(vendor),
-                PriceCompetitiveness = (double)await CalculatePriceCompetitiveness(vendor),
+                PriceCompetitiveness = (double)CalculatePriceCompetitiveness(vendor), // Removed await
                 ResponseTime = CalculateAverageResponseTime(vendor),
                 ComplianceScore = CalculateComplianceScore(vendor)
             };
 
             metrics.CompositePerformanceScore = CalculateCompositeScore(metrics);
-            return metrics;
+            return metrics; // Ensure it returns VendorMetrics directly
         }
 
         private double CalculateOnTimeDeliveryRate(List<ProcurementRequest> orders)
@@ -609,7 +609,7 @@ namespace HospitalAssetTracker.Services
             return qualityRating > 0 ? qualityRating * 20 : 70.0; // Convert back to 0-100 or default
         }
 
-        private async Task<double> CalculatePriceCompetitiveness(Vendor vendor)
+        private double CalculatePriceCompetitiveness(Vendor vendor) // Changed from async Task<double>
         {
             // Compare vendor's prices with market averages
             // This would require historical price data and market benchmarks
@@ -700,7 +700,7 @@ namespace HospitalAssetTracker.Services
         private double CalculatePriceScore(Vendor vendor, VendorSelectionCriteria criteria)
         {
             // Calculate price competitiveness score (0-100)
-            var recentQuotes = vendor.VendorQuotes?.Where(q => q.CreatedDate >= DateTime.UtcNow.AddMonths(-6)).ToList();
+            var recentQuotes = vendor.Quotes?.Where(q => q.CreatedDate >= DateTime.UtcNow.AddMonths(-6)).ToList();
             if (recentQuotes?.Any() != true) return 50.0; // Neutral score if no recent data
             
             var avgPrice = recentQuotes.Average(q => q.TotalAmount);
@@ -840,8 +840,8 @@ namespace HospitalAssetTracker.Services
             for (int month = 1; month <= 12; month++)
             {
                 var monthData = historicalData.Where(r => r.RequestDate.Month == month);
-                var monthlyAverage = monthData.Any() ? monthData.Average(r => (double)r.TotalAmount) : 0;
-                var overallAverage = historicalData.Any() ? historicalData.Average(r => (double)r.TotalAmount) : 1;
+                var monthlyAverage = monthData.Any(r => r.TotalAmount.HasValue) ? monthData.Where(r => r.TotalAmount.HasValue).Average(r => (double)r.TotalAmount!.Value) : 0;
+                var overallAverage = historicalData.Any(r => r.TotalAmount.HasValue) ? historicalData.Where(r => r.TotalAmount.HasValue).Average(r => (double)r.TotalAmount!.Value) : 1;
                 
                 factors[month.ToString()] = overallAverage > 0 ? monthlyAverage / overallAverage : 1.0;
             }
@@ -858,7 +858,7 @@ namespace HospitalAssetTracker.Services
             foreach (var categoryGroup in categories)
             {
                 var categoryData = categoryGroup.ToList();
-                var avgMonthlySpend = categoryData.Any() ? categoryData.Average(r => (double)r.TotalAmount) : 0;
+                var avgMonthlySpend = categoryData.Any(r => r.TotalAmount.HasValue) ? categoryData.Where(r => r.TotalAmount.HasValue).Average(r => (double)r.TotalAmount!.Value) : 0;
                 
                 forecasts.Add(new CategoryForecast
                 {
@@ -905,15 +905,16 @@ namespace HospitalAssetTracker.Services
             return new CostOptimizationAnalysis
             {
                 AnalysisDate = DateTime.UtcNow,
-                TotalPotentialSavings = 15000m,
-                OptimizationOpportunities = new List<CostOptimizationOpportunity>
+                IdentifiedSavings = 15000m, // Changed from TotalPotentialSavings
+                Opportunities = new List<CostOptimizationOpportunity> // Changed from OptimizationOpportunities
                 {
                     new CostOptimizationOpportunity
                     {
                         OpportunityType = "Volume Consolidation",
                         Description = "Consolidate similar purchases across departments",
                         PotentialSavings = 8000m,
-                        ImplementationEffort = "Medium"
+                        ImplementationDifficulty = "Medium", // Changed from ImplementationEffort
+                        Priority = "High" // Added Priority based on previous fix
                     }
                 }
             };
@@ -989,20 +990,20 @@ namespace HospitalAssetTracker.Services
         private Dictionary<string, decimal> CalculateSpendByCategory(List<ProcurementRequest> requests)
         {
             return requests.GroupBy(r => r.Category.ToString())
-                      .ToDictionary(g => g.Key, g => g.Sum(r => r.TotalAmount ?? 0m));
+                      .ToDictionary(g => g.Key, g => g.Sum(r => r.TotalAmount ?? 0));
         }
         
         private Dictionary<string, decimal> CalculateSpendByVendor(List<ProcurementRequest> requests)
         {
             return requests.Where(r => r.Vendor != null)
                       .GroupBy(r => r.Vendor!.Name)
-                      .ToDictionary(g => g.Key, g => g.Sum(r => r.TotalAmount ?? 0m));
+                      .ToDictionary(g => g.Key, g => g.Sum(r => r.TotalAmount ?? 0));
         }
         
         private Dictionary<string, decimal> CalculateSpendByDepartment(List<ProcurementRequest> requests)
         {
             return requests.GroupBy(r => r.Department)
-                      .ToDictionary(g => g.Key, g => g.Sum(r => r.TotalAmount ?? 0m));
+                      .ToDictionary(g => g.Key, g => g.Sum(r => r.TotalAmount ?? 0));
         }
         
         private List<SpendTrend> CalculateSpendTrends(List<ProcurementRequest> requests, SpendAnalysisParameters parameters)
@@ -1011,7 +1012,7 @@ namespace HospitalAssetTracker.Services
                       .Select(g => new SpendTrend
                       {
                           Period = $"{g.Key.Year}-{g.Key.Month:D2}",
-                          Amount = g.Sum(r => r.TotalAmount ?? 0m),
+                          Amount = g.Sum(r => r.TotalAmount ?? 0),
                           RequestCount = g.Count()
                       })
                       .OrderBy(t => t.Period)
@@ -1022,11 +1023,14 @@ namespace HospitalAssetTracker.Services
         {
             var anomalies = new List<SpendAnomaly>();
             
+            // Filter requests that have a TotalAmount for calculations
+            var requestsWithAmount = requests.Where(r => r.TotalAmount.HasValue).ToList();
+
             // Simple anomaly detection - requests significantly above average
-            var averageAmount = requests.Any() ? requests.Average(r => (double)r.TotalAmount) : 0;
+            var averageAmount = requestsWithAmount.Any() ? requestsWithAmount.Average(r => (double)r.TotalAmount!.Value) : 0;
             var threshold = averageAmount * 2.5; // 2.5x average
             
-            var highValueRequests = requests.Where(r => (double)r.TotalAmount > threshold).ToList();
+            var highValueRequests = requestsWithAmount.Where(r => (double)r.TotalAmount!.Value > threshold).ToList();
             
             foreach (var request in highValueRequests)
             {

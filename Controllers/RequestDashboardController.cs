@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using HospitalAssetTracker.Services;
 using HospitalAssetTracker.Models;
 using Microsoft.AspNetCore.Identity;
+using HospitalAssetTracker.Data;
+using Microsoft.EntityFrameworkCore; // Added for .CountAsync()
 
 namespace HospitalAssetTracker.Controllers
 {
@@ -17,17 +19,20 @@ namespace HospitalAssetTracker.Controllers
         private readonly IRequestBusinessLogicService _requestBusinessLogicService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<RequestDashboardController> _logger;
+        private readonly ApplicationDbContext _context; // Added context for direct queries
 
         public RequestDashboardController(
             IRequestService requestService,
             IRequestBusinessLogicService requestBusinessLogicService,
             UserManager<ApplicationUser> userManager,
-            ILogger<RequestDashboardController> logger)
+            ILogger<RequestDashboardController> logger,
+            ApplicationDbContext context) // Injected context
         {
             _requestService = requestService;
             _requestBusinessLogicService = requestBusinessLogicService;
             _userManager = userManager;
             _logger = logger;
+            _context = context; // Initialized context
         }
 
         /// <summary>
@@ -48,22 +53,18 @@ namespace HospitalAssetTracker.Controllers
                 
                 var model = new RequestDashboardViewModel
                 {
-                    // Basic metrics
-                    TotalActiveRequests = dashboardData.TotalActiveRequests,
-                    PendingApprovals = dashboardData.PendingApprovals,
+                    TotalActiveRequests = dashboardData.InProgressRequests + dashboardData.SubmittedRequests + dashboardData.OnHoldRequests,
+                    PendingApprovals = 0, // Obsolete
                     OverdueRequests = dashboardData.OverdueRequests,
-                    CompletedToday = dashboardData.CompletedToday,
+                    CompletedToday = dashboardData.RecentRequests.Count(r => r.Status == "Completed" && r.RequestDate.Date == DateTime.UtcNow.Date),
                     
-                    // Advanced analytics
                     DemandForecast = await _requestBusinessLogicService.GenerateDemandForecastAsync(30),
                     SlaCompliance = await _requestBusinessLogicService.MonitorSlaComplianceAsync(null, 30),
                     QualityMetrics = await _requestBusinessLogicService.MonitorServiceQualityAsync(1),
                     
-                    // Recent activities
                     RecentRequests = await _requestService.GetMyRequestsAsync(userId),
                     OverdueRequestsList = await _requestService.GetOverdueRequestsAsync(),
                     
-                    // Current user context
                     CurrentUserId = userId,
                     LastRefreshed = DateTime.UtcNow
                 };
@@ -95,7 +96,7 @@ namespace HospitalAssetTracker.Controllers
                 }
 
                 var analysis = await _requestBusinessLogicService.AnalyzeRequestIntelligentlyAsync(requestId.Value);
-                
+
                 var model = new RequestAnalysisViewModel
                 {
                     Analysis = analysis,
@@ -163,7 +164,7 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var compliance = await _requestBusinessLogicService.MonitorSlaComplianceAsync(null, analysisDays);
-                
+
                 var model = new SlaComplianceViewModel
                 {
                     Compliance = compliance,
@@ -210,9 +211,9 @@ namespace HospitalAssetTracker.Controllers
                         CategoryForecasts = forecast.CategoryForecasts.Select(cf => new RequestCategoryForecast
                         {
                             RequestType = cf.RequestType,
-                            CurrentDemand = cf.CurrentDemand,
-                            PredictedVolume = cf.PredictedVolume,
-                            TrendDirection = cf.TrendDirection,
+                            HistoricalAverage = cf.CurrentDemand, // Corrected: Assign to the underlying property
+                            ForecastedRequests = cf.PredictedVolume, // Corrected: Assign to the underlying property
+                            GrowthRate = cf.TrendDirection == "Up" ? 1 : (cf.TrendDirection == "Down" ? -1 : 0), // Corrected: Infer from TrendDirection
                             ConfidenceLevel = cf.ConfidenceLevel
                         }).ToList(),
                         RecommendedActions = forecast.RecommendedActions
@@ -283,7 +284,7 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var quality = await _requestBusinessLogicService.MonitorServiceQualityAsync(analysisMonths);
-                
+
                 var model = new QualityAssuranceViewModel
                 {
                     QualityResult = quality,
@@ -381,11 +382,11 @@ namespace HospitalAssetTracker.Controllers
             {
                 var dashboardData = await _requestService.GetRequestDashboardDataAsync();
                 var slaCompliance = await _requestBusinessLogicService.MonitorSlaComplianceAsync(null, 7); // Last 7 days
-                
+
                 var metrics = new
                 {
-                    activeRequests = dashboardData.TotalActiveRequests,
-                    pendingApprovals = dashboardData.PendingApprovals,
+                    activeRequests = dashboardData.SubmittedRequests + dashboardData.InProgressRequests + dashboardData.OnHoldRequests,
+                    pendingApprovals = 0, // Obsolete
                     overdueRequests = dashboardData.OverdueRequests,
                     completedToday = dashboardData.CompletedToday,
                     slaCompliance = slaCompliance.OverallComplianceRate,
@@ -416,7 +417,7 @@ namespace HospitalAssetTracker.Controllers
                 {
                     new List<string> { "Request ID", "Title", "Status", "Priority", "Department", "Created Date" }
                 };
-                
+
                 // Add sample data (in real implementation, this would come from the service)
                 var recentRequests = await _requestService.GetOverdueRequestsAsync();
                 foreach (var request in recentRequests.Take(100))
@@ -492,7 +493,7 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var data = await _requestBusinessLogicService.GetResourceOptimizationAsync();
-                
+
                 if (format.ToLower() == "pdf")
                 {
                     // Return PDF report
@@ -503,7 +504,7 @@ namespace HospitalAssetTracker.Controllers
                     // Return Excel report
                     return Json(new { success = false, message = "Excel export not implemented yet" });
                 }
-                
+
                 // Return HTML view
                 return View("ResourceOptimizationReport", data);
             }

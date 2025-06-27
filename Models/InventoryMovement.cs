@@ -92,6 +92,7 @@ namespace HospitalAssetTracker.Models
                     InventoryMovementType.StockOut => $"Stock Out: -{Quantity}",
                     InventoryMovementType.Transfer => $"Transfer: {Quantity} units",
                     InventoryMovementType.Adjustment => $"Adjustment: {Quantity}",
+                    InventoryMovementType.Reservation => $"Reserved: {Quantity}",
                     InventoryMovementType.Allocation => $"Allocated: {Quantity}",
                     InventoryMovementType.Return => $"Returned: +{Quantity}",
                     InventoryMovementType.Disposal => $"Disposed: -{Quantity}",
@@ -147,16 +148,17 @@ namespace HospitalAssetTracker.Models
         Out = 1,               // Alias for StockOut (for view compatibility)
         Transfer = 2,          // Moving between locations
         Adjustment = 3,        // Stock count adjustments
-        Allocation = 4,        // Reserving for specific use
-        Return = 5,            // Returning to inventory
-        Disposal = 6,          // Permanent removal
-        AssetDeployment = 7,   // Moving from inventory to asset
-        AssetReturn = 8,       // Moving from asset back to inventory
-        Maintenance = 9,       // Sent for maintenance
-        Calibration = 10,      // Sent for calibration
-        Quarantine = 11,       // Moved to quarantine
-        Lost = 12,             // Reported as lost
-        Stolen = 13,           // Reported as stolen
-        Damaged = 14           // Reported as damaged
+        Reservation = 4,       // Reserving inventory
+        Allocation = 5,        // Reserving for specific use
+        Return = 6,            // Returning to inventory
+        Disposal = 7,          // Permanent removal
+        AssetDeployment = 8,   // Moving from inventory to asset
+        AssetReturn = 9,       // Moving from asset back to inventory
+        Maintenance = 10,      // Sent for maintenance
+        Calibration = 11,      // Sent for calibration
+        Quarantine = 12,       // Moved to quarantine
+        Lost = 13,             // Reported as lost
+        Stolen = 14,           // Reported as stolen
+        Damaged = 15           // Reported as damaged
     }
 }

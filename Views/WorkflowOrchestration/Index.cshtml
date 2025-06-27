@@ -1,0 +1,495 @@
+@{
+    ViewData["Title"] = "Workflow Orchestration Dashboard";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-project-diagram me-2"></i>
+                    Cross-Module Workflow Orchestration
+                </h1>
+                <p class="page-subtitle">
+                    Manage and monitor automated workflows across Assets, Requests, Procurement, and Inventory modules
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Active Workflows
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="active-workflows-count">
+                                Loading...
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-play-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Completed Today
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="completed-today-count">
+                                Loading...
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Avg. Processing Time
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="avg-processing-time">
+                                Loading...
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Automation Rate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="automation-rate">
+                                Loading...
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-robot fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <button type="button" class="btn btn-primary btn-block" onclick="startRequestWorkflow()">
+                                <i class="fas fa-play me-2"></i>Start Request Workflow
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button type="button" class="btn btn-success btn-block" onclick="triggerAssetMaintenance()">
+                                <i class="fas fa-tools me-2"></i>Asset Maintenance
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button type="button" class="btn btn-info btn-block" onclick="triggerProcurement()">
+                                <i class="fas fa-shopping-cart me-2"></i>Procurement Workflow
+                            </button>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <button type="button" class="btn btn-warning btn-block" onclick="inventoryReplenishment()">
+                                <i class="fas fa-boxes me-2"></i>Inventory Replenishment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Workflows Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">Active Workflows</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="workflowsTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Workflow ID</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                    <th>Started</th>
+                                    <th>Initiated By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="workflows-tbody">
+                                <!-- Data will be loaded via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Progress Chart -->
+    <div class="row mt-4">
+        <div class="col-xl-8 col-lg-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">Workflow Performance</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="workflowChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">Workflow Types Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="workflowTypeChart" width="400" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Workflow Details Modal -->
+<div class="modal fade" id="workflowModal" tabindex="-1" role="dialog" aria-labelledby="workflowModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="workflowModalLabel">Workflow Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="workflow-details">
+                <!-- Workflow details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" onclick="cancelWorkflow()">Cancel Workflow</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let selectedWorkflowId = null;
+        let workflowChart = null;
+        let workflowTypeChart = null;
+
+        $(document).ready(function() {
+            // Initialize DataTable
+            $('#workflowsTable').DataTable({
+                "pageLength": 10,
+                "ordering": true,
+                "searching": true,
+                "responsive": true
+            });
+
+            // Load dashboard data
+            loadDashboardData();
+            loadActiveWorkflows();
+            initializeCharts();
+
+            // Refresh data every 30 seconds
+            setInterval(function() {
+                loadDashboardData();
+                loadActiveWorkflows();
+            }, 30000);
+        });
+
+        function loadDashboardData() {
+            // Simulate loading dashboard metrics
+            $('#active-workflows-count').text('12');
+            $('#completed-today-count').text('45');
+            $('#avg-processing-time').text('2.5h');
+            $('#automation-rate').text('87%');
+        }
+
+        function loadActiveWorkflows() {
+            $.get('/api/WorkflowOrchestration/active')
+                .done(function(data) {
+                    const tbody = $('#workflows-tbody');
+                    tbody.empty();
+
+                    data.workflows.forEach(function(workflow) {
+                        const row = `
+                            <tr>
+                                <td><code>${workflow.workflowId}</code></td>
+                                <td><span class="badge badge-info">${workflow.type}</span></td>
+                                <td><span class="badge badge-${getStatusBadgeClass(workflow.status)}">${workflow.status}</span></td>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: ${workflow.progress}%" 
+                                             aria-valuenow="${workflow.progress}" aria-valuemin="0" aria-valuemax="100">
+                                            ${workflow.progress.toFixed(1)}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>${new Date(workflow.startTime).toLocaleString()}</td>
+                                <td>${workflow.initiatedBy}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="viewWorkflow('${workflow.workflowId}')">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="cancelWorkflowById('${workflow.workflowId}')">
+                                        <i class="fas fa-stop"></i> Cancel
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                        tbody.append(row);
+                    });
+                })
+                .fail(function() {
+                    console.error('Failed to load active workflows');
+                });
+        }
+
+        function getStatusBadgeClass(status) {
+            switch(status.toLowerCase()) {
+                case 'running': return 'primary';
+                case 'completed': return 'success';
+                case 'failed': return 'danger';
+                case 'pending': return 'warning';
+                default: return 'secondary';
+            }
+        }
+
+        function initializeCharts() {
+            // Workflow Performance Chart
+            const ctx1 = document.getElementById('workflowChart').getContext('2d');
+            workflowChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Workflows Completed',
+                        data: [65, 78, 90, 81, 95, 102],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }, {
+                        label: 'Average Processing Time (hours)',
+                        data: [3.2, 2.8, 2.5, 2.7, 2.3, 2.1],
+                        borderColor: 'rgb(255, 99, 132)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Workflow Types Chart
+            const ctx2 = document.getElementById('workflowTypeChart').getContext('2d');
+            workflowTypeChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Request Processing', 'Asset Maintenance', 'Procurement', 'Inventory'],
+                    datasets: [{
+                        data: [40, 25, 20, 15],
+                        backgroundColor: [
+                            'rgb(255, 99, 132)',
+                            'rgb(54, 162, 235)',
+                            'rgb(255, 205, 86)',
+                            'rgb(75, 192, 192)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function startRequestWorkflow() {
+            const requestId = prompt('Enter Request ID:');
+            if (requestId) {
+                $.post('/api/WorkflowOrchestration/start-request-workflow', { requestId: parseInt(requestId) })
+                    .done(function(data) {
+                        alert('Request workflow started successfully!');
+                        loadActiveWorkflows();
+                    })
+                    .fail(function() {
+                        alert('Failed to start request workflow');
+                    });
+            }
+        }
+
+        function triggerAssetMaintenance() {
+            const assetId = prompt('Enter Asset ID:');
+            const action = prompt('Enter maintenance action (e.g., schedule, repair, replace):');
+            if (assetId && action) {
+                $.post('/api/WorkflowOrchestration/asset-lifecycle', { assetId: parseInt(assetId), action: action })
+                    .done(function(data) {
+                        alert('Asset maintenance workflow triggered successfully!');
+                        loadActiveWorkflows();
+                    })
+                    .fail(function() {
+                        alert('Failed to trigger asset maintenance workflow');
+                    });
+            }
+        }
+
+        function triggerProcurement() {
+            $.post('/api/WorkflowOrchestration/procurement', { triggerType: 'manual' })
+                .done(function(data) {
+                    alert('Procurement workflow triggered successfully!');
+                    loadActiveWorkflows();
+                })
+                .fail(function() {
+                    alert('Failed to trigger procurement workflow');
+                });
+        }
+
+        function inventoryReplenishment() {
+            alert('Inventory replenishment workflow will be triggered (feature coming soon)');
+        }
+
+        function viewWorkflow(workflowId) {
+            selectedWorkflowId = workflowId;
+            
+            $.get(`/api/WorkflowOrchestration/status/${workflowId}`)
+                .done(function(data) {
+                    const details = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Workflow ID:</strong> ${data.workflowId}</p>
+                                <p><strong>Status:</strong> <span class="badge badge-${getStatusBadgeClass(data.status)}">${data.status}</span></p>
+                                <p><strong>Progress:</strong> ${data.progress}%</p>
+                                <p><strong>Current Step:</strong> ${data.currentStep}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Steps Completed:</strong> ${data.stepsCompleted}/${data.totalSteps}</p>
+                                <p><strong>Started:</strong> ${new Date(data.startTime).toLocaleString()}</p>
+                                <p><strong>Estimated Completion:</strong> ${new Date(data.estimatedCompletion).toLocaleString()}</p>
+                                <p><strong>Last Updated:</strong> ${new Date(data.lastUpdated).toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <div class="progress mt-3">
+                            <div class="progress-bar" role="progressbar" style="width: ${data.progress}%" 
+                                 aria-valuenow="${data.progress}" aria-valuemin="0" aria-valuemax="100">
+                                ${data.progress}%
+                            </div>
+                        </div>
+                    `;
+                    $('#workflow-details').html(details);
+                    $('#workflowModal').modal('show');
+                })
+                .fail(function() {
+                    alert('Failed to load workflow details');
+                });
+        }
+
+        function cancelWorkflow() {
+            if (selectedWorkflowId && confirm('Are you sure you want to cancel this workflow?')) {
+                cancelWorkflowById(selectedWorkflowId);
+            }
+        }
+
+        function cancelWorkflowById(workflowId) {
+            if (confirm('Are you sure you want to cancel this workflow?')) {
+                $.post(`/api/WorkflowOrchestration/cancel/${workflowId}`)
+                    .done(function(data) {
+                        alert('Workflow cancelled successfully!');
+                        $('#workflowModal').modal('hide');
+                        loadActiveWorkflows();
+                    })
+                    .fail(function() {
+                        alert('Failed to cancel workflow');
+                    });
+            }
+        }
+    </script>
+}
+
+@section Styles {
+    <style>
+        .border-left-primary {
+            border-left: 0.25rem solid #4e73df !important;
+        }
+        .border-left-success {
+            border-left: 0.25rem solid #1cc88a !important;
+        }
+        .border-left-info {
+            border-left: 0.25rem solid #36b9cc !important;
+        }
+        .border-left-warning {
+            border-left: 0.25rem solid #f6c23e !important;
+        }
+        .page-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e3e6f0;
+        }
+        .page-title {
+            color: #5a5c69;
+            font-size: 1.75rem;
+            font-weight: 400;
+        }
+        .page-subtitle {
+            color: #858796;
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+        .text-xs {
+            font-size: .7rem;
+        }
+        .text-gray-800 {
+            color: #5a5c69 !important;
+        }
+        .text-gray-300 {
+            color: #dddfeb !important;
+        }
+    </style>
+}

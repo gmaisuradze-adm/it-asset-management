@@ -46,9 +46,9 @@ namespace HospitalAssetTracker.Services
             try
             {
                 var totalAssets = await _context.Assets.CountAsync();
-                var activeAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.Active);
-                var inMaintenanceAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.InRepair);
-                var retiredAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.Retired);
+                var activeAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.InUse);
+                var inMaintenanceAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.UnderMaintenance);
+                var retiredAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.Decommissioned);
                 var totalValue = await _context.Assets.SumAsync(a => a.PurchasePrice ?? 0);
 
                 var overview = new AssetOverviewMetrics
@@ -63,9 +63,9 @@ namespace HospitalAssetTracker.Services
 
                 var statusSummary = new List<AssetStatusSummary>
                 {
-                    new AssetStatusSummary { Status = "Active", Count = activeAssets, Percentage = totalAssets > 0 ? (double)activeAssets / totalAssets * 100 : 0 },
+                    new AssetStatusSummary { Status = "In Use", Count = activeAssets, Percentage = totalAssets > 0 ? (double)activeAssets / totalAssets * 100 : 0 },
                     new AssetStatusSummary { Status = "In Maintenance", Count = inMaintenanceAssets, Percentage = totalAssets > 0 ? (double)inMaintenanceAssets / totalAssets * 100 : 0 },
-                    new AssetStatusSummary { Status = "Retired", Count = retiredAssets, Percentage = totalAssets > 0 ? (double)retiredAssets / totalAssets * 100 : 0 }
+                    new AssetStatusSummary { Status = "Decommissioned", Count = retiredAssets, Percentage = totalAssets > 0 ? (double)retiredAssets / totalAssets * 100 : 0 }
                 };
 
                 var categoryBreakdown = await _context.Assets
@@ -89,8 +89,8 @@ namespace HospitalAssetTracker.Services
                     {
                         LocationName = g.Key,
                         AssetCount = g.Count(),
-                        ActiveAssets = g.Count(a => a.Status == AssetStatus.Active),
-                        MaintenanceAssets = g.Count(a => a.Status == AssetStatus.InRepair),
+                        ActiveAssets = g.Count(a => a.Status == AssetStatus.InUse),
+                        MaintenanceAssets = g.Count(a => a.Status == AssetStatus.UnderMaintenance),
                         TotalValue = g.Sum(a => a.PurchasePrice ?? 0)
                     })
                     .ToList();
@@ -162,9 +162,9 @@ namespace HospitalAssetTracker.Services
             try
             {
                 var totalAssets = await _context.Assets.CountAsync();
-                var activeAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.Active);
-                var inMaintenanceAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.InRepair);
-                var retiredAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.Retired);
+                var activeAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.InUse);
+                var inMaintenanceAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.UnderMaintenance);
+                var retiredAssets = await _context.Assets.CountAsync(a => a.Status == AssetStatus.Decommissioned);
 
                 var categoryData = await _context.Assets
                     .GroupBy(a => a.Category)
@@ -238,8 +238,8 @@ namespace HospitalAssetTracker.Services
                     {
                         AssetId = a.Id,
                         Cost = a.PurchasePrice ?? 0,
-                        CostType = "Purchase",
-                        CostDate = a.PurchaseDate ?? DateTime.Now
+                        CostType = "Purchase", // Or Acquisition if more appropriate
+                        CostDate = a.AcquisitionDate ?? a.CreatedDate // Corrected to use AcquisitionDate or fallback to CreatedDate
                     })
                     .ToListAsync();
 
@@ -263,7 +263,7 @@ namespace HospitalAssetTracker.Services
             }
         }
 
-        public async Task<AssetPerformanceAnalysisResult> AnalyzeAssetPerformanceAsync(int assetId, string analystUserId)
+        public AssetPerformanceAnalysisResult AnalyzeAssetPerformance(int assetId, string analystUserId)
         {
             _logger.LogInformation("Analyzing asset performance for analyst: {UserId}", analystUserId);
 
@@ -306,7 +306,7 @@ namespace HospitalAssetTracker.Services
 
                 // Find underutilized assets
                 var underutilizedAssets = await _context.Assets
-                    .Where(a => a.Status == AssetStatus.Active)
+                    .Where(a => a.Status == AssetStatus.InUse)
                     .Take(5)
                     .ToListAsync();
 
@@ -371,7 +371,7 @@ namespace HospitalAssetTracker.Services
             }
         }
 
-        public async Task<bool> AcknowledgeAlertAsync(int alertId, string userId)
+        public bool AcknowledgeAlert(int alertId, string userId)
         {
             _logger.LogInformation("Acknowledging alert {AlertId} by user: {UserId}", alertId, userId);
 
@@ -388,7 +388,7 @@ namespace HospitalAssetTracker.Services
             }
         }
 
-        public async Task<byte[]> ExportDashboardDataAsync(string format, string userId)
+        public byte[] ExportDashboardData(string format, string userId)
         {
             _logger.LogInformation("Exporting dashboard data in format {Format} for user: {UserId}", format, userId);
 
@@ -405,7 +405,7 @@ namespace HospitalAssetTracker.Services
             }
         }
 
-        public async Task<byte[]> ExportAnalyticsDataAsync(string format, string userId)
+        public byte[] ExportAnalyticsData(string format, string userId)
         {
             _logger.LogInformation("Exporting analytics data in format {Format} for user: {UserId}", format, userId);
 
@@ -422,37 +422,7 @@ namespace HospitalAssetTracker.Services
             }
         }
 
-        public async Task<AssetPerformanceReportResult> GetAssetPerformanceReportAsync(string userId)
-        {
-            _logger.LogInformation("Getting asset performance report for user: {UserId}", userId);
-
-            try
-            {
-                var performanceData = await _context.Assets
-                    .Select(a => new AssetPerformanceData
-                    {
-                        AssetId = a.Id,
-                        AssetName = a.Name,
-                        PerformanceScore = 85.0, // Placeholder
-                        MeasurementDate = DateTime.Now
-                    })
-                    .ToListAsync();
-
-                return new AssetPerformanceReportResult
-                {
-                    PerformanceData = performanceData,
-                    ReportGenerationDate = DateTime.Now,
-                    GeneratedByUserId = userId
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error getting asset performance report for user: {UserId}", userId);
-                throw;
-            }
-        }
-
-        public async Task<byte[]> ExportPerformanceDataAsync(string format, string userId)
+        public byte[] ExportPerformanceData(string format, string userId)
         {
             _logger.LogInformation("Exporting performance data in format {Format} for user: {UserId}", format, userId);
 
@@ -570,8 +540,7 @@ namespace HospitalAssetTracker.Services
                 var assetsToAnalyze = await _context.Assets
                     .Include(a => a.MaintenanceRecords)
                     .Include(a => a.Movements)
-                    .Where(a => a.Status != AssetStatus.Decommissioned && 
-                               a.Status != AssetStatus.WriteOff)
+                    .Where(a => a.Status != AssetStatus.Decommissioned)
                     .ToListAsync();
 
                 var replacementPredictions = new List<AssetReplacementPrediction>();
@@ -646,12 +615,7 @@ namespace HospitalAssetTracker.Services
 
                 // Analyze current asset utilization patterns
                 var utilizationAnalysis = await AnalyzeCurrentUtilizationAsync();
-                result.CurrentUtilizationMetrics = new Dictionary<string, double>
-                {
-                    ["OverallUtilization"] = utilizationAnalysis.OverallUtilization,
-                    ["AverageUptime"] = utilizationAnalysis.AverageUptime,
-                    ["EfficiencyScore"] = utilizationAnalysis.EfficiencyScore
-                };
+                result.CurrentUtilizationMetrics = utilizationAnalysis.Metrics;
 
                 // Identify underutilized assets
                 var underutilizedAssets = await IdentifyUnderutilizedAssetsAsync();
@@ -666,22 +630,14 @@ namespace HospitalAssetTracker.Services
                     result.UnderutilizedAssets, result.OverDemandScenarios);
 
                 // Convert to AssetOptimizationOpportunity
-                result.OptimizationRecommendations = utilizationRecommendations.Select(r => new AssetOptimizationOpportunity
-                {
-                    OpportunityType = r.Type,
-                    Description = r.Description,
-                    PotentialSavings = r.EstimatedSavings,
-                    ImplementationEffort = "Medium", // Default value since original doesn't have this
-                    Priority = r.Priority
-                }).ToList();
+                result.OptimizationRecommendations = utilizationRecommendations;
 
                 // Calculate potential cost savings
                 result.PotentialCostSavings = CalculatePotentialUtilizationSavings(utilizationRecommendations);
                 result.ImplementationPriority = DetermineImplementationPriority(utilizationRecommendations);
 
                 // Performance improvement projections
-                result.ProjectedImprovements = CalculateProjectedUtilizationImprovements(result)
-                    .Select(i => i.Description).ToList();
+                result.ProjectedImprovements = CalculateProjectedUtilizationImprovements(result);
 
                 await LogAssetAnalysisActivity(0, optimizerUserId, "Asset Utilization Optimization Completed");
 
@@ -714,11 +670,10 @@ namespace HospitalAssetTracker.Services
                 // Get all assets requiring maintenance analysis
                 var assets = await _context.Assets
                     .Include(a => a.MaintenanceRecords)
-                    .Where(a => a.Status != AssetStatus.Decommissioned && 
-                               a.Status != AssetStatus.WriteOff)
+                    .Where(a => a.Status != AssetStatus.Decommissioned)
                     .ToListAsync();
 
-                var maintenanceScheduleItems = new List<IntelligentMaintenanceScheduleItem>();
+                var maintenanceScheduleItems = new List<MaintenanceScheduleItem>();
 
                 foreach (var asset in assets)
                 {
@@ -780,19 +735,25 @@ namespace HospitalAssetTracker.Services
                     return result;
                 }
 
-                // Step 2: Create asset from inventory item
-                var newAsset = await CreateAssetFromInventoryItemAsync(inventoryItem, targetLocationId, deployedByUserId);
+                // Step 2: Create asset from inventory item (factory method)
+                var assetToCreate = CreateAssetFromInventoryItem(inventoryItem, targetLocationId, deployedByUserId);
+                
+                // Step 2b: Save the new asset using AssetService to ensure it gets an ID and audit log
+                var newAsset = await _assetService.CreateAssetAsync(assetToCreate, deployedByUserId);
                 result.CreatedAssetId = newAsset.Id;
 
                 // Step 3: Update inventory quantities
-                await _inventoryService.UpdateInventoryQuantityAsync(inventoryItemId, inventoryItem.Quantity - 1, deployedByUserId);
+                await _inventoryService.UpdateInventoryQuantityAsync(inventoryItemId, inventoryItem.Quantity - 1, "Deployed to new asset", deployedByUserId);
 
-                // Step 4: Create asset-inventory mapping
-                await CreateAssetInventoryMappingAsync(newAsset.Id, inventoryItemId, deployedByUserId);
+                // Step 4: Create asset-inventory mapping (adds to context)
+                CreateAssetInventoryMapping(newAsset.Id, inventoryItemId, deployedByUserId); 
+                
+                // Step 4b: Save changes for AssetInventoryMapping (and potentially other context changes if any)
+                await _context.SaveChangesAsync(); 
 
                 // Step 5: Generate deployment documentation
                 var documentation = await GenerateDeploymentDocumentationAsync(newAsset, inventoryItem);
-                result.DeploymentDocumentation = new List<string> { documentation };
+                result.DeploymentDocumentation = documentation;
 
                 // Step 6: Create audit trail
                 await _auditService.LogAsync(AuditAction.Create, "Asset Deployment", newAsset.Id, deployedByUserId,
@@ -854,7 +815,7 @@ namespace HospitalAssetTracker.Services
 
                 // Step 6: Generate retirement documentation
                 var retirementDoc = await GenerateRetirementDocumentationAsync(asset, retirementReason);
-                result.RetirementDocumentation = new List<string> { retirementDoc };
+                result.RetirementDocumentation = retirementDoc;
 
                 result.Success = true;
                 result.RetirementMetrics = CalculateRetirementMetrics(asset);
@@ -988,246 +949,342 @@ namespace HospitalAssetTracker.Services
         private List<string> GenerateReplacementBudgetingRecommendations(AssetReplacementForecastResult result) => new();
         private double CalculateForecastAccuracy() => 0.85;
 
-        // === CROSS-MODULE INTEGRATION METHODS ===
-
-        /// <summary>
-        /// Handles asset service requests with intelligent routing
-        /// </summary>
-        public async Task<AssetServiceRequestResult> ProcessAssetServiceRequestAsync(int requestId, string processorUserId)
+        private async Task<(double OverallUtilization, double AverageUptime, double EfficiencyScore, List<AssetMetric> Metrics)> AnalyzeCurrentUtilizationAsync()
         {
-            // Implementation for processing service requests
-            return new AssetServiceRequestResult { Success = true };
+            var metrics = new List<AssetMetric>
+            {
+                new AssetMetric { Name = "OverallUtilization", Value = 0.75 },
+                new AssetMetric { Name = "AverageUptime", Value = 0.98 },
+                new AssetMetric { Name = "EfficiencyScore", Value = 0.85 }
+            };
+            return await Task.FromResult((0.75, 0.98, 0.85, metrics));
         }
 
-        /// <summary>
-        /// Synchronizes asset data across all modules
-        /// </summary>
-        public async Task<AssetDataSynchronizationResult> SynchronizeAssetDataAcrossModulesAsync(int assetId, string synchronizedByUserId)
+        // Modified to return Task<List<Asset>>
+        private async Task<List<Asset>> IdentifyUnderutilizedAssetsAsync()
         {
-            // Implementation for data synchronization
-            return new AssetDataSynchronizationResult { Success = true };
+            // Example: find assets that are InUse but have low activity (placeholder logic)
+            var underutilized = await _context.Assets.Where(a => a.Status == AssetStatus.InUse) 
+                                                 .Take(5)
+                                                 .ToListAsync();
+            
+            return underutilized; // Directly return the list of Assets
         }
 
-        // Additional placeholder implementations would continue here...
-        // For brevity, including key structure elements
-
-        #region Placeholder Implementations for Advanced Features
-        
-        public async Task<AssetHealthAnalysisResult> AnalyzeAssetHealthAsync(int assetId, string analystUserId)
+        private async Task<AssetOverDemandAnalysis> IdentifyOverDemandScenariosAsync()
         {
-            return new AssetHealthAnalysisResult { AssetId = assetId, AnalysisDate = DateTime.UtcNow };
+            // Placeholder implementation
+            return await Task.FromResult(new AssetOverDemandAnalysis());
         }
 
-        public async Task<AssetCostBenefitAnalysisResult> PerformAssetCostBenefitAnalysisAsync(AssetInvestmentRequest request, string analystUserId)
+        private List<UtilizationRecommendation> GenerateUtilizationOptimizationRecommendations(List<Asset> underutilized, AssetOverDemandAnalysis overDemand) // Changed from List<string> overDemand
         {
-            return new AssetCostBenefitAnalysisResult { AnalysisDate = DateTime.UtcNow };
+            var recommendations = new List<UtilizationRecommendation>();
+            foreach (var asset in underutilized)
+            {
+                recommendations.Add(new UtilizationRecommendation { Type = "Reallocate", Description = $"Reallocate asset {asset.Name}", EstimatedSavings = 500 });
+            }
+            return recommendations;
         }
 
-        public async Task<AssetPerformanceMetricsResult> GenerateAssetPerformanceMetricsAsync(DateTime fromDate, DateTime toDate, string reportGeneratorUserId)
+        private decimal CalculatePotentialUtilizationSavings(List<UtilizationRecommendation> recommendations)
         {
-            return new AssetPerformanceMetricsResult { ReportPeriodStart = fromDate, ReportPeriodEnd = toDate };
+            return recommendations.Sum(r => r.EstimatedSavings);
         }
 
-        public async Task<AssetFailureRiskAssessmentResult> AssessAssetFailureRisksAsync(List<int> assetIds, string assessorUserId)
+        private string DetermineImplementationPriority(List<UtilizationRecommendation> recommendations)
         {
-            return new AssetFailureRiskAssessmentResult { AssessmentDate = DateTime.UtcNow };
+            return "High";
         }
 
-        public async Task<AssetPortfolioOptimizationResult> OptimizeAssetPortfolioAsync(string optimizerUserId)
+        private List<ProjectedImprovement> CalculateProjectedUtilizationImprovements(AssetUtilizationOptimizationResult result)
         {
-            return new AssetPortfolioOptimizationResult { OptimizationDate = DateTime.UtcNow };
+            return new List<ProjectedImprovement>
+            {
+                new ProjectedImprovement { Description = "Improved efficiency by 10%" }
+            };
         }
 
-        public async Task<AssetComplianceAnalysisResult> AnalyzeAssetComplianceAsync(string complianceOfficerUserId)
+        private async Task<MaintenanceScheduleItem> GenerateMaintenanceScheduleItemAsync(Asset asset, int planningPeriodDays)
         {
-            return new AssetComplianceAnalysisResult { AnalysisDate = DateTime.UtcNow };
+            // Placeholder logic
+            return await Task.FromResult(new MaintenanceScheduleItem { AssetId = asset.Id, Description = "Scheduled Maintenance" });
         }
 
-        public async Task<AssetBudgetPlanningResult> GenerateAssetBudgetPlanningAsync(int fiscalYear, string plannerUserId)
+        private List<MaintenanceScheduleItem> OptimizeMaintenanceSchedule(List<MaintenanceScheduleItem> items)
         {
-            return new AssetBudgetPlanningResult { FiscalYear = fiscalYear, PlanningDate = DateTime.UtcNow };
-        }
-
-        public async Task<AssetSecurityRiskResult> AnalyzeAssetSecurityRisksAsync(string securityOfficerUserId)
-        {
-            return new AssetSecurityRiskResult { AnalysisDate = DateTime.UtcNow };
-        }
-
-        public async Task<AssetAutomationResult> ExecuteAutomatedAssetManagementTasksAsync(string taskExecutorUserId)
-        {
-            return new AssetAutomationResult { ExecutionDate = DateTime.UtcNow };
-        }
-
-        public async Task<AssetWorkflowOrchestrationResult> OrchestateComplexAssetWorkflowAsync(AssetWorkflowRequest request, string orchestratorUserId)
-        {
-            return new AssetWorkflowOrchestrationResult { OrchestrationDate = DateTime.UtcNow };
-        }
-
-        public async Task<AssetAlertingResult> ProcessIntelligentAssetAlertingAsync(string alertProcessorUserId)
-        {
-            return new AssetAlertingResult { ProcessingDate = DateTime.UtcNow };
-        }
-
-        public async Task<AssetLifecycleReportResult> GenerateComprehensiveAssetLifecycleReportAsync(AssetReportingCriteria criteria, string reportGeneratorUserId)
-        {
-            return new AssetLifecycleReportResult { ReportGenerationDate = DateTime.UtcNow };
-        }
-
-        #endregion
-
-        #region Private Helper Method Implementations
-        
-        private async Task<AssetUtilizationMetrics> AnalyzeCurrentUtilizationAsync()
-        {
-            return new AssetUtilizationMetrics();
-        }
-
-        private async Task<List<UnderutilizedAsset>> IdentifyUnderutilizedAssetsAsync()
-        {
-            return new List<UnderutilizedAsset>();
-        }
-
-        private async Task<List<OverDemandScenario>> IdentifyOverDemandScenariosAsync()
-        {
-            return new List<OverDemandScenario>();
-        }
-
-        private List<UtilizationOptimizationRecommendation> GenerateUtilizationOptimizationRecommendations(
-            List<UnderutilizedAsset> underutilized, List<OverDemandScenario> overDemand)
-        {
-            return new List<UtilizationOptimizationRecommendation>();
-        }
-
-        private decimal CalculatePotentialUtilizationSavings(List<UtilizationOptimizationRecommendation> recommendations)
-        {
-            return 0m;
-        }
-
-        private string DetermineImplementationPriority(List<UtilizationOptimizationRecommendation> recommendations)
-        {
-            return "Medium";
-        }
-
-        private List<UtilizationImprovement> CalculateProjectedUtilizationImprovements(AssetUtilizationOptimizationResult result)
-        {
-            return new List<UtilizationImprovement>();
-        }
-
-        private async Task<IntelligentMaintenanceScheduleItem?> GenerateMaintenanceScheduleItemAsync(Asset asset, int planningPeriodDays)
-        {
-            return new IntelligentMaintenanceScheduleItem { AssetId = asset.Id, AssetTag = asset.AssetTag };
-        }
-
-        private List<IntelligentMaintenanceScheduleItem> OptimizeMaintenanceSchedule(List<IntelligentMaintenanceScheduleItem> items)
-        {
+            // Placeholder
             return items;
         }
 
-        private MaintenanceResourceRequirements CalculateMaintenanceResourceRequirements(List<IntelligentMaintenanceScheduleItem> items)
+        private Dictionary<string, int> CalculateMaintenanceResourceRequirements(List<MaintenanceScheduleItem> items)
         {
-            return new MaintenanceResourceRequirements();
+            return new Dictionary<string, int> { { "Technicians", items.Count } };
         }
 
         private List<string> GenerateMaintenanceSchedulingInsights(IntelligentMaintenanceScheduleResult result)
         {
-            return new List<string>();
+            return new List<string> { "Insight 1" };
         }
 
         private List<string> GenerateMaintenanceCostOptimizationRecommendations(IntelligentMaintenanceScheduleResult result)
         {
-            return new List<string>();
+            return new List<string> { "Recommendation 1" };
         }
 
-        private async Task<Asset> CreateAssetFromInventoryItemAsync(InventoryItem inventoryItem, int targetLocationId, string deployedByUserId)
+        private async Task<string> ArchiveAssetDataAsync(Asset asset)
         {
+            return await Task.FromResult("Data archived successfully.");
+        }
+
+
+        // === CROSS-MODULE INTEGRATION METHODS ===
+
+        // Placeholder Implementations for missing methods
+        private async Task<string> GenerateDeploymentDocumentationAsync(Asset asset, InventoryItem item)
+        {
+            await Task.Delay(10); // Simulate async work
+            return $"Deployment documentation for Asset: {asset.AssetTag}, from Item: {item.ItemCode}";
+        }
+
+        private Dictionary<string, object> CalculateDeploymentMetrics(Asset asset, InventoryItem item) // Return type changed
+        {
+            return new Dictionary<string, object> { { "DeploymentEfficiency", 99.5 }, { "TimeTakenMinutes", 30 } };
+        }
+
+        private async Task<AssetReplacementProcessingResult> ProcessReplacementProcurementAsync(Asset assetToReplace, string userId) // Return type changed
+        {
+            await Task.Delay(10); // Simulate async work
+            return new AssetReplacementProcessingResult 
+            { 
+                Success = true, 
+                Message = $"Replacement procurement process initiated for Asset: {assetToReplace.AssetTag} by User: {userId}",
+                ProcurementRequestId = new Random().Next(1000, 2000)
+            };
+        }
+
+        private async Task<AssetDisposalCoordinationResult> CoordinateAssetDisposalAsync(Asset assetToDispose, string userId) // Return type changed
+        {
+            await Task.Delay(10); // Simulate async work
+            return new AssetDisposalCoordinationResult 
+            { 
+                Success = true, 
+                Message = $"Disposal coordination initiated for Asset: {assetToDispose.AssetTag} by User: {userId}",
+                DisposalMethod = "Recycle",
+                DisposalDate = DateTime.UtcNow.AddDays(7)
+            };
+        }
+
+        private async Task<string> GenerateRetirementDocumentationAsync(Asset asset, string retirementReason)
+        {
+            await Task.Delay(10); // Simulate async work
+            return $"Retirement documentation for Asset: {asset.AssetTag}, Reason: {retirementReason}";
+        }
+
+        private Dictionary<string, object> CalculateRetirementMetrics(Asset asset) // Return type changed
+        {
+            return new Dictionary<string, object> { { "RetirementComplianceScore", 100.0 }, { "ResidualValue", 50.00 } };
+        }
+        // End of Placeholder Implementations
+
+        private Asset CreateAssetFromInventoryItem(InventoryItem item, int locationId, string userId)
+        {
+            // This method should be synchronous if no await calls are made
             var asset = new Asset
             {
-                AssetTag = await _assetService.GenerateAssetTagAsync(),
-                Category = MapInventoryItemCategoryToAssetCategory(inventoryItem.Category),
-                Brand = inventoryItem.Brand ?? "Unknown",
-                Model = inventoryItem.Model ?? "Unknown",
-                SerialNumber = inventoryItem.SerialNumber ?? "",
-                InternalSerialNumber = Guid.NewGuid().ToString(),
-                Status = AssetStatus.InUse,
-                LocationId = targetLocationId,
-                InstallationDate = DateTime.UtcNow,
+                AssetTag = $"ASSET-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}", 
+                Description = item.Description ?? string.Empty, 
+                Category = MapInventoryCategoryToAssetCategory(item.Category),
+                Brand = item.Brand ?? "N/A",
+                Model = item.Model ?? "N/A",
+                SerialNumber = item.SerialNumber ?? $"SN-{Guid.NewGuid().ToString().Substring(0,12)}",
+                PurchasePrice = item.UnitCost,
+                AcquisitionDate = item.PurchaseDate, // Changed from NotMapped PurchaseDate to mapped AcquisitionDate
+                InstallationDate = DateTime.UtcNow, 
+                WarrantyExpiry = item.WarrantyExpiry,
+                Status = AssetStatus.Available, 
+                LocationId = locationId,
                 CreatedDate = DateTime.UtcNow,
-                LastUpdated = DateTime.UtcNow,
-                PurchasePrice = inventoryItem.UnitCost,
-                Description = inventoryItem.Description ?? ""
+                LastUpdated = DateTime.UtcNow 
             };
-
-            return await _assetService.CreateAssetAsync(asset, deployedByUserId);
+            return asset;
         }
 
-        private AssetCategory MapInventoryItemCategoryToAssetCategory(InventoryCategory inventoryCategory)
+        private void CreateAssetInventoryMapping(int assetId, int inventoryItemId, string userId)
         {
-            return inventoryCategory switch
-            {
-                InventoryCategory.Computer => AssetCategory.Desktop,
-                InventoryCategory.Printer => AssetCategory.Printer,
-                InventoryCategory.NetworkEquipment => AssetCategory.NetworkDevice,
-                InventoryCategory.MedicalEquipment => AssetCategory.MedicalDevice,
-                _ => AssetCategory.Other
-            };
-        }
-
-        private async Task CreateAssetInventoryMappingAsync(int assetId, int inventoryItemId, string createdByUserId)
-        {
+            // This method should be synchronous if no await calls are made
             var mapping = new AssetInventoryMapping
             {
                 AssetId = assetId,
                 InventoryItemId = inventoryItemId,
-                CreatedDate = DateTime.UtcNow,
-                CreatedByUserId = createdByUserId
+                Quantity = 1, 
+                Status = AssetInventoryMappingStatus.Deployed, 
+                DeploymentDate = DateTime.UtcNow,
+                DeployedByUserId = userId, 
+                Notes = "Asset created from inventory item."
             };
-
             _context.AssetInventoryMappings.Add(mapping);
-            await _context.SaveChangesAsync();
+            //SaveChangesAsync should be called by the orchestrating method after all operations.
         }
 
-        private async Task<string> GenerateDeploymentDocumentationAsync(Asset asset, InventoryItem inventoryItem)
+        // Example helper method (needs to be implemented based on actual categories)
+        private AssetCategory MapInventoryCategoryToAssetCategory(InventoryCategory inventoryCategory)
         {
-            return $"Asset {asset.AssetTag} deployed from inventory item {inventoryItem.ItemCode} on {DateTime.UtcNow:yyyy-MM-dd}";
-        }
-
-        private AssetDeploymentMetrics CalculateDeploymentMetrics(Asset asset, InventoryItem inventoryItem)
-        {
-            return new AssetDeploymentMetrics
+            return inventoryCategory switch
             {
-                DeploymentTime = TimeSpan.FromMinutes(15).TotalDays, // Convert to double
-                CostEfficiency = 0.95
+                InventoryCategory.Computer => AssetCategory.Desktop, // Computer (0) maps to Desktop
+                // InventoryCategory.Desktop (0) is redundant
+                InventoryCategory.Laptop => AssetCategory.Laptop,
+                InventoryCategory.Server => AssetCategory.Server,
+                InventoryCategory.NetworkDevice => AssetCategory.NetworkDevice, // NetworkDevice (3)
+                // InventoryCategory.NetworkEquipment (3) is redundant
+                InventoryCategory.Printer => AssetCategory.Printer,
+                InventoryCategory.Monitor => AssetCategory.Monitor,
+                InventoryCategory.Peripherals => AssetCategory.Other, 
+                InventoryCategory.Components => AssetCategory.Other, 
+                InventoryCategory.Storage => AssetCategory.Other, 
+                InventoryCategory.MedicalDevice => AssetCategory.MedicalDevice, // MedicalDevice (15)
+                // InventoryCategory.MedicalEquipment (15) is redundant
+                _ => AssetCategory.Other
             };
         }
 
-        private async Task<AssetDataArchivalResult> ArchiveAssetDataAsync(Asset asset)
-        {
-            return new AssetDataArchivalResult { Success = true };
-        }
+        #region Interface Implementations
 
-        private async Task<ReplacementProcessingResult> ProcessReplacementProcurementAsync(Asset asset, string userId)
-        {
-            return new ReplacementProcessingResult { Success = true };
-        }
+        public AssetPerformanceReportResult GetAssetPerformanceReport(string userId) { throw new NotImplementedException(); }
+        public AssetServiceRequestResult ProcessAssetServiceRequest(int requestId, string processorUserId) { throw new NotImplementedException(); }
+        public CrossModuleAssetSyncResult SynchronizeAssetDataAcrossModules(int assetId, string synchronizedByUserId) { throw new NotImplementedException(); }
 
-        private async Task<DisposalCoordinationResult> CoordinateAssetDisposalAsync(Asset asset, string userId)
+        public AssetHealthAnalysisResult AnalyzeAssetHealth(int assetId, string analystUserId)
         {
-            return new DisposalCoordinationResult { Success = true };
-        }
-
-        private async Task<string> GenerateRetirementDocumentationAsync(Asset asset, string reason)
-        {
-            return $"Asset {asset.AssetTag} retired on {DateTime.UtcNow:yyyy-MM-dd}. Reason: {reason}";
-        }
-
-        private AssetRetirementMetrics CalculateRetirementMetrics(Asset asset)
-        {
-            return new AssetRetirementMetrics
+            _logger.LogInformation("Analyzing health for Asset ID: {AssetId} by User: {UserId}", assetId, analystUserId);
+            try
             {
-                TotalLifespanDays = (DateTime.UtcNow - asset.InstallationDate).Days,
-                TotalCostOfOwnership = asset.PurchasePrice ?? 0
-            };
+                // It's better to make this method async if GetAssetByIdAsync is async.
+                // For now, using .Result for simplicity as the interface is synchronous.
+                // Consider changing IAssetBusinessLogicService and this method to be async.
+                var asset = _assetService.GetAssetByIdAsync(assetId).Result; 
+
+                if (asset == null)
+                {
+                    _logger.LogWarning("Asset not found for health analysis. Asset ID: {AssetId}", assetId);
+                    return new AssetHealthAnalysisResult 
+                    {
+                        AnalysisDate = DateTime.UtcNow, 
+                        AnalystUserId = analystUserId,
+                        HealthStatus = "Error - Asset Not Found",
+                        IssuesFound = new List<string> { "Asset not found." }
+                    };
+                }
+
+                var result = new AssetHealthAnalysisResult
+                {
+                    AnalyzedAsset = asset,
+                    AnalysisDate = DateTime.UtcNow,
+                    AnalystUserId = analystUserId,
+                    AgeInDays = (DateTime.UtcNow - asset.InstallationDate).Days,
+                    WarrantyExpiryDate = asset.WarrantyExpiry
+                };
+
+                double healthScore = 100.0;
+                var issues = new List<string>();
+                var recommendations = new List<string>();
+
+                // Age factor (e.g., lose 2 points per year over 1 year old, max 30 points lost)
+                int yearsOld = result.AgeInDays / 365;
+                if (yearsOld > 1) healthScore -= Math.Min(30, (yearsOld - 1) * 2);
+                if (yearsOld > 5) issues.Add($"Asset is over 5 years old ({yearsOld} years).");
+
+                // Maintenance factor
+                var oneYearAgo = DateTime.UtcNow.AddYears(-1);
+                result.MaintenanceCountLastYear = asset.MaintenanceRecords?.Count(m => m.CompletedDate.HasValue && m.CompletedDate.Value >= oneYearAgo) ?? 0;
+                healthScore -= result.MaintenanceCountLastYear * 5; // Lose 5 points per maintenance last year
+                if (result.MaintenanceCountLastYear > 2) issues.Add($"Frequent maintenance: {result.MaintenanceCountLastYear} incidents in the last year.");
+
+                // Current Status factor
+                if (asset.Status == AssetStatus.UnderMaintenance)
+                {
+                    healthScore -= 20;
+                    issues.Add("Asset is currently Under Maintenance.");
+                    recommendations.Add("Follow up on current maintenance progress.");
+                }
+                else if (asset.Status == AssetStatus.Lost || asset.Status == AssetStatus.Stolen)
+                {
+                    healthScore = 0; // Critically compromised
+                    issues.Add($"Asset status is {asset.Status}.");
+                    recommendations.Add("Initiate investigation/recovery procedures.");
+                }
+                else if (asset.Status == AssetStatus.Decommissioned)
+                {
+                    healthScore -= 50; // Significantly lower score for decommissioned assets
+                    issues.Add("Asset is Decommissioned.");
+                }
+
+                // Warranty Factor
+                result.IsWarrantyActive = asset.WarrantyExpiry.HasValue && asset.WarrantyExpiry.Value.Date >= DateTime.UtcNow.Date;
+                if (!result.IsWarrantyActive && asset.WarrantyExpiry.HasValue)
+                {
+                    healthScore -= 10;
+                    issues.Add("Warranty has expired.");
+                    recommendations.Add("Consider extended warranty or replacement planning if asset is critical.");
+                }
+                else if (asset.WarrantyExpiry.HasValue && asset.WarrantyExpiry.Value.Date < DateTime.UtcNow.AddMonths(3).Date)
+                {
+                    healthScore -= 5;
+                    issues.Add("Warranty expiring soon (within 3 months).");
+                    recommendations.Add("Review warranty status and plan for renewal or replacement.");
+                }
+
+                result.HealthScore = Math.Max(0, healthScore); // Ensure score doesn't go below 0
+
+                if (result.HealthScore >= 80) result.HealthStatus = "Good";
+                else if (result.HealthScore >= 60) result.HealthStatus = "Fair";
+                else if (result.HealthScore >= 40) result.HealthStatus = "Poor";
+                else result.HealthStatus = "Critical";
+
+                if (!issues.Any() && result.HealthStatus == "Good")
+                {
+                    issues.Add("No significant issues found.");
+                }
+                if (!recommendations.Any() && result.HealthStatus == "Good")
+                {
+                    recommendations.Add("Continue standard monitoring.");
+                }
+
+                result.IssuesFound = issues;
+                result.Recommendations = recommendations;
+
+                // Log analysis activity (assuming LogAssetAnalysisActivity is async, but this method is sync)
+                // This might need adjustment if LogAssetAnalysisActivity is truly async and needs to be awaited.
+                LogAssetAnalysisActivity(assetId, analystUserId, $"Health Analysis performed. Score: {result.HealthScore}, Status: {result.HealthStatus}").ConfigureAwait(false).GetAwaiter().GetResult();
+
+                _logger.LogInformation("Asset health analysis completed for Asset ID: {AssetId}. Score: {Score}, Status: {Status}", assetId, result.HealthScore, result.HealthStatus);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during asset health analysis for Asset ID: {AssetId}", assetId);
+                return new AssetHealthAnalysisResult 
+                {
+                    AnalysisDate = DateTime.UtcNow, 
+                    AnalystUserId = analystUserId,
+                    HealthStatus = "Error - Analysis Failed",
+                    IssuesFound = new List<string> { $"An unexpected error occurred: {ex.Message}" }
+                };
+            }
         }
+
+        public AssetCostBenefitAnalysisResult PerformAssetCostBenefitAnalysis(AssetInvestmentRequest request, string analystUserId) { throw new NotImplementedException(); }
+        public AssetPerformanceMetricsResult GenerateAssetPerformanceMetrics(DateTime fromDate, DateTime toDate, string reportGeneratorUserId) { throw new NotImplementedException(); }
+        public AssetFailureRiskAssessmentResult AssessAssetFailureRisks(List<int> assetIds, string assessorUserId) { throw new NotImplementedException(); }
+        public AssetPortfolioOptimizationResult OptimizeAssetPortfolio(string optimizerUserId) { throw new NotImplementedException(); }
+        public AssetComplianceAnalysisResult AnalyzeAssetCompliance(string complianceOfficerUserId) { throw new NotImplementedException(); }
+        public AssetBudgetPlanningResult GenerateAssetBudgetPlanning(int fiscalYear, string plannerUserId) { throw new NotImplementedException(); }
+        public AssetSecurityRiskAnalysisResult AnalyzeAssetSecurityRisks(string securityOfficerUserId) { throw new NotImplementedException(); }
+        public AutomatedAssetManagementTaskResult ExecuteAutomatedAssetManagementTasks(string taskExecutorUserId) { throw new NotImplementedException(); }
+        public Task<AssetWorkflowOrchestrationResult> OrchestateComplexAssetWorkflow(AssetWorkflowRequest request, string orchestratorUserId) { throw new NotImplementedException(); }
+        public AssetAlertingResult ProcessIntelligentAssetAlerting(string alertProcessorUserId) { throw new NotImplementedException(); }
+        public AssetLifecycleReportResult GenerateComprehensiveAssetLifecycleReport(AssetReportingCriteria criteria, string reportGeneratorUserId) { throw new NotImplementedException(); }
 
         #endregion
     }

@@ -59,10 +59,11 @@ else
                                     @{
                                         var priorityClass = request.Priority switch
                                         {
-                                            RequestPriority.High => "bg-danger",
-                                            RequestPriority.Medium => "bg-warning text-dark",
-                                            RequestPriority.Low => "bg-success",
-                                            _ => "bg-secondary"
+                                            RequestPriority.Critical => "bg-danger text-white",
+                                            RequestPriority.High => "bg-warning text-dark",
+                                            RequestPriority.Medium => "bg-info text-white",
+                                            RequestPriority.Low => "bg-success text-white",
+                                            _ => "bg-secondary text-white"
                                         };
                                     }
                                     <span class="badge @priorityClass">@request.Priority</span>
@@ -71,14 +72,12 @@ else
                                     @{
                                         var statusClass = request.Status switch
                                         {
-                                            RequestStatus.Open => "bg-primary",
-                                            RequestStatus.InProgress => "bg-info",
-                                            RequestStatus.PendingApproval => "bg-warning text-dark",
-                                            RequestStatus.Approved => "bg-success",
-                                            RequestStatus.Completed => "bg-success",
-                                            RequestStatus.Cancelled => "bg-danger",
-                                            RequestStatus.Rejected => "bg-danger",
-                                            _ => "bg-secondary"
+                                            RequestStatus.Submitted => "bg-info text-white",
+                                            RequestStatus.InProgress => "bg-warning text-dark",
+                                            RequestStatus.OnHold => "bg-secondary text-white",
+                                            RequestStatus.Completed => "bg-success text-white",
+                                            RequestStatus.Cancelled => "bg-danger text-white",
+                                            _ => "bg-light text-dark"
                                         };
                                     }
                                     <span class="badge @statusClass">
@@ -109,7 +108,7 @@ else
                                            class="btn btn-sm btn-outline-primary" title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        @if (request.Status == RequestStatus.Open || request.Status == RequestStatus.InProgress)
+                                        @if (request.Status == RequestStatus.InProgress) // Removed || request.Status == RequestStatus.Open
                                         {
                                             <button type="button" class="btn btn-sm btn-outline-success" 
                                                     onclick="completeRequest(@request.Id)" title="Mark Complete">

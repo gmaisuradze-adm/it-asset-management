@@ -106,6 +106,24 @@ namespace HospitalAssetTracker.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ProcurementRequest procurement, List<ProcurementItem> items)
         {
+            // DEBUG: Log form submission details
+            var logger = HttpContext.RequestServices.GetRequiredService<ILogger<ProcurementController>>();
+            logger.LogInformation("Procurement Create POST - ModelState.IsValid: {IsValid}", ModelState.IsValid);
+            logger.LogInformation("Procurement Create POST - Title: '{Title}', Description: '{Description}'", procurement.Title, procurement.Description);
+            logger.LogInformation("Procurement Create POST - ProcurementType: {Type}, Category: {Category}, Method: {Method}", 
+                procurement.ProcurementType, procurement.Category, procurement.Method);
+            logger.LogInformation("Procurement Create POST - Items count: {ItemCount}", items?.Count ?? 0);
+            
+            // DEBUG: Log validation errors
+            if (!ModelState.IsValid)
+            {
+                foreach (var error in ModelState)
+                {
+                    logger.LogWarning("Validation Error - Field: {Field}, Errors: {Errors}", 
+                        error.Key, string.Join(", ", error.Value.Errors.Select(e => e.ErrorMessage)));
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 try
@@ -116,6 +134,15 @@ namespace HospitalAssetTracker.Controllers
                     procurement.EstimatedBudget = procurement.Items.Sum(i => i.EstimatedTotalPrice);
                     
                     var userId = _userManager.GetUserId(User);
+                    if (string.IsNullOrEmpty(userId))
+                    {
+                        logger.LogError("Procurement Create POST - User not found");
+                        ModelState.AddModelError("", "User not found.");
+                        await PopulateViewBags(procurement);
+                        return View(procurement);
+                    }
+                    
+                    logger.LogInformation("Procurement Create POST - Creating procurement for user: {UserId}", userId);
                     await _procurementService.CreateProcurementRequestAsync(procurement, userId);
                     
                     TempData["SuccessMessage"] = $"Procurement request {procurement.RequestNumber} has been created successfully.";
@@ -123,8 +150,13 @@ namespace HospitalAssetTracker.Controllers
                 }
                 catch (Exception ex)
                 {
+                    logger.LogError(ex, "Procurement Create POST - Exception occurred: {Message}", ex.Message);
                     ModelState.AddModelError("", $"Error creating procurement request: {ex.Message}");
                 }
+            }
+            else
+            {
+                logger.LogWarning("Procurement Create POST - ModelState is invalid, returning to form");
             }
 
             await PopulateViewBags(procurement);
@@ -171,6 +203,12 @@ namespace HospitalAssetTracker.Controllers
                     procurement.EstimatedBudget = procurement.Items.Sum(i => i.EstimatedTotalPrice);
                     
                     var userId = _userManager.GetUserId(User);
+                    if (string.IsNullOrEmpty(userId))
+                    {
+                        ModelState.AddModelError("", "User not found.");
+                        await PopulateViewBags(procurement);
+                        return View(procurement);
+                    }
                     await _procurementService.UpdateProcurementRequestAsync(procurement, userId);
                     
                     TempData["SuccessMessage"] = "Procurement request has been updated successfully.";
@@ -194,6 +232,11 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var userId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    TempData["ErrorMessage"] = "User not found.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
                 var success = await _procurementService.SubmitForApprovalAsync(id, userId);
                 
                 if (success)
@@ -222,6 +265,11 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var userId = _userManager.GetUserId(User);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    TempData["ErrorMessage"] = "User not found.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
                 var success = await _procurementService.ApproveProcurementAsync(id, userId, comments);
                 
                 if (success)
@@ -259,12 +307,13 @@ namespace HospitalAssetTracker.Controllers
             // Create received items based on procurement items
             var receivedItems = procurement.Items?.Select(item => new ProcurementItemReceived
             {
+                ProcurementItemId = item.Id,
                 ItemName = item.ItemName,
                 Description = item.Description,
                 OrderedQuantity = item.Quantity,
-                ReceivedQuantity = item.Quantity, // Default to ordered quantity
+                ReceivedQuantity = item.PendingQuantity, // Default to pending quantity
                 UnitPrice = item.UnitPrice,
-                Category = item.ItemName // Default category
+                Category = item.ItemName // Default category, can be changed by user
             }).ToList() ?? new List<ProcurementItemReceived>();
 
             ViewBag.ProcurementId = id;
@@ -283,6 +332,12 @@ namespace HospitalAssetTracker.Controllers
                 try
                 {
                     var userId = _userManager.GetUserId(User);
+                    if (string.IsNullOrEmpty(userId))
+                    {
+                        ModelState.AddModelError("", "User not found.");
+                        ViewBag.ProcurementId = id;
+                        return View(receivedItems);
+                    }
                     var success = await _procurementService.ReceiveProcurementAsync(id, userId, receivedItems);
                     
                     if (success)
@@ -335,6 +390,11 @@ namespace HospitalAssetTracker.Controllers
                 try
                 {
                     var userId = _userManager.GetUserId(User);
+                    if (string.IsNullOrEmpty(userId))
+                    {
+                        ModelState.AddModelError("", "User not found.");
+                        return View(vendor);
+                    }
                     await _procurementService.CreateVendorAsync(vendor, userId);
                     
                     TempData["SuccessMessage"] = $"Vendor {vendor.Name} has been created successfully.";
@@ -382,6 +442,22 @@ namespace HospitalAssetTracker.Controllers
                     Value = e.ToString(), 
                     Text = e.ToString().Replace("_", " "),
                     Selected = procurement?.ProcurementType == e
+                });
+
+            ViewBag.Categories = Enum.GetValues<ProcurementCategory>()
+                .Select(e => new SelectListItem 
+                { 
+                    Value = e.ToString(), 
+                    Text = e.ToString().Replace("_", " "),
+                    Selected = procurement?.Category == e
+                });
+
+            ViewBag.Methods = Enum.GetValues<ProcurementMethod>()
+                .Select(e => new SelectListItem 
+                { 
+                    Value = e.ToString(), 
+                    Text = e.ToString().Replace("_", " "),
+                    Selected = procurement?.Method == e
                 });
 
             ViewBag.Priorities = Enum.GetValues<ProcurementPriority>()

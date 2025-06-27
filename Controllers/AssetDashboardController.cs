@@ -88,7 +88,7 @@ namespace HospitalAssetTracker.Controllers
 
                 foreach (var asset in assets.Take(50)) // Limit for performance
                 {
-                    var analysis = await _assetBusinessLogicService.AnalyzeAssetPerformanceAsync(asset.Id, userId);
+                    var analysis = _assetBusinessLogicService.AnalyzeAssetPerformance(asset.Id, userId);
                     performanceAnalyses.Add(analysis);
                 }
                 
@@ -184,21 +184,21 @@ namespace HospitalAssetTracker.Controllers
         }
 
         [HttpPost("AcknowledgeAlert")]
-        public async Task<IActionResult> AcknowledgeAlert(int assetId, string alertType)
+        public IActionResult AcknowledgeAlert(int assetId, string alertType)
         {
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
                 
                 // For now, use assetId as alertId - this should be improved with proper alert ID mapping
-                await _assetBusinessLogicService.AcknowledgeAlertAsync(assetId, userId);
+                _assetBusinessLogicService.AcknowledgeAlert(assetId, userId);
                 
                 return Json(new { success = true, message = "Alert acknowledged successfully" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error acknowledging alert for asset {AssetId}", assetId);
-                return Json(new { success = false, message = "Unable to acknowledge alert" });
+                return Json(new { success = false, message = "An error occurred while acknowledging the alert." });
             }
         }
 
@@ -240,21 +240,21 @@ namespace HospitalAssetTracker.Controllers
                 {
                     case "dashboard":
                         var dashboardData = await _assetBusinessLogicService.GetAssetDashboardAsync(userId);
-                        data = await _assetBusinessLogicService.ExportDashboardDataAsync("excel", userId);
+                        data = _assetBusinessLogicService.ExportDashboardData("excel", userId);
                         fileName = $"Asset_Dashboard_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
                         contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
                         break;
                     
                     case "analytics":
                         var analyticsData = await _assetBusinessLogicService.GetAssetAnalyticsAsync(userId);
-                        data = await _assetBusinessLogicService.ExportAnalyticsDataAsync("excel", userId);
+                        data = _assetBusinessLogicService.ExportAnalyticsData("excel", userId);
                         fileName = $"Asset_Analytics_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
                         contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
                         break;
                     
                     case "performance":
-                        var performanceData = await _assetBusinessLogicService.GetAssetPerformanceReportAsync(userId);
-                        data = await _assetBusinessLogicService.ExportPerformanceDataAsync("excel", userId);
+                        var performanceData = _assetBusinessLogicService.GetAssetPerformanceReport(userId);
+                        data = _assetBusinessLogicService.ExportPerformanceData("excel", userId);
                         fileName = $"Asset_Performance_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
                         contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
                         break;

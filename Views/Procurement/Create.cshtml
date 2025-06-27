@@ -54,6 +54,46 @@
                         </div>
                     </div>
                     
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="ProcurementType" class="form-label">Procurement Type *</label>
+                                <select asp-for="ProcurementType" asp-items="ViewBag.ProcurementTypes" class="form-select" required>
+                                    <option value="">Select Procurement Type</option>
+                                </select>
+                                <span asp-validation-for="ProcurementType" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Category" class="form-label">Category *</label>
+                                <select asp-for="Category" asp-items="ViewBag.Categories" class="form-select" required>
+                                    <option value="">Select Category</option>
+                                </select>
+                                <span asp-validation-for="Category" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Method" class="form-label">Procurement Method *</label>
+                                <select asp-for="Method" asp-items="ViewBag.Methods" class="form-select" required>
+                                    <option value="">Select Method</option>
+                                </select>
+                                <span asp-validation-for="Method" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label asp-for="Department" class="form-label">Department *</label>
+                                <input asp-for="Department" class="form-control" placeholder="Enter department" required />
+                                <span asp-validation-for="Department" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="mb-3">
                         <label asp-for="Description" class="form-label">Description *</label>
                         <textarea asp-for="Description" class="form-control" rows="3" placeholder="Describe the procurement request" required></textarea>

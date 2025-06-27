@@ -22,9 +22,12 @@
                 <label class="form-label">Type</label>
                 <select class="form-select" name="ProcurementType">
                     <option value="">All Types</option>
-                    @foreach (var type in ViewBag.ProcurementTypes as IEnumerable<SelectListItem>)
+                    @if (ViewBag.ProcurementTypes is IEnumerable<SelectListItem> procurementTypes)
                     {
-                        <option value="@type.Value" selected="@type.Selected">@type.Text</option>
+                        @foreach (var type in procurementTypes)
+                        {
+                            <option value="@type.Value" selected="@type.Selected">@type.Text</option>
+                        }
                     }
                 </select>
             </div>
@@ -32,9 +35,12 @@
                 <label class="form-label">Status</label>
                 <select class="form-select" name="Status">
                     <option value="">All Statuses</option>
-                    @foreach (var status in ViewBag.Statuses as IEnumerable<SelectListItem>)
+                    @if (ViewBag.Statuses is IEnumerable<SelectListItem> statuses)
                     {
-                        <option value="@status.Value" selected="@status.Selected">@status.Text</option>
+                        @foreach (var status in statuses)
+                        {
+                            <option value="@status.Value" selected="@status.Selected">@status.Text</option>
+                        }
                     }
                 </select>
             </div>
@@ -42,9 +48,12 @@
                 <label class="form-label">Priority</label>
                 <select class="form-select" name="Priority">
                     <option value="">All Priorities</option>
-                    @foreach (var priority in ViewBag.Priorities as IEnumerable<SelectListItem>)
+                    @if (ViewBag.Priorities is IEnumerable<SelectListItem> priorities)
                     {
-                        <option value="@priority.Value" selected="@priority.Selected">@priority.Text</option>
+                        @foreach (var priority in priorities)
+                        {
+                            <option value="@priority.Value" selected="@priority.Selected">@priority.Text</option>
+                        }
                     }
                 </select>
             </div>
@@ -52,9 +61,12 @@
                 <label class="form-label">Vendor</label>
                 <select class="form-select" name="VendorId">
                     <option value="">All Vendors</option>
-                    @foreach (var vendor in ViewBag.Vendors as IEnumerable<SelectListItem>)
+                    @if (ViewBag.Vendors is IEnumerable<SelectListItem> vendors)
                     {
-                        <option value="@vendor.Value" selected="@vendor.Selected">@vendor.Text</option>
+                        @foreach (var vendor in vendors)
+                        {
+                            <option value="@vendor.Value" selected="@vendor.Selected">@vendor.Text</option>
+                        }
                     }
                 </select>
             </div>

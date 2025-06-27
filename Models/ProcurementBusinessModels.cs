@@ -216,58 +216,36 @@ namespace HospitalAssetTracker.Models
         public List<string> StrategicRecommendations { get; set; } = new List<string>();
         public Dictionary<string, decimal> CategorySavings { get; set; } = new Dictionary<string, decimal>();
         public List<CostDriver> CostDrivers { get; set; } = new List<CostDriver>();
-        public decimal TotalPotentialSavings { get; set; }
-        public List<CostOptimizationOpportunity> OptimizationOpportunities { get; set; } = new List<CostOptimizationOpportunity>();
     }
 
-    /// <summary>
-    /// Individual cost optimization opportunity
-    /// </summary>
-    public class CostOptimizationOpportunity
+    public class SpendAnalysis // Added definition
     {
-        public string OpportunityType { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public DateTime PeriodStart { get; set; }
+        public DateTime PeriodEnd { get; set; }
+    }
+
+    public class CostDriver // Added definition
+    {
+        public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public decimal PotentialSavings { get; set; }
-        public double SavingsPercentage { get; set; }
-        public string Implementation { get; set; } = string.Empty;
-        public string Timeline { get; set; } = string.Empty;
-        public string Priority { get; set; } = string.Empty;
-        public string RiskLevel { get; set; } = string.Empty;
-        public List<string> RequiredActions { get; set; } = new List<string>();
-        public string Owner { get; set; } = string.Empty;
-
-        // Additional properties for service compatibility  
-        public string ImplementationEffort { get; set; } = string.Empty;
+        public decimal ImpactAmount { get; set; }
     }
 
     /// <summary>
-    /// Spend analysis by category or vendor
+    /// Cost optimization execution result
     /// </summary>
-    public class SpendAnalysis
+    public class CostOptimizationResult
     {
-        public string Category { get; set; } = string.Empty;
-        public string Vendor { get; set; } = string.Empty;
-        public decimal TotalSpend { get; set; }
-        public double SpendPercentage { get; set; }
-        public int TransactionCount { get; set; }
-        public decimal AverageTransactionValue { get; set; }
-        public double GrowthRate { get; set; }
-        public string Trend { get; set; } = string.Empty;
-        public List<string> OptimizationOpportunities { get; set; } = new List<string>();
-    }
-
-    /// <summary>
-    /// Cost driver analysis
-    /// </summary>
-    public class CostDriver
-    {
-        public string DriverName { get; set; } = string.Empty;
-        public string Category { get; set; } = string.Empty;
-        public decimal Impact { get; set; }
-        public double Influence { get; set; }
-        public string Trend { get; set; } = string.Empty;
-        public List<string> Controllability { get; set; } = new List<string>();
-        public List<string> MitigationStrategies { get; set; } = new List<string>();
+        public bool Success { get; set; }
+        public DateTime ExecutionDate { get; set; }
+        public string InitiatedByUserId { get; set; } = string.Empty;
+        public CostOptimizationAnalysis Analysis { get; set; } = new CostOptimizationAnalysis();
+        public List<string> ImplementedActions { get; set; } = new List<string>();
+        public decimal TotalSavingsRealized { get; set; }
+        public List<string> ProcessingMessages { get; set; } = new List<string>();
+        public List<string> NextSteps { get; set; } = new List<string>();
     }
 
     // === CONTRACT & SUPPLIER MANAGEMENT MODELS ===
@@ -373,21 +351,6 @@ namespace HospitalAssetTracker.Models
     }
 
     // === ADDITIONAL RESULT MODELS FOR INTERFACE METHODS ===
-
-    /// <summary>
-    /// Cost optimization execution result
-    /// </summary>
-    public class CostOptimizationResult
-    {
-        public bool Success { get; set; }
-        public DateTime ExecutionDate { get; set; }
-        public string InitiatedByUserId { get; set; } = string.Empty;
-        public CostOptimizationAnalysis Analysis { get; set; } = new CostOptimizationAnalysis();
-        public List<string> ImplementedActions { get; set; } = new List<string>();
-        public decimal TotalSavingsRealized { get; set; }
-        public List<string> ProcessingMessages { get; set; } = new List<string>();
-        public List<string> NextSteps { get; set; } = new List<string>();
-    }
 
     /// <summary>
     /// Contract optimization result

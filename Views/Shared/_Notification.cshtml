@@ -1,0 +1,65 @@
+@{
+    var successMessage = TempData["SuccessMessage"] as string;
+    var errorMessage = TempData["ErrorMessage"] as string;
+    var warningMessage = TempData["WarningMessage"] as string;
+    var infoMessage = TempData["InfoMessage"] as string;
+}
+
+@if (!string.IsNullOrEmpty(successMessage) || !string.IsNullOrEmpty(errorMessage) || !string.IsNullOrEmpty(warningMessage) || !string.IsNullOrEmpty(infoMessage))
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                }
+            });
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <text>
+                Toast.fire({
+                    icon: 'success',
+                    title: '@Html.Raw(successMessage)'
+                });
+                </text>
+            }
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <text>
+                Toast.fire({
+                    icon: 'error',
+                    title: '@Html.Raw(errorMessage)'
+                });
+                </text>
+            }
+
+            @if (!string.IsNullOrEmpty(warningMessage))
+            {
+                <text>
+                Toast.fire({
+                    icon: 'warning',
+                    title: '@Html.Raw(warningMessage)'
+                });
+                </text>
+            }
+
+            @if (!string.IsNullOrEmpty(infoMessage))
+            {
+                <text>
+                Toast.fire({
+                    icon: 'info',
+                    title: '@Html.Raw(infoMessage)'
+                });
+                </text>
+            }
+        });
+    </script>
+}

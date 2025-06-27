@@ -1,4 +1,4 @@
-@model IEnumerable<HospitalAssetTracker.Models.Asset>
+@model List<HospitalAssetTracker.Models.MaintenanceAssetViewModel>
 @{
     ViewData["Title"] = "Assets Requiring Maintenance";
 }
@@ -9,12 +9,6 @@
         <a asp-action="Index" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Back to Assets
         </a>
-        @if (User.IsInRole("Admin") || User.IsInRole("IT Support"))
-        {
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bulkMaintenanceModal">
-                <i class="bi bi-tools"></i> Schedule Bulk Maintenance
-            </button>
-        }
     </div>
 </div>
 
@@ -25,7 +19,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="card-title">@Model.Count()</h4>
+                        <h4 class="card-title">@Model.Count</h4>
                         <p class="card-text">Assets Needing Maintenance</p>
                     </div>
                     <div class="align-self-center">
@@ -40,7 +34,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="card-title">@Model.Count(a => !a.MaintenanceRecords.Any())</h4>
+                        <h4 class="card-title">@Model.Count(vm => vm.NeverMaintained)</h4>
                         <p class="card-text">Never Maintained</p>
                     </div>
                     <div class="align-self-center">
@@ -55,7 +49,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="card-title">@Model.Count(a => a.MaintenanceRecords.Any())</h4>
+                        <h4 class="card-title">@Model.Count(vm => vm.IsOverdue)</h4>
                         <p class="card-text">Overdue Maintenance</p>
                     </div>
                     <div class="align-self-center">
@@ -70,7 +64,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h4 class="card-title">@Model.GroupBy(a => a.Category).Count()</h4>
+                        <h4 class="card-title">@Model.Select(vm => vm.Asset.Category).Distinct().Count()</h4>
                         <p class="card-text">Asset Categories</p>
                     </div>
                     <div class="align-self-center">
@@ -101,9 +95,6 @@ else
                 <table class="table table-striped table-hover" id="maintenanceTable">
                     <thead class="table-dark">
                         <tr>
-                            <th>
-                                <input type="checkbox" id="selectAll" class="form-check-input">
-                            </th>
                             <th>Asset Tag</th>
                             <th>Category</th>
                             <th>Brand & Model</th>
@@ -115,41 +106,38 @@ else
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var asset in Model.OrderByDescending(a => a.MaintenanceRecords.Any() ? (DateTime.UtcNow - a.MaintenanceRecords.Max(m => m.CompletedDate ?? DateTime.MinValue)).Days : 999))
+                        @foreach (var vm in Model)
                         {
                             <tr>
                                 <td>
-                                    <input type="checkbox" class="form-check-input asset-checkbox" value="@asset.Id">
-                                </td>
-                                <td>
-                                    <a asp-action="Details" asp-route-id="@asset.Id" class="text-decoration-none">
-                                        <strong>@asset.AssetTag</strong>
+                                    <a asp-action="Details" asp-route-id="@vm.Asset.Id" class="text-decoration-none">
+                                        <strong>@vm.Asset.AssetTag</strong>
                                     </a>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary">@asset.Category</span>
+                                    <span class="badge bg-secondary">@vm.Asset.Category</span>
                                 </td>
                                 <td>
                                     <div>
-                                        <strong>@asset.Brand</strong>
-                                        @if (!string.IsNullOrEmpty(asset.Model))
+                                        <strong>@vm.Asset.Brand</strong>
+                                        @if (!string.IsNullOrEmpty(vm.Asset.Model))
                                         {
-                                            <br><small class="text-muted">@asset.Model</small>
+                                            <br><small class="text-muted">@vm.Asset.Model</small>
                                         }
                                     </div>
                                 </td>
                                 <td>
-                                    @if (asset.Location != null)
+                                    @if (vm.Asset.Location != null)
                                     {
                                         <div>
-                                            <i class="bi bi-geo-alt"></i> @asset.Location.Building
-                                            @if (!string.IsNullOrEmpty(asset.Location.Floor))
+                                            <i class="bi bi-geo-alt"></i> @vm.Asset.Location.Building
+                                            @if (!string.IsNullOrEmpty(vm.Asset.Location.Floor))
                                             {
-                                                <br><small class="text-muted">Floor @asset.Location.Floor</small>
+                                                <br><small class="text-muted">Floor @vm.Asset.Location.Floor</small>
                                             }
-                                            @if (!string.IsNullOrEmpty(asset.Location.Room))
+                                            @if (!string.IsNullOrEmpty(vm.Asset.Location.Room))
                                             {
-                                                <br><small class="text-muted">Room @asset.Location.Room</small>
+                                                <br><small class="text-muted">Room @vm.Asset.Location.Room</small>
                                             }
                                         </div>
                                     }
@@ -159,13 +147,13 @@ else
                                     }
                                 </td>
                                 <td>
-                                    @if (asset.AssignedToUser != null)
+                                    @if (vm.Asset.AssignedToUser != null)
                                     {
                                         <div>
-                                            <i class="bi bi-person"></i> @asset.AssignedToUser.FirstName @asset.AssignedToUser.LastName
-                                            @if (!string.IsNullOrEmpty(asset.AssignedToUser.Department))
+                                            <i class="bi bi-person"></i> @vm.Asset.AssignedToUser.FirstName @vm.Asset.AssignedToUser.LastName
+                                            @if (!string.IsNullOrEmpty(vm.Asset.AssignedToUser.Department))
                                             {
-                                                <br><small class="text-muted">@asset.AssignedToUser.Department</small>
+                                                <br><small class="text-muted">@vm.Asset.AssignedToUser.Department</small>
                                             }
                                         </div>
                                     }
@@ -175,20 +163,15 @@ else
                                     }
                                 </td>
                                 <td>
-                                    @if (asset.MaintenanceRecords.Any())
+                                    @if (vm.LastMaintenanceDate.HasValue)
                                     {
-                                        var lastMaintenance = asset.MaintenanceRecords.Where(m => m.CompletedDate.HasValue).OrderByDescending(m => m.CompletedDate).FirstOrDefault();
-                                        if (lastMaintenance != null)
-                                        {
-                                            <div>
-                                                @lastMaintenance.CompletedDate.Value.ToString("MMM dd, yyyy")
-                                                <br><small class="text-muted">@lastMaintenance.MaintenanceType</small>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">In Progress</span>
-                                        }
+                                        <div>
+                                            @vm.LastMaintenanceDate.Value.ToString("MMM dd, yyyy")
+                                        </div>
+                                    }
+                                    else if (vm.MaintenanceInProgress)
+                                    {
+                                        <span class="text-muted">In Progress</span>
                                     }
                                     else
                                     {
@@ -196,34 +179,28 @@ else
                                     }
                                 </td>
                                 <td>
-                                    @{
-                                        var daysOverdue = asset.MaintenanceRecords.Any() 
-                                            ? (int)(DateTime.UtcNow - asset.MaintenanceRecords.Where(m => m.CompletedDate.HasValue).Max(m => m.CompletedDate.Value)).TotalDays - 90
-                                            : 999;
-                                    }
-                                    @if (daysOverdue > 365)
+                                    @if (vm.IsOverdue)
                                     {
-                                        <span class="badge bg-danger">@daysOverdue days</span>
-                                    }
-                                    else if (daysOverdue > 180)
-                                    {
-                                        <span class="badge bg-warning">@daysOverdue days</span>
+                                        var badgeClass = vm.DaysOverdue > 365 ? "bg-danger" : (vm.DaysOverdue > 180 ? "bg-warning text-dark" : "bg-info");
+                                        <span class="badge @badgeClass">
+                                            @vm.DaysOverdue days
+                                        </span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-info">@daysOverdue days</span>
+                                        <span class="badge bg-success">Up to date</span>
                                     }
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <a asp-action="Details" asp-route-id="@asset.Id" class="btn btn-outline-info" title="View Details">
+                                        <a asp-action="Details" asp-route-id="@vm.Asset.Id" class="btn btn-outline-info" title="View Details">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         @if (User.IsInRole("Admin") || User.IsInRole("IT Support"))
                                         {
                                             <button type="button" class="btn btn-outline-warning schedule-maintenance-btn" 
-                                                    data-asset-id="@asset.Id" 
-                                                    data-asset-tag="@asset.AssetTag" 
+                                                    data-asset-id="@vm.Asset.Id" 
+                                                    data-asset-tag="@vm.Asset.AssetTag" 
                                                     title="Schedule Maintenance">
                                                 <i class="bi bi-calendar-plus"></i>
                                             </button>
@@ -303,58 +280,6 @@ else
     </div>
 </div>
 
-<!-- Bulk Maintenance Modal -->
-<div class="modal fade" id="bulkMaintenanceModal" tabindex="-1" aria-labelledby="bulkMaintenanceModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="bulkMaintenanceModalLabel">Schedule Bulk Maintenance</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="bulkMaintenanceForm">
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        Select assets from the table and schedule maintenance for all selected assets at once.
-                    </div>
-                    <div class="mb-3">
-                        <label for="bulkMaintenanceType" class="form-label">Maintenance Type</label>
-                        <select class="form-select" id="bulkMaintenanceType" name="MaintenanceType" required>
-                            <option value="">Select maintenance type...</option>
-                            <option value="PreventiveMaintenance">Preventive Maintenance</option>
-                            <option value="Repair">Repair</option>
-                            <option value="Upgrade">Upgrade</option>
-                            <option value="Inspection">Inspection</option>
-                            <option value="Calibration">Calibration</option>
-                            <option value="Cleaning">Cleaning</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="bulkMaintenanceTitle" class="form-label">Title</label>
-                        <input type="text" class="form-control" id="bulkMaintenanceTitle" name="Title" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="bulkMaintenanceDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="bulkMaintenanceDescription" name="Description" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="bulkScheduledDate" class="form-label">Scheduled Date</label>
-                        <input type="date" class="form-control" id="bulkScheduledDate" name="ScheduledDate" required>
-                    </div>
-                    <div id="selectedAssetsCount" class="alert alert-secondary">
-                        No assets selected
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="bulkScheduleBtn" disabled>Schedule Maintenance</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
@@ -366,43 +291,18 @@ else
     <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
 
     <script>
-        $(document).ready(function() {
-            // Initialize DataTable
-            $('#maintenanceTable').DataTable({
+        $(document).ready(function () {
+            var table = $('#maintenanceTable').DataTable({
                 responsive: true,
-                order: [[7, 'desc']], // Sort by days overdue descending
-                pageLength: 25,
-                dom: 'Bfrtip',
-                buttons: [
-                    {
-                        extend: 'excel',
-                        text: '<i class="bi bi-file-earmark-excel"></i> Excel',
-                        className: 'btn btn-success btn-sm'
-                    },
-                    {
-                        extend: 'pdf',
-                        text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
-                        className: 'btn btn-danger btn-sm'
-                    }
-                ]
+                pageLength: 10,
+                order: [[1, 'asc']], // Sort by Asset Tag by default
+                // columnDefs: [
+                //     { orderable: false, targets: 0 } // Disable sorting on checkbox column if it existed
+                // ]
             });
 
-            // Select all checkbox functionality
-            $('#selectAll').change(function() {
-                $('.asset-checkbox').prop('checked', this.checked);
-                updateSelectedCount();
-            });
-
-            // Individual checkbox change
-            $('.asset-checkbox').change(function() {
-                updateSelectedCount();
-                if (!this.checked) {
-                    $('#selectAll').prop('checked', false);
-                }
-            });
-
-            // Schedule maintenance button click
-            $('.schedule-maintenance-btn').click(function() {
+            // Handle individual schedule maintenance button click
+            $('.schedule-maintenance-btn').on('click', function () {
                 var assetId = $(this).data('asset-id');
                 var assetTag = $(this).data('asset-tag');
                 
@@ -438,61 +338,7 @@ else
                     }
                 });
             });
-
-            // Bulk maintenance form submit
-            $('#bulkMaintenanceForm').submit(function(e) {
-                e.preventDefault();
-                
-                var selectedAssets = $('.asset-checkbox:checked').map(function() {
-                    return this.value;
-                }).get();
-                
-                if (selectedAssets.length === 0) {
-                    showAlert('warning', 'Please select at least one asset');
-                    return;
-                }
-                
-                var formData = $(this).serialize() + '&assetIds=' + selectedAssets.join('&assetIds=');
-                
-                $.ajax({
-                    url: '@Url.Action("ScheduleBulkMaintenance", "Maintenance")',
-                    type: 'POST',
-                    data: formData,
-                    success: function(response) {
-                        if (response.success) {
-                            $('#bulkMaintenanceModal').modal('hide');
-                            showAlert('success', 'Bulk maintenance scheduled successfully for ' + selectedAssets.length + ' assets');
-                            location.reload();
-                        } else {
-                            showAlert('danger', response.message || 'Error scheduling bulk maintenance');
-                        }
-                    },
-                    error: function() {
-                        showAlert('danger', 'Error scheduling bulk maintenance');
-                    }
-                });
-            });
-
-            // Set default scheduled date to 7 days from now
-            var nextWeek = new Date();
-            nextWeek.setDate(nextWeek.getDate() + 7);
-            $('#scheduledDate, #bulkScheduledDate').val(nextWeek.toISOString().split('T')[0]);
         });
-
-        function updateSelectedCount() {
-            var selectedCount = $('.asset-checkbox:checked').length;
-            var totalCount = $('.asset-checkbox').length;
-            
-            if (selectedCount === 0) {
-                $('#selectedAssetsCount').html('<i class="bi bi-info-circle"></i> No assets selected');
-                $('#selectedAssetsCount').removeClass('alert-info').addClass('alert-secondary');
-                $('#bulkScheduleBtn').prop('disabled', true);
-            } else {
-                $('#selectedAssetsCount').html('<i class="bi bi-check-circle"></i> ' + selectedCount + ' of ' + totalCount + ' assets selected');
-                $('#selectedAssetsCount').removeClass('alert-secondary').addClass('alert-info');
-                $('#bulkScheduleBtn').prop('disabled', false);
-            }
-        }
 
         function exportTable() {
             $('#maintenanceTable').DataTable().button(0).trigger();
@@ -542,14 +388,6 @@ else
         
         .dt-buttons {
             margin-bottom: 1rem;
-        }
-        
-        .asset-checkbox {
-            cursor: pointer;
-        }
-        
-        .schedule-maintenance-btn {
-            cursor: pointer;
         }
     </style>
 }

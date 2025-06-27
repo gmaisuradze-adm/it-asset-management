@@ -1,0 +1,19 @@
+@model HospitalAssetTracker.Models.NotificationViewModel
+
+@if (Model.ShowPendingRequests && Model.PendingRequestsCount > 0)
+{
+    <li class="nav-item">
+        <a class="nav-link text-warning" asp-controller="Requests" asp-action="Index" asp-route-Status="Pending">
+            <i class="bi bi-bell-fill"></i> New Requests <span class="badge bg-danger">@Model.PendingRequestsCount</span>
+        </a>
+    </li>
+}
+
+@if (Model.MyActiveRequestsCount > 0)
+{
+    <li class="nav-item">
+        <a class="nav-link text-info" asp-controller="Requests" asp-action="AssignedToMe">
+            <i class="bi bi-person-check-fill"></i> My Active <span class="badge bg-info">@Model.MyActiveRequestsCount</span>
+        </a>
+    </li>
+}

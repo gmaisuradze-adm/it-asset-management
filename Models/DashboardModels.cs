@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace HospitalAssetTracker.Models
 {
     public class InventoryDashboardData
@@ -79,6 +81,62 @@ namespace HospitalAssetTracker.Models
         public dynamic InventoryItem => new { Name = ItemName };
     }
 
+    // ViewModel for displaying request summaries
+    public class RequestSummaryViewModel
+    {
+        public int Id { get; set; }
+        public string RequestNumber { get; set; } = string.Empty; // Added
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty; // Added
+        public string RequestType { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public string RequesterName { get; set; } = string.Empty;
+        public string? AssignedToName { get; set; } // Added
+        public DateTime RequestDate { get; set; }
+        public DateTime? DueDate { get; set; }
+    }
+
+    // ViewModel for displaying recent procurements
+    public class RecentProcurementViewModel
+    {
+        public int Id { get; set; }
+        public string? Title { get; set; }
+        public string ItemName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime RequestDate { get; set; }
+        public string? RequestedBy { get; set; }
+        public string? Vendor { get; set; }
+        public decimal? Amount { get; set; }
+        public DateTime? Date { get; set; }
+        public string? SupplierName { get; set; }
+        public string? PurchaseOrderNumber { get; set; }
+    }
+
+    public class ProcurementDashboardData
+    {
+        public int TotalProcurements { get; set; }
+        public int PendingApprovals { get; set; }
+        public int InProgressProcurements { get; set; }
+        public int CompletedThisMonth { get; set; }
+        public decimal TotalSpendThisMonth { get; set; }
+
+        // Aliases for backward compatibility
+        [NotMapped]
+        public int PendingApproval => PendingApprovals;
+        [NotMapped]
+        public int InProgress => InProgressProcurements;
+        [NotMapped]
+        public decimal TotalSpendingThisMonth => TotalSpendThisMonth;
+        [NotMapped]
+        public Dictionary<string, int> ProcurementsByType => ProcurementsByCategory;
+
+        public List<RecentProcurementViewModel> RecentProcurements { get; set; } = new();
+        public Dictionary<string, int> ProcurementsByCategory { get; set; } = new();
+        public Dictionary<string, int> ProcurementsByStatus { get; set; } = new();
+        public Dictionary<string, decimal> TopVendorsBySpending { get; set; } = new();
+    }
+
     // ViewModel for displaying low stock alerts
     public class InventoryAlertViewModel
     {
@@ -125,227 +183,5 @@ namespace HospitalAssetTracker.Models
         public string ItemName { get; set; } = string.Empty;
         public string ItemCode { get; set; } = string.Empty;
         public int MovementCount { get; set; }
-    }
-
-    public class RequestDashboardData
-    {
-        public int TotalRequests { get; set; }
-        public int TotalActiveRequests { get; set; } // Alias for controller compatibility
-        public int PendingRequests { get; set; }
-        public int PendingApprovals { get; set; } // Alias for controller compatibility
-        public int InProgressRequests { get; set; }
-        public int CompletedRequests { get; set; }
-        public int OverdueRequests { get; set; }
-        public int CompletedToday { get; set; }
-        public int MyOpenRequests { get; set; } // For logged-in user
-        
-        public List<RequestSummaryViewModel> HighPriorityRequests { get; set; } = new(); // Changed to ViewModel
-        public List<RequestSummaryViewModel> RecentRequests { get; set; } = new(); // Changed to ViewModel
-        public List<RequestSummaryViewModel> MyAssignments { get; set; } = new(); // Changed to ViewModel
-        
-        // Chart data for request trends (e.g., new vs. completed over time)
-        public List<string> RequestTrendLabels { get; set; } = new(); // Renamed
-        public List<int> NewRequestsTrendData { get; set; } = new(); // Renamed and specified
-        public List<int> CompletedRequestsTrendData { get; set; } = new(); // Renamed and specified
-        
-        // Chart data for requests by type
-        public List<string> RequestTypeDistributionLabels { get; set; } = new(); // Renamed
-        public List<int> RequestTypeDistributionData { get; set; } = new(); // Renamed
-
-        // Chart data for requests by priority
-        public List<string> RequestPriorityDistributionLabels { get; set; } = new();
-        public List<int> RequestPriorityDistributionData { get; set; } = new();
-
-        // Chart data for requests by status
-        public List<string> RequestStatusDistributionLabels { get; set; } = new();
-        public List<int> RequestStatusDistributionData { get; set; } = new();
-
-        // Alias properties for view compatibility
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public List<string> TrendLabels 
-        { 
-            get => RequestTrendLabels; 
-            set => RequestTrendLabels = value; 
-        }
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public List<int> TrendData 
-        { 
-            get => NewRequestsTrendData; 
-            set => NewRequestsTrendData = value; 
-        }
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public List<string> TypeLabels 
-        { 
-            get => RequestTypeDistributionLabels; 
-            set => RequestTypeDistributionLabels = value; 
-        }
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public List<int> TypeData 
-        { 
-            get => RequestTypeDistributionData; 
-            set => RequestTypeDistributionData = value; 
-        }
-
-        // Legacy properties for compatibility
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public int OpenRequests 
-        { 
-            get => PendingRequests + InProgressRequests; 
-            set { /* Read-only computed property */ } 
-        }
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public Dictionary<string, int> RequestsByType { get; set; } = new();
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public Dictionary<string, int> RequestsByPriority { get; set; } = new();
-    }
-
-    // ViewModel for displaying request summaries in the dashboard
-    public class RequestSummaryViewModel
-    {
-        public int Id { get; set; }
-        public string RequestNumber { get; set; } = string.Empty;
-        public string Title { get; set; } = string.Empty;
-        public RequestStatus Status { get; set; }
-        public RequestPriority Priority { get; set; }
-        public DateTime RequestDate { get; set; }
-        public DateTime? DueDate { get; set; }
-        public string RequestedBy { get; set; } = string.Empty;
-        public string? AssignedTo { get; set; }
-        
-        // Additional string properties for service compatibility  
-        public string? RequestType { get; set; }
-        public string? RequesterName { get; set; }
-        public string? AssignedToName { get; set; }
-        
-        // Alias properties for views that expect User objects
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public RequestedByUser RequestedByUser => new RequestedByUser { FirstName = RequesterName?.Split(' ')[0] ?? "", LastName = RequesterName?.Split(' ').Skip(1).FirstOrDefault() ?? "" };
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public AssignedToUser? AssignedToUser => string.IsNullOrEmpty(AssignedToName) ? null : new AssignedToUser { FirstName = AssignedToName?.Split(' ')[0] ?? "", LastName = AssignedToName?.Split(' ').Skip(1).FirstOrDefault() ?? "" };
-        
-        // Additional properties expected by views
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public string Description => Title; // Use Title as Description
-    }
-
-    public class ProcurementDashboardData
-    {
-        public int TotalOpenProcurementRequests { get; set; } // Renamed from TotalProcurements for clarity
-        public int PendingApprovalCount { get; set; } // Renamed from PendingApproval
-        public int ApprovedAndProcessingCount { get; set; } // Renamed from InProgress
-        public int PartiallyReceivedCount { get; set; }
-        public int FullyReceivedCount { get; set; }
-        public int CancelledCount { get; set; }
-
-        public decimal TotalOpenOrdersValue { get; set; }
-        public decimal TotalSpendingThisMonth { get; set; }
-        public decimal AverageProcessingTimeDays { get; set; }
-
-        public Dictionary<string, int> ProcurementsByStatus { get; set; } = new(); // Replaces ProcurementsByType if type refers to status
-        public Dictionary<string, decimal> SpendingByVendorLast90Days { get; set; } = new(); // Renamed from TopVendors and specified period
-        public List<ProcurementSummaryViewModel> RecentProcurementRequests { get; set; } = new(); // Changed to ViewModel
-        public List<ProcurementSummaryViewModel> PendingMyApproval { get; set; } = new(); // For approvers
-
-        // Chart data for procurement trends (e.g., new orders over time, spending over time)
-        public List<string> ProcurementTrendLabels { get; set; } = new();
-        public List<int> NewProcurementOrdersTrend { get; set; } = new();
-        public List<decimal> ProcurementSpendingTrend { get; set; } = new();
-        
-        // Alias properties for backward compatibility
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public int TotalProcurements 
-        { 
-            get => TotalOpenProcurementRequests; 
-            set => TotalOpenProcurementRequests = value; 
-        }
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public int PendingApproval 
-        { 
-            get => PendingApprovalCount; 
-            set => PendingApprovalCount = value; 
-        }
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public int InProgress 
-        { 
-            get => ApprovedAndProcessingCount; 
-            set => ApprovedAndProcessingCount = value; 
-        }
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public int CompletedThisMonth 
-        { 
-            get => FullyReceivedCount; 
-            set => FullyReceivedCount = value; 
-        }
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public Dictionary<string, int> ProcurementsByType 
-        { 
-            get => ProcurementsByStatus; 
-            set => ProcurementsByStatus = value; 
-        }
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public Dictionary<string, decimal> TopVendors 
-        { 
-            get => SpendingByVendorLast90Days; 
-            set => SpendingByVendorLast90Days = value; 
-        }
-        
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public List<ProcurementSummaryViewModel> RecentProcurements 
-        { 
-            get => RecentProcurementRequests; 
-            set => RecentProcurementRequests = value; 
-        }
-    }
-
-    // ViewModel for displaying procurement summaries
-    public class ProcurementSummaryViewModel
-    {
-        public int Id { get; set; }
-        public string ProcurementNumber { get; set; } = string.Empty; // Assuming ProcurementRequest has a number
-        public string RequestTitle { get; set; } = string.Empty; // Or a summary of items
-        public ProcurementStatus Status { get; set; } // Assuming an enum ProcurementStatus exists
-        public DateTime RequestDate { get; set; }
-        public string RequestedBy { get; set; } = string.Empty;
-        public decimal EstimatedTotalCost { get; set; }
-        public string? AssignedVendor { get; set; }
-        
-        // Additional properties expected by services
-        public string RequestNumber { get; set; } = string.Empty;
-        public string Title { get; set; } = string.Empty;
-        public string VendorName { get; set; } = string.Empty;
-        public decimal TotalAmount { get; set; }
-        public string RequesterName { get; set; } = string.Empty;
-        
-        // Alias properties for backward compatibility
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-        public string StatusString 
-        { 
-            get => Status.ToString(); 
-            set => Status = Enum.Parse<ProcurementStatus>(value); 
-        }
-    }
-
-    // Helper classes for view compatibility
-    public class RequestedByUser
-    {
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-    }
-    
-    public class AssignedToUser
-    {
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
     }
 }

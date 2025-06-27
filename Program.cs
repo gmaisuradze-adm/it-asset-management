@@ -3,22 +3,31 @@ using Microsoft.EntityFrameworkCore;
 using HospitalAssetTracker.Data;
 using HospitalAssetTracker.Models;
 using HospitalAssetTracker.Services;
+using HospitalAssetTracker.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Kestrel to listen on all interfaces
-builder.WebHost.ConfigureKestrel(options =>
+// Configure enhanced logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
+// Add structured logging
+builder.Logging.AddJsonConsole(options =>
 {
-    options.ListenAnyIP(7001); // HTTP
-    options.ListenAnyIP(7002, listenOptions =>
+    options.IncludeScopes = true;
+    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss";
+    options.JsonWriterOptions = new System.Text.Json.JsonWriterOptions
     {
-        listenOptions.UseHttps();
-    }); // HTTPS
+        Indented = builder.Environment.IsDevelopment()
+    };
 });
 
-// Configure logging
-builder.Logging.AddConsole();
+// Set logging levels
 builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.AspNetCore.Mvc", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.AspNetCore.Routing", LogLevel.Warning);
 
 // Add services to the container
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? 
@@ -50,9 +59,6 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-// Add memory cache
-builder.Services.AddMemoryCache();
-
 // Add HttpContextAccessor for audit service
 builder.Services.AddHttpContextAccessor();
 
@@ -73,9 +79,21 @@ builder.Services.AddScoped<IAssetBusinessLogicService, AssetBusinessLogicService
 builder.Services.AddScoped<IIntegratedBusinessLogicService, IntegratedBusinessLogicService>();
 builder.Services.AddScoped<ICrossModuleIntegrationService, CrossModuleIntegrationService>();
 
-// Add Phase 2 services
+// Enhanced logging and error handling services
+builder.Services.AddScoped<IEnhancedLoggingService, EnhancedLoggingService>();
+
+// === UNIFIED BUSINESS LOGIC SERVICE ===
+// Central orchestrator for Georgian requirements implementation
 builder.Services.AddScoped<IUnifiedBusinessLogicService, UnifiedBusinessLogicService>();
-builder.Services.AddScoped<ICacheService, CacheService>();
+
+// === WORKFLOW ORCHESTRATION SERVICES ===
+// Using simple implementations for stability - advanced services available but disabled for now
+builder.Services.AddScoped<ISimpleWorkflowOrchestrationService, SimpleWorkflowOrchestrationService>();
+
+// Advanced services (temporarily disabled for stability)
+// builder.Services.AddScoped<IWorkflowOrchestrationService, WorkflowOrchestrationService>();
+// builder.Services.AddScoped<IAutomationRulesEngine, AutomationRulesEngine>();
+// builder.Services.AddScoped<IEventNotificationService, EventNotificationService>();
 
 var app = builder.Build();
 
@@ -83,14 +101,16 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+    // Skip HTTPS redirection in development for easier testing
 }
 else
 {
-    app.UseExceptionHandler("/Home/Error");
+    // Use global exception handling middleware in production
+    app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
     app.UseHsts();
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -113,7 +133,7 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         
-        await context.Database.MigrateAsync();
+        await context.Database.EnsureCreatedAsync();
         await SeedData.Initialize(services, userManager, roleManager);
     }
     catch (Exception ex)

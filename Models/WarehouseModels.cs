@@ -119,6 +119,16 @@ namespace HospitalAssetTracker.Models
         public string Reasoning { get; set; } = string.Empty;
         public int EstimatedDeliveryDays { get; set; }
         public decimal EstimatedCost { get; set; }
+        public SupplierInfo? RecommendedSupplier { get; set; }
+    }
+
+    public class SupplierInfo
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public decimal LastPrice { get; set; }
+        public double LeadTimeDays { get; set; }
+        public double ReliabilityScore { get; set; }
     }
 
     public enum ReplenishmentPriority
@@ -309,73 +319,34 @@ namespace HospitalAssetTracker.Models
 
     #region Automation Models
 
-    public class AutomationRule
-    {
-        public int Id { get; set; }
-        public string RuleName { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
-        public AutomationTrigger Trigger { get; set; }
-        public string ConditionsJson { get; set; } = string.Empty;
-        public string ActionsJson { get; set; } = string.Empty;
-        public DateTime CreatedDate { get; set; }
-        public string CreatedByUserId { get; set; } = string.Empty;
-        public virtual ApplicationUser CreatedByUser { get; set; } = null!;
-        public DateTime? LastTriggered { get; set; }
-        public int TriggerCount { get; set; }
-        
-        // Navigation properties
-        public virtual ICollection<AutomationLog> AutomationLogs { get; set; } = new List<AutomationLog>();
-        public virtual ICollection<AutomationLog> Logs 
-        { 
-            get => AutomationLogs; 
-            set => AutomationLogs = value; 
-        }
-    }
-
-    public enum AutomationTrigger
-    {
-        StockLevelReached,
-        ItemReceived,
-        QualityAssessmentCompleted,
-        RequestCreated,
-        ScheduledInterval,
-        ManualTrigger
-    }
+    // AutomationRule and AutomationTrigger moved to UnifiedBusinessLogicModels.cs to avoid conflicts
 
     public class AutomationLog
     {
         public int Id { get; set; }
         public int AutomationRuleId { get; set; }
-        public virtual AutomationRule AutomationRule { get; set; } = null!;
-        
-        // Additional properties for compatibility
-        public int RuleId 
-        { 
-            get => AutomationRuleId; 
-            set => AutomationRuleId = value; 
-        }
-        public virtual AutomationRule Rule 
-        { 
-            get => AutomationRule; 
-            set => AutomationRule = value; 
-        }
-        
-        public DateTime ExecutionDate { get; set; }
-        public DateTime Timestamp 
-        { 
-            get => ExecutionDate; 
-            set => ExecutionDate = value; 
-        }
-        
-        public string Action { get; set; } = string.Empty;
+        public DateTime ExecutedAt { get; set; }
         public bool Success { get; set; }
         public string? ErrorMessage { get; set; }
-        public string ExecutionDetailsJson { get; set; } = string.Empty;
-        
-        // User-related properties
         public string? ExecutedByUserId { get; set; }
         public virtual ApplicationUser? ExecutedByUser { get; set; }
+        public string Action { get; set; } = string.Empty;
+        public string ExecutionDetailsJson { get; set; } = string.Empty;
+        
+        // Compatibility properties
+        public DateTime Timestamp
+        {
+            get => ExecutedAt;
+            set => ExecutedAt = value;
+        }
+        
+        public int RuleId
+        {
+            get => AutomationRuleId;
+            set => AutomationRuleId = value;
+        }
+        
+        public virtual AutomationRule? Rule { get; set; }
     }
 
     #endregion
@@ -496,17 +467,6 @@ namespace HospitalAssetTracker.Models
             get => TargetValue; 
             set => TargetValue = value; 
         }
-    }
-
-    /// <summary>
-    /// Quick action for warehouse dashboard
-    /// </summary>
-    public class WarehouseQuickAction
-    {
-        public string Title { get; set; } = string.Empty;
-        public string Action { get; set; } = string.Empty;
-        public string Icon { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
     }
 
     #endregion

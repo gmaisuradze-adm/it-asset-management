@@ -1,1096 +1,338 @@
 @model ITRequest
 
+@inject UserManager<ApplicationUser> UserManager
+
 @{
-    ViewData["Title"] = "Request Details";
-    var canEdit = ViewBag.CanEdit as bool? ?? false;
-    var canAssign = ViewBag.CanAssign as bool? ?? false;
-    var canApprove = ViewBag.CanApprove as bool? ?? false;
+    ViewData["Title"] = $"Request Details - #{Model.RequestNumber}";
+    var currentUser = await UserManager.GetUserAsync(User);
+    IList<string> userRoles = new List<string>();
+    if (currentUser != null)
+    {
+        userRoles = await UserManager.GetRolesAsync(currentUser);
+    }
+
+    bool isManagerOrSupport = userRoles.Contains("Admin") || userRoles.Contains("IT Support") || userRoles.Contains("Asset Manager");
+    bool isSupport = userRoles.Contains("Admin") || userRoles.Contains("IT Support");
+    bool isOwner = currentUser != null && Model.AssignedToUserId == currentUser.Id;
+    bool isRequester = currentUser != null && Model.RequestedByUserId == currentUser.Id;
+
+    bool canTakeOwnership = isSupport && Model.AssignedToUserId == null && Model.Status == RequestStatus.Submitted;
+    bool canAssign = isManagerOrSupport && Model.Status != RequestStatus.Completed && Model.Status != RequestStatus.Cancelled;
+    bool canComplete = isOwner && Model.Status == RequestStatus.InProgress;
+    bool canEdit = (isRequester || isManagerOrSupport) && Model.Status != RequestStatus.Completed && Model.Status != RequestStatus.Cancelled;
+    bool canCancel = (isRequester || isSupport) && Model.Status != RequestStatus.Completed && Model.Status != RequestStatus.Cancelled;
+    bool canPlaceOnHold = isOwner && Model.Status == RequestStatus.InProgress;
+    bool canResume = isOwner && Model.Status == RequestStatus.OnHold;
+
+    // Pass flags to the partial view
+    ViewData["canTakeOwnership"] = canTakeOwnership;
+    ViewData["canAssign"] = canAssign;
+    ViewData["canComplete"] = canComplete;
+    ViewData["canCancel"] = canCancel;
+    ViewData["canPlaceOnHold"] = canPlaceOnHold;
+    ViewData["canResume"] = canResume;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>@ViewData["Title"] - #@Model.Id</h2>
     <div>
-        @if (canEdit && (Model.Status == RequestStatus.Open || Model.Status == RequestStatus.InProgress))
+        <h2 class="mb-0">@ViewData["Title"]</h2>
+        <small class="text-muted">Track and manage this IT request from submission to completion.</small>
+    </div>
+    <div class="btn-group">
+        @if (canEdit)
         {
-            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
-                <i class="fas fa-edit"></i> Edit
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil-square"></i> Edit
             </a>
         }
-        <a asp-action="Index" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to List
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to List
         </a>
     </div>
 </div>
 
 <div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Request Information</h5>
+    <div class="col-lg-8">
+        <!-- Request Details Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="bi bi-file-earmark-text"></i> Request Information</h5>
+                <span id="status-badge" class="badge @GetStatusClass(Model.Status)">
+                    @Model.Status.ToString()
+                </span>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <dl>
-                            <dt>Request Type</dt>
-                            <dd>
-                                <span class="badge bg-secondary">
-                                    @Model.RequestType.ToString().Replace("_", " ")
-                                </span>
+                        <dl class="row">
+                            <dt class="col-sm-5">Title:</dt>
+                            <dd class="col-sm-7">@Model.Title</dd>
+
+                            <dt class="col-sm-5">Priority:</dt>
+                            <dd class="col-sm-7">
+                                <span class="badge @GetPriorityClass(Model.Priority)">@Model.Priority</span>
                             </dd>
 
-                            <dt>Title</dt>
-                            <dd>@Model.Title</dd>
-
-                            <dt>Priority</dt>
-                            <dd>
-                                @{
-                                    var priorityClass = Model.Priority switch
-                                    {
-                                        RequestPriority.High => "bg-danger",
-                                        RequestPriority.Medium => "bg-warning text-dark",
-                                        RequestPriority.Low => "bg-success",
-                                        _ => "bg-secondary"
-                                    };
-                                }
-                                <span class="badge @priorityClass">@Model.Priority</span>
-                            </dd>
-
-                            <dt>Status</dt>
-                            <dd>
-                                @{
-                                    var statusClass = Model.Status switch
-                                    {
-                                        RequestStatus.Open => "bg-primary",
-                                        RequestStatus.InProgress => "bg-info",
-                                        RequestStatus.PendingApproval => "bg-warning text-dark",
-                                        RequestStatus.Approved => "bg-success",
-                                        RequestStatus.Completed => "bg-success",
-                                        RequestStatus.Cancelled => "bg-danger",
-                                        RequestStatus.Rejected => "bg-danger",
-                                        _ => "bg-secondary"
-                                    };
-                                }
-                                <span class="badge @statusClass">
-                                    @Model.Status.ToString().Replace("_", " ")
-                                </span>
-                            </dd>
+                            <dt class="col-sm-5">Request Type:</dt>
+                            <dd class="col-sm-7">@Model.RequestType.ToString().Replace("_", " ")</dd>
                         </dl>
                     </div>
                     <div class="col-md-6">
-                        <dl>
-                            <dt>Requested By</dt>
-                            <dd>
-                                @if (Model.RequestedByUser != null)
+                        <dl class="row">
+                            <dt class="col-sm-5">Requested By:</dt>
+                            <dd class="col-sm-7">
+                                @(Model.RequestedByUser?.FullName ?? "N/A")
+                                @if (!string.IsNullOrEmpty(Model.Department))
                                 {
-                                    @Model.RequestedByUser.FirstName @Model.RequestedByUser.LastName
-                                    <br><small class="text-muted">@Model.RequestedByUser.Email</small>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">Unknown</span>
+                                    <br><small class="text-muted">@Model.Department</small>
                                 }
                             </dd>
 
-                            <dt>Assigned To</dt>
-                            <dd>
-                                @if (Model.AssignedToUser != null)
-                                {
-                                    @Model.AssignedToUser.FirstName @Model.AssignedToUser.LastName
-                                    <br><small class="text-muted">@Model.AssignedToUser.Email</small>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">Not assigned</span>
-                                }
-                            </dd>
+                            <dt class="col-sm-5">Request Date:</dt>
+                            <dd class="col-sm-7">@Model.RequestDate.ToString("g")</dd>
 
-                            <dt>Created Date</dt>
-                            <dd>@Model.CreatedDate.ToString("MM/dd/yyyy HH:mm")</dd>
-
-                            <dt>Due Date</dt>
-                            <dd>
-                                @if (Model.DueDate.HasValue)
-                                {
-                                    var isOverdue = Model.DueDate.Value < DateTime.Now && Model.Status != RequestStatus.Completed;
-                                    <span class="@(isOverdue ? "text-danger fw-bold" : "")">
-                                        @Model.DueDate.Value.ToString("MM/dd/yyyy")
-                                    </span>
-                                    @if (isOverdue)
-                                    {
-                                        <i class="fas fa-exclamation-triangle text-danger ms-1" title="Overdue"></i>
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="text-muted">Not set</span>
-                                }
+                            <dt class="col-sm-5">Required By:</dt>
+                            <dd class="col-sm-7">
+                                @(Model.RequiredByDate.HasValue ? Model.RequiredByDate.Value.ToString("d") : "Not specified")
                             </dd>
                         </dl>
                     </div>
                 </div>
+                <hr>
+                <h6><i class="bi bi-card-text"></i> Description</h6>
+                <div class="p-3 bg-light rounded">
+                    @Html.Raw(Model.Description?.Replace("\n", "<br />") ?? "No description provided.")
+                </div>
 
-                @if (!string.IsNullOrEmpty(Model.Description))
+                @if (!string.IsNullOrEmpty(Model.BusinessJustification))
                 {
                     <hr>
-                    <dt>Description</dt>
-                    <dd class="mt-2">
-                        <div class="border rounded p-3 bg-light">
-                            @Html.Raw(Model.Description.Replace("\n", "<br>"))
-                        </div>
-                    </dd>
+                    <h6><i class="bi bi-briefcase"></i> Business Justification</h6>
+                    <div class="p-3 bg-light rounded">
+                         @Html.Raw(Model.BusinessJustification?.Replace("\n", "<br />"))
+                    </div>
                 }
             </div>
         </div>
-
-        @if (Model.RelatedAsset != null)
-        {
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Related Asset</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <dl>
-                                <dt>Asset Tag</dt>
-                                <dd>@Model.RelatedAsset.AssetTag</dd>
-
-                                <dt>Category</dt>
-                                <dd>@Model.RelatedAsset.Category</dd>
-
-                                <dt>Brand/Model</dt>
-                                <dd>@Model.RelatedAsset.Brand @Model.RelatedAsset.Model</dd>
-                            </dl>
-                        </div>
-                        <div class="col-md-6">
-                            <dl>
-                                <dt>Serial Number</dt>
-                                <dd>@Model.RelatedAsset.SerialNumber</dd>
-
-                                <dt>Status</dt>
-                                <dd>
-                                    <span class="badge bg-info">@Model.RelatedAsset.Status</span>
-                                </dd>
-
-                                <dt>Location</dt>
-                                <dd>
-                                    @if (Model.RelatedAsset.Location != null)
-                                    {
-                                        <text>@Model.RelatedAsset.Location.Building - @Model.RelatedAsset.Location.Floor - @Model.RelatedAsset.Location.Room</text>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">Not assigned</span>
-                                    }
-                                </dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
     </div>
 
-    <div class="col-md-4">
-        @if (canAssign && Model.Status == RequestStatus.Open)
-        {
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Assign Request</h5>
-                </div>
-                <div class="card-body">
-                    @if (Model.AssignedToUserId == null && (User.IsInRole("Admin") || User.IsInRole("IT Support")))
-                    {
-                        <div class="mb-3">
-                            <form asp-action="TakeOwnership" method="post" style="display: inline;">
-                                <input type="hidden" name="id" value="@Model.Id" />
-                                <button type="submit" class="btn btn-success btn-sm w-100 mb-2">
-                                    <i class="fas fa-hand-paper"></i> Take Ownership
-                                </button>
-                            </form>
-                            <hr>
-                            <small class="text-muted">Or assign to someone else:</small>
-                        </div>
-                    }
-                    
-                    <form asp-action="Assign" method="post">
-                        <input type="hidden" name="id" value="@Model.Id" />
-                        <div class="mb-3">
-                            <label for="assignedToUserId" class="form-label">Assign To</label>
-                            <select class="form-select" name="assignedToUserId" required>
-                                <option value="">Select a user...</option>
-                                @if (ViewBag.ITUsers != null)
-                                {
-                                    @foreach (var user in ViewBag.ITUsers as IEnumerable<SelectListItem>)
-                                    {
-                                        <option value="@user.Value">@user.Text</option>
-                                    }
-                                }
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-user-check"></i> Assign to Selected User
-                        </button>
-                    </form>
-                </div>
-            </div>
-        }
-
-        @if (canApprove && Model.Status == RequestStatus.PendingApproval)
-        {
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Approval Required</h5>
-                </div>
-                <div class="card-body">
-                    <form asp-action="Approve" method="post">
-                        <input type="hidden" name="id" value="@Model.Id" />
-                        <div class="mb-3">
-                            <label for="comments" class="form-label">Comments (optional)</label>
-                            <textarea class="form-control" name="comments" rows="3" placeholder="Enter approval comments..."></textarea>
-                        </div>
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-check"></i> Approve
-                            </button>
-                            <button type="button" class="btn btn-danger" onclick="rejectRequest(@Model.Id)">
-                                <i class="fas fa-times"></i> Reject
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        }
-
-        @if (Model.Status == RequestStatus.InProgress && (Model.AssignedToUserId == ViewBag.CurrentUserId || canApprove))
-        {
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Complete Request</h5>
-                </div>
-                <div class="card-body">
-                    <button type="button" class="btn btn-success" onclick="completeRequest(@Model.Id)">
-                        <i class="fas fa-check-circle"></i> Mark Complete
-                    </button>
-                </div>
-            </div>
-        }
-
-        @if (Model.AssignedToUserId != null && canAssign)
-        {
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Reassign Request</h5>
-                </div>
-                <div class="card-body">
-                    <form asp-action="Assign" method="post">
-                        <input type="hidden" name="id" value="@Model.Id" />
-                        <div class="mb-3">
-                            <label for="assignedToUserId" class="form-label">Reassign To</label>
-                            <select class="form-select" name="assignedToUserId" required>
-                                <option value="">Select a user...</option>
-                                @if (ViewBag.ITUsers != null)
-                                {
-                                    @foreach (var user in ViewBag.ITUsers as IEnumerable<SelectListItem>)
-                                    {
-                                        <option value="@user.Value" selected="@(user.Value == Model.AssignedToUserId)">@user.Text</option>
-                                    }
-                                }
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-warning w-100">
-                            <i class="fas fa-exchange-alt"></i> Reassign
-                        </button>
-                    </form>
-                </div>
-            </div>
-        }
-
-        @if (canAssign && (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager")))
-        {
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Advanced Management</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-2">
-                                <label class="form-label">Priority</label>
-                                <select id="prioritySelect" class="form-select form-select-sm">
-                                    <option value="Low">Low</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="High">High</option>
-                                    <option value="Critical">Critical</option>
-                                </select>
-                            </div>
-                            <button type="button" class="btn btn-outline-warning btn-sm w-100" onclick="changePriority(@Model.Id)">
-                                <i class="fas fa-exclamation-triangle"></i> Change Priority
-                            </button>
-                        </div>
-                        <div class="col-md-6">
-                            @if (Model.Status != RequestStatus.Completed && Model.Status != RequestStatus.Cancelled)
-                            {
-                                <button type="button" class="btn btn-outline-danger btn-sm w-100 mb-2" onclick="escalateRequest(@Model.Id)">
-                                    <i class="fas fa-level-up-alt"></i> Escalate
-                                </button>
-                                <button type="button" class="btn btn-outline-info btn-sm w-100" onclick="transferRequest(@Model.Id)">
-                                    <i class="fas fa-share"></i> Transfer
-                                </button>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            @* Integrated Business Process Management *@
-            @if (Model.RelatedAsset != null && (Model.RequestType == RequestType.MaintenanceService || Model.RequestType == RequestType.HardwareRepair))
-            {
-                <div class="card mb-3">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-cogs"></i> Integrated Repair Workflow
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i>
-                            <strong>Asset:</strong> @Model.RelatedAsset.AssetTag - @Model.RelatedAsset.Brand @Model.RelatedAsset.Model
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-12 mb-2">
-                                <button type="button" class="btn btn-success btn-sm w-100" onclick="startRepairWorkflow(@Model.Id)">
-                                    <i class="fas fa-play"></i> Start Repair Workflow
-                                </button>
-                            </div>
-                            
-                            @if (Model.Status == RequestStatus.InProgress)
-                            {
-                                <div class="col-6 mb-2">
-                                    <button type="button" class="btn btn-warning btn-sm w-100" onclick="generateProcurementForRepair(@Model.Id)">
-                                        <i class="fas fa-shopping-cart"></i> Order Parts
-                                    </button>
-                                </div>
-                                <div class="col-6 mb-2">
-                                    <button type="button" class="btn btn-info btn-sm w-100" onclick="findReplacementAsset(@Model.Id)">
-                                        <i class="fas fa-exchange-alt"></i> Find Replacement
-                                    </button>
-                                </div>
-                                <div class="col-12 mb-2">
-                                    <button type="button" class="btn btn-primary btn-sm w-100" onclick="completeRepair(@Model.Id)">
-                                        <i class="fas fa-check-circle"></i> Complete Repair
-                                    </button>
-                                </div>
-                            }
-                        </div>
-                        
-                        <div class="mt-3">
-                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="viewWorkflowStatus(@Model.Id)">
-                                <i class="fas fa-timeline"></i> View Workflow Status
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-
+    <div class="col-lg-4">
+        <!-- Management Card -->
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Request Timeline</h5>
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="bi bi-gear-wide-connected"></i> Management</h5>
             </div>
-            <div class="card-body">
-                <div class="timeline">
-                    <div class="timeline-item">
-                        <div class="timeline-marker bg-primary"></div>
-                        <div class="timeline-content">
-                            <h6 class="timeline-title">Request Created</h6>
-                            <p class="timeline-date">@Model.CreatedDate.ToString("MM/dd/yyyy HH:mm")</p>
-                        </div>
-                    </div>
-                    
-                    @if (Model.AssignedToUser != null)
-                    {
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-info"></div>
-                            <div class="timeline-content">
-                                <h6 class="timeline-title">Assigned to @Model.AssignedToUser.FirstName @Model.AssignedToUser.LastName</h6>
-                            </div>
-                        </div>
-                    }
-                    
-                    @if (Model.Status == RequestStatus.Completed)
-                    {
-                        <div class="timeline-item">
-                            <div class="timeline-marker bg-success"></div>
-                            <div class="timeline-content">
-                                <h6 class="timeline-title">Request Completed</h6>
-                            </div>
-                        </div>
-                    }
-                </div>
+            <div id="management-section" class="card-body">
+                @await Html.PartialAsync("_RequestManagementPartial", Model)
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script>
-        $(document).ready(function() {
-            // Set current priority as selected
-            $('#prioritySelect').val('@Model.Priority');
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+$(function () {
+    const token = $('input[name="__RequestVerificationToken"]').first().val();
+    const requestId = @Model.Id;
+
+    const showToast = (icon, title) => {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: title,
+            showConfirmButton: false,
+            timer: 3500,
+            timerProgressBar: true
         });
-        
-        function changePriority(requestId) {
-            const newPriority = document.getElementById('prioritySelect').value;
-            const currentPriority = '@Model.Priority';
-            
-            if (newPriority === currentPriority) {
-                Swal.fire('No Change', 'Priority is already set to the selected level.', 'info');
-                return;
+    };
+
+    const handleAjax = (options) => {
+        const button = options.button;
+        let originalHtml = '';
+        if (button) {
+            originalHtml = button.html();
+            button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...');
+        }
+
+        $.ajax({
+            url: options.url,
+            type: 'POST',
+            data: options.data,
+            headers: { "RequestVerificationToken": token },
+            success: function (response) {
+                if (response.success) {
+                    showToast('success', response.message);
+                    
+                    if (response.newStatus && response.statusClass) {
+                        const badge = $('#status-badge');
+                        badge.text(response.newStatus);
+                        badge.removeClass().addClass('badge ' + response.statusClass);
+                    }
+
+                    if (response.updatedHtml) {
+                        $('#management-section').html(response.updatedHtml);
+                        // Re-initialize any plugins if necessary
+                    }
+
+                } else {
+                    showToast('error', response.message || 'An unknown error occurred.');
+                }
+            },
+            error: function (jqXHR) {
+                const errorMsg = jqXHR.responseJSON?.message || 'An unexpected error occurred.';
+                showToast('error', errorMsg);
+            },
+            complete: function() {
+                if (button) {
+                    button.prop('disabled', false).html(originalHtml);
+                }
             }
-            
-            Swal.fire({
-                title: 'Change Priority',
-                input: 'textarea',
-                inputLabel: 'Reason for priority change',
-                inputPlaceholder: 'Explain why the priority needs to be changed...',
-                showCancelButton: true,
-                confirmButtonText: 'Change Priority',
-                confirmButtonColor: '#ffc107',
-                cancelButtonText: 'Cancel',
-                preConfirm: (reason) => {
-                    return $.ajax({
-                        url: '@Url.Action("ChangePriority", "Requests")',
-                        type: 'POST',
-                        data: {
-                            id: requestId,
-                            newPriority: newPriority,
-                            reason: reason,
-                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                        }
-                    });
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    if (result.value && result.value.success) {
-                        Swal.fire(
-                            'Priority Changed!',
-                            `Priority changed to ${newPriority}`,
-                            'success'
-                        ).then(() => {
-                            location.reload();
-                        });
-                    } else {
-                        Swal.fire('Error!', result.value?.message || 'Failed to change priority', 'error');
-                    }
-                }
-            });
-        }
+        });
+    };
 
-        function completeRequest(requestId) {
-            Swal.fire({
-                title: 'Complete Request',
-                input: 'textarea',
-                inputLabel: 'Completion Notes (optional)',
-                inputPlaceholder: 'Enter any completion notes...',
-                showCancelButton: true,
-                confirmButtonText: 'Mark Complete',
-                confirmButtonColor: '#28a745',
-                cancelButtonText: 'Cancel',
-                preConfirm: (notes) => {
-                    return $.ajax({
-                        url: '@Url.Action("Complete", "Requests")',
-                        type: 'POST',
-                        data: {
-                            id: requestId,
-                            completionNotes: notes,
-                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                        }
-                    });
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire(
-                        'Completed!',
-                        'The request has been marked as complete.',
-                        'success'
-                    ).then(() => {
-                        location.reload();
-                    });
-                }
-            }).catch((error) => {
-                Swal.fire(
-                    'Error!',
-                    'Failed to complete request: ' + (error.responseText || 'Unknown error'),
-                    'error'
-                );
-            });
-        }
-
-        function rejectRequest(requestId) {
-            Swal.fire({
-                title: 'Reject Request',
-                input: 'textarea',
-                inputLabel: 'Rejection Reason (required)',
-                inputPlaceholder: 'Please provide a reason for rejection...',
-                inputValidator: (value) => {
-                    if (!value) {
-                        return 'You need to provide a rejection reason!'
-                    }
-                },
-                showCancelButton: true,
-                confirmButtonText: 'Reject Request',
-                confirmButtonColor: '#dc3545',
-                cancelButtonText: 'Cancel',
-                preConfirm: (reason) => {
-                    return $.ajax({
-                        url: '@Url.Action("Reject", "Requests")',
-                        type: 'POST',
-                        data: {
-                            id: requestId,
-                            rejectionReason: reason,
-                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                        }
-                    });
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire(
-                        'Rejected!',
-                        'The request has been rejected.',
-                        'info'
-                    ).then(() => {
-                        location.reload();
-                    });
-                }
-            }).catch((error) => {
-                Swal.fire(
-                    'Error!',
-                    'Failed to reject request: ' + (error.responseText || 'Unknown error'),
-                    'error'
-                );
-            });
-        }
-
-        function escalateRequest(requestId) {
-            // First, get available users for escalation
-            $.ajax({
-                url: '@Url.Action("GetAvailableUsers", "Requests")',
-                type: 'GET',
-                data: { role: 'Admin,IT Support,Asset Manager' }
-            })
-            .then((users) => {
-                let options = '<option value="">Select user to escalate to...</option>';
-                users.forEach(user => {
-                    options += `<option value="${user.id}">${user.firstName} ${user.lastName} (${user.department || 'N/A'})</option>`;
+    // Use event delegation for dynamically loaded content
+    $('#management-section').on('click', '#take-ownership-btn', function () {
+        const btn = $(this);
+        Swal.fire({
+            title: 'Take Ownership?',
+            text: "Do you want to assign this request to yourself?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, take it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                handleAjax({
+                    url: `/Requests/TakeOwnership/${requestId}`,
+                    button: btn
                 });
-                
-                Swal.fire({
-                    title: 'Escalate Request',
-                    html: `
-                        <div class="mb-3">
-                            <label class="form-label">Escalate To</label>
-                            <select id="escalateTarget" class="form-select">
-                                ${options}
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Escalation Reason</label>
-                            <textarea id="escalationReason" class="form-control" rows="3" placeholder="Reason for escalation..." required></textarea>
-                        </div>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'Escalate',
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonText: 'Cancel',
-                    preConfirm: () => {
-                        const target = document.getElementById('escalateTarget').value;
-                        const reason = document.getElementById('escalationReason').value;
-                        
-                        if (!target) {
-                            Swal.showValidationMessage('Please select a user to escalate to');
-                            return false;
-                        }
-                        
-                        if (!reason) {
-                            Swal.showValidationMessage('Please provide an escalation reason');
-                            return false;
-                        }
-                        
-                        return $.ajax({
-                            url: '@Url.Action("Escalate", "Requests")',
-                            type: 'POST',
-                            data: {
-                                id: requestId,
-                                escalateToUserId: target,
-                                reason: reason,
-                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                            }
-                        });
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        if (result.value && result.value.success) {
-                            Swal.fire(
-                                'Escalated!',
-                                result.value.message,
-                                'success'
-                            ).then(() => {
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire('Error!', result.value?.message || 'Failed to escalate request', 'error');
-                        }
-                    }
-                });
-            })
-            .catch(() => {
-                Swal.fire('Error!', 'Failed to load escalation targets', 'error');
+            }
+        });
+    });
+
+    $('#management-section').on('submit', '#assign-form', function (e) {
+        e.preventDefault();
+        const userId = $('#assign-user-select').val();
+        if (!userId) {
+            showToast('warning', 'Please select a user to assign.');
+            return;
+        }
+        handleAjax({
+            url: `/Requests/Assign/${requestId}`,
+            data: $(this).serialize(),
+            button: $('#assign-submit-btn')
+        });
+    });
+
+    $('#management-section').on('click', '#complete-btn', async function () {
+        const btn = $(this);
+        const { value: comments } = await Swal.fire({
+            title: 'Complete Request',
+            input: 'textarea',
+            inputPlaceholder: 'Enter optional completion notes here...',
+            showCancelButton: true,
+            confirmButtonText: 'Complete',
+            confirmButtonColor: '#17a2b8'
+        });
+
+        if (comments !== undefined) {
+            handleAjax({
+                url: `/Requests/Complete/${requestId}`,
+                data: { comments: comments },
+                button: btn
             });
         }
+    });
 
-        function transferRequest(requestId) {
-            // Get available departments/users for transfer
-            $.get('@Url.Action("GetTransferTargets", "Requests")')
-                .then(data => {
-                    const options = data.map(item => `<option value="${item.id}">${item.name}</option>`).join('');
-                    
-                    Swal.fire({
-                        title: 'Transfer Request',
-                        html: `
-                            <div class="mb-3">
-                                <label class="form-label">Transfer To</label>
-                                <select id="transferTarget" class="form-select">
-                                    <option value="">Select target...</option>
-                                    ${options}
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Transfer Reason</label>
-                                <textarea id="transferReason" class="form-control" rows="3" placeholder="Reason for transfer..." required></textarea>
-                            </div>
-                        `,
-                        showCancelButton: true,
-                        confirmButtonText: 'Transfer',
-                        confirmButtonColor: '#17a2b8',
-                        cancelButtonText: 'Cancel',
-                        preConfirm: () => {
-                            const target = document.getElementById('transferTarget').value;
-                            const reason = document.getElementById('transferReason').value;
-                            
-                            if (!target) {
-                                Swal.showValidationMessage('Please select a transfer target');
-                                return false;
-                            }
-                            
-                            if (!reason) {
-                                Swal.showValidationMessage('Please provide a transfer reason');
-                                return false;
-                            }
-                            
-                            return $.ajax({
-                                url: '@Url.Action("Transfer", "Requests")',
-                                type: 'POST',
-                                data: {
-                                    id: requestId,
-                                    transferToUserId: target,
-                                    reason: reason,
-                                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                                }
-                            });
-                        }
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            if (result.value && result.value.success) {
-                                Swal.fire(
-                                    'Transferred!',
-                                    result.value.message,
-                                    'success'
-                                ).then(() => {
-                                    location.reload();
-                                });
-                            } else {
-                                Swal.fire('Error!', result.value?.message || 'Failed to transfer request', 'error');
-                            }
-                        }
-                    });
-                })
-                .catch(() => {
-                    Swal.fire('Error!', 'Failed to load transfer targets', 'error');
-                });
-        }
-
-        function startRepairWorkflow(requestId) {
-            Swal.fire({
-                title: 'Start Integrated Repair Workflow',
-                html: 'This will:<br>' +
-                      '• Update asset status to "Under Maintenance"<br>' +
-                      '• Check if parts are needed<br>' +
-                      '• Generate procurement requests if required<br>' +
-                      '• Find temporary replacement if available<br>' +
-                      '• Create workflow tracking',
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonText: 'Start Workflow',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: '/CrossModule/StartRepairWorkflow',
-                        type: 'POST',
-                        data: {
-                            requestId: requestId,
-                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                let message = 'Repair workflow started successfully!<br><br>';
-                                if (response.workflowSteps && response.workflowSteps.length > 0) {
-                                    message += '<strong>Steps completed:</strong><br>';
-                                    response.workflowSteps.forEach(step => {
-                                        message += '• ' + step + '<br>';
-                                    });
-                                }
-                                if (response.requiresProcurement) {
-                                    message += '<br><strong>Procurement requests generated:</strong> ' + response.procurementIds.length;
-                                }
-                                if (response.temporaryAssetId) {
-                                    message += '<br><strong>Temporary replacement asset assigned:</strong> #' + response.temporaryAssetId;
-                                }
-                                
-                                Swal.fire({
-                                    title: 'Workflow Started!',
-                                    html: message,
-                                    icon: 'success'
-                                }).then(() => {
-                                    location.reload();
-                                });
-                            } else {
-                                Swal.fire('Error!', response.message || 'Failed to start repair workflow', 'error');
-                            }
-                        },
-                        error: function(xhr) {
-                            Swal.fire('Error!', 'Failed to start repair workflow: ' + (xhr.responseText || 'Unknown error'), 'error');
-                        }
-                    });
+    $('#management-section').on('click', '#cancel-btn', async function () {
+        const btn = $(this);
+        const { value: comments } = await Swal.fire({
+            title: 'Cancel Request',
+            input: 'textarea',
+            inputLabel: 'Reason for Cancellation',
+            inputPlaceholder: 'You must provide a reason for cancellation...',
+            showCancelButton: true,
+            confirmButtonText: 'Confirm Cancellation',
+            confirmButtonColor: '#dc3545',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'You need to provide a reason for cancellation!'
                 }
+            }
+        });
+
+        if (comments) {
+            handleAjax({
+                url: `/Requests/Cancel/${requestId}`,
+                data: { comments: comments },
+                button: btn
             });
         }
+    });
 
-        function generateProcurementForRepair(requestId) {
-            Swal.fire({
-                title: 'Generate Procurement for Repair',
-                html: '<div class="text-left">' +
-                      '<label>Part Name:</label>' +
-                      '<input id="partName" class="swal2-input" placeholder="e.g., Printer Maintenance Kit">' +
-                      '<label>Part Number:</label>' +
-                      '<input id="partNumber" class="swal2-input" placeholder="e.g., MK-HP-123">' +
-                      '<label>Quantity:</label>' +
-                      '<input id="quantity" type="number" class="swal2-input" value="1" min="1">' +
-                      '<label>Estimated Price ($):</label>' +
-                      '<input id="estimatedPrice" type="number" class="swal2-input" placeholder="150.00" step="0.01">' +
-                      '<label>Vendor:</label>' +
-                      '<input id="vendor" class="swal2-input" placeholder="Office Supplies Inc">' +
-                      '<label>Description:</label>' +
-                      '<textarea id="description" class="swal2-textarea" placeholder="Description of the part needed"></textarea>' +
-                      '</div>',
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'Generate Procurement',
-                cancelButtonText: 'Cancel',
-                preConfirm: () => {
-                    const partName = document.getElementById('partName').value;
-                    const partNumber = document.getElementById('partNumber').value;
-                    const quantity = parseInt(document.getElementById('quantity').value);
-                    const estimatedPrice = parseFloat(document.getElementById('estimatedPrice').value);
-                    const vendor = document.getElementById('vendor').value;
-                    const description = document.getElementById('description').value;
+    $('#management-section').on('click', '#onhold-btn', async function () {
+        const btn = $(this);
+        const { value: comments } = await Swal.fire({
+            title: 'Place Request On Hold',
+            input: 'textarea',
+            inputPlaceholder: 'Enter optional comments for placing the request on hold...',
+            showCancelButton: true,
+            confirmButtonText: 'Place on Hold',
+            confirmButtonColor: '#ffc107'
+        });
 
-                    if (!partName || !quantity || !estimatedPrice) {
-                        Swal.showValidationMessage('Please fill in required fields');
-                        return false;
-                    }
-
-                    return {
-                        partName: partName,
-                        partNumber: partNumber,
-                        quantity: quantity,
-                        estimatedPrice: estimatedPrice,
-                        vendor: vendor,
-                        description: description,
-                        priority: 'Medium'
-                    };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const partRequest = result.value;
-                    
-                    $.ajax({
-                        url: '/CrossModule/GenerateProcurementFromRepair',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({
-                            requestId: requestId,
-                            partRequests: [partRequest],
-                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                        }),
-                        success: function(response) {
-                            if (response.success) {
-                                Swal.fire({
-                                    title: 'Procurement Generated!',
-                                    html: `Procurement requests created: ${response.generatedIds.length}<br>` +
-                                          `Total estimated cost: $${response.totalCost.toFixed(2)}<br>` +
-                                          `Items: ${response.items.join(', ')}`,
-                                    icon: 'success'
-                                });
-                            } else {
-                                Swal.fire('Error!', response.message || 'Failed to generate procurement', 'error');
-                            }
-                        },
-                        error: function(xhr) {
-                            Swal.fire('Error!', 'Failed to generate procurement: ' + (xhr.responseText || 'Unknown error'), 'error');
-                        }
-                    });
-                }
+        if (comments !== undefined) {
+            handleAjax({
+                url: `/Requests/PlaceOnHold/${requestId}`,
+                data: { comments: comments },
+                button: btn
             });
         }
+    });
 
-        function findReplacementAsset(requestId) {
-            Swal.fire({
-                title: 'Finding Replacement Asset',
-                text: 'Searching for available replacement assets...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
+    $('#management-section').on('click', '#resume-btn', async function () {
+        const btn = $(this);
+        const { value: comments } = await Swal.fire({
+            title: 'Resume Request',
+            input: 'textarea',
+            inputPlaceholder: 'Enter optional comments for resuming the request...',
+            showCancelButton: true,
+            confirmButtonText: 'Resume',
+            confirmButtonColor: '#17a2b8'
+        });
 
-            // Simulate finding replacement assets
-            setTimeout(() => {
-                Swal.fire({
-                    title: 'Available Replacement Assets',
-                    html: '<select id="replacementAsset" class="swal2-select">' +
-                          '<option value="">Select replacement asset...</option>' +
-                          '<option value="1">ASSET001 - HP LaserJet Pro (Available in Storage)</option>' +
-                          '<option value="2">ASSET002 - Canon Printer (Available in IT Room)</option>' +
-                          '<option value="3">ASSET003 - Brother Printer (Available in Inventory)</option>' +
-                          '</select>',
-                    showCancelButton: true,
-                    confirmButtonText: 'Use Replacement',
-                    cancelButtonText: 'Cancel',
-                    preConfirm: () => {
-                        const selectedAsset = document.getElementById('replacementAsset').value;
-                        if (!selectedAsset) {
-                            Swal.showValidationMessage('Please select a replacement asset');
-                            return false;
-                        }
-                        return selectedAsset;
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const replacementAssetId = result.value;
-                        
-                        $.ajax({
-                            url: '/CrossModule/ReplaceAssetTemporarily',
-                            type: 'POST',
-                            data: {
-                                requestId: requestId,
-                                replacementAssetId: replacementAssetId,
-                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                            },
-                            success: function(response) {
-                                if (response.success) {
-                                    Swal.fire({
-                                        title: 'Asset Replaced!',
-                                        html: `Original asset moved to maintenance<br>` +
-                                              `Replacement asset ${response.replacementAssetId} deployed<br>` +
-                                              `Location: ${response.locationId}`,
-                                        icon: 'success'
-                                    });
-                                } else {
-                                    Swal.fire('Error!', response.message || 'Failed to replace asset', 'error');
-                                }
-                            },
-                            error: function(xhr) {
-                                Swal.fire('Error!', 'Failed to replace asset: ' + (xhr.responseText || 'Unknown error'), 'error');
-                            }
-                        });
-                    }
-                });
-            }, 1000);
-        }
-
-        function completeRepair(requestId) {
-            Swal.fire({
-                title: 'Complete Repair',
-                html: '<div class="text-left">' +
-                      '<label>Completion Notes:</label>' +
-                      '<textarea id="completionNotes" class="swal2-textarea" placeholder="Describe what was done to complete the repair"></textarea>' +
-                      '<label>Final Location (optional):</label>' +
-                      '<select id="finalLocation" class="swal2-select">' +
-                      '<option value="">Keep current location</option>' +
-                      '<option value="1">Building A - Floor 1 - Room 101</option>' +
-                      '<option value="2">Building A - Floor 2 - Room 201</option>' +
-                      '<option value="3">Building B - Floor 1 - Reception</option>' +
-                      '</select>' +
-                      '</div>',
-                showCancelButton: true,
-                confirmButtonText: 'Complete Repair',
-                cancelButtonText: 'Cancel',
-                preConfirm: () => {
-                    const completionNotes = document.getElementById('completionNotes').value;
-                    const finalLocationId = document.getElementById('finalLocation').value;
-                    
-                    if (!completionNotes.trim()) {
-                        Swal.showValidationMessage('Please provide completion notes');
-                        return false;
-                    }
-                    
-                    return {
-                        completionNotes: completionNotes,
-                        finalLocationId: finalLocationId || null
-                    };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const data = result.value;
-                    
-                    $.ajax({
-                        url: '/CrossModule/CompleteRepair',
-                        type: 'POST',
-                        data: {
-                            requestId: requestId,
-                            completionNotes: data.completionNotes,
-                            finalLocationId: data.finalLocationId,
-                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                Swal.fire({
-                                    title: 'Repair Completed!',
-                                    html: `Asset ${response.assetId} status updated to ${response.newStatus}<br>` +
-                                          (response.finalLocationId ? `Moved to location ${response.finalLocationId}` : 'Kept in current location'),
-                                    icon: 'success'
-                                }).then(() => {
-                                    location.reload();
-                                });
-                            } else {
-                                Swal.fire('Error!', response.message || 'Failed to complete repair', 'error');
-                            }
-                        },
-                        error: function(xhr) {
-                            Swal.fire('Error!', 'Failed to complete repair: ' + (xhr.responseText || 'Unknown error'), 'error');
-                        }
-                    });
-                }
+        if (comments !== undefined) {
+            handleAjax({
+                url: `/Requests/Resume/${requestId}`,
+                data: { comments: comments },
+                button: btn
             });
         }
-
-        function viewWorkflowStatus(requestId) {
-            $.ajax({
-                url: '/CrossModule/GetWorkflowStatus/' + requestId,
-                type: 'GET',
-                success: function(response) {
-                    if (response.success) {
-                        let statusHtml = '<div class="text-left">' +
-                                        `<strong>Request Status:</strong> ${response.status}<br><br>`;
-                        
-                        if (response.workflowSteps && response.workflowSteps.length > 0) {
-                            statusHtml += '<strong>Workflow Steps:</strong><br>';
-                            response.workflowSteps.forEach(step => {
-                                statusHtml += `• ${step.stepName}: ${step.status}<br>`;
-                            });
-                            statusHtml += '<br>';
-                        }
-                        
-                        if (response.pendingActions && response.pendingActions.length > 0) {
-                            statusHtml += '<strong>Pending Actions:</strong><br>';
-                            response.pendingActions.forEach(action => {
-                                statusHtml += `• ${action}<br>`;
-                            });
-                            statusHtml += '<br>';
-                        }
-                        
-                        if (response.relatedProcurementIds && response.relatedProcurementIds.length > 0) {
-                            statusHtml += `<strong>Related Procurement IDs:</strong> ${response.relatedProcurementIds.join(', ')}<br>`;
-                        }
-                        
-                        if (response.temporaryAssetId) {
-                            statusHtml += `<strong>Temporary Asset:</strong> #${response.temporaryAssetId}<br>`;
-                        }
-                        
-                        statusHtml += '</div>';
-                        
-                        Swal.fire({
-                            title: 'Workflow Status',
-                            html: statusHtml,
-                            icon: 'info',
-                            width: 600
-                        });
-                    } else {
-                        Swal.fire('Error!', response.message || 'Failed to get workflow status', 'error');
-                    }
-                },
-                error: function(xhr) {
-                    Swal.fire('Error!', 'Failed to get workflow status: ' + (xhr.responseText || 'Unknown error'), 'error');
-                }
-            });
-        }
-    </script>
+    });
+});
+</script>
 }
 
-@section Styles {
-    <style>
-        .timeline {
-            position: relative;
-            padding-left: 30px;
-        }
+@functions {
+    private string GetStatusClass(RequestStatus status) => status switch
+    {
+        RequestStatus.Submitted => "bg-primary",
+        RequestStatus.InProgress => "bg-warning text-dark", // Standardized
+        RequestStatus.OnHold => "bg-secondary",         // Standardized
+        RequestStatus.Completed => "bg-success",
+        RequestStatus.Cancelled => "bg-danger",
+        _ => "bg-light text-dark"
+    };
 
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 15px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #dee2e6;
-        }
-
-        .timeline-item {
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        .timeline-marker {
-            position: absolute;
-            left: -23px;
-            top: 5px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            border: 3px solid #fff;
-            box-shadow: 0 0 0 2px #dee2e6;
-        }
-
-        .timeline-content {
-            background: #f8f9fa;
-            padding: 10px 15px;
-            border-radius: 5px;
-            border-left: 3px solid #007bff;
-        }
-
-        .timeline-title {
-            margin: 0 0 5px 0;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .timeline-date {
-            margin: 0;
-            font-size: 12px;
-            color: #6c757d;
-        }
-    </style>
+    private string GetPriorityClass(RequestPriority priority) => priority switch
+    {
+        RequestPriority.Critical => "bg-danger",
+        RequestPriority.High => "bg-warning text-dark",
+        RequestPriority.Medium => "bg-info text-dark",
+        RequestPriority.Low => "bg-success",
+        _ => "bg-secondary"
+    };
 }

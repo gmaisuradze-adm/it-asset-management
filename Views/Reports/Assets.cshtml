@@ -104,14 +104,11 @@
                                                 case AssetStatus.InUse:
                                                     <span class="badge bg-primary">In Use</span>
                                                     break;
-                                                case AssetStatus.Maintenance:
-                                                    <span class="badge bg-warning">Maintenance</span>
+                                                case AssetStatus.UnderMaintenance:
+                                                    <span class="badge bg-warning">Under Maintenance</span>
                                                     break;
                                                 case AssetStatus.Decommissioned:
                                                     <span class="badge bg-secondary">Decommissioned</span>
-                                                    break;
-                                                case AssetStatus.WriteOff:
-                                                    <span class="badge bg-danger">Written Off</span>
                                                     break;
                                                 default:
                                                     <span class="badge bg-light text-dark">@asset.Status</span>

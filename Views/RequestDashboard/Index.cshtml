@@ -218,7 +218,7 @@
                                             <p class="mb-1 small text-muted">@request.Description</p>
                                             <small class="text-muted">@request.CreatedDate.ToString("MMM dd, yyyy HH:mm")</small>
                                         </div>
-                                        <span class="badge bg-@(request.Status == RequestStatus.Open ? "warning" : 
+                                        <span class="badge bg-@(request.Status == RequestStatus.Submitted ? "warning" : 
                                                                 request.Status == RequestStatus.InProgress ? "info" : 
                                                                 request.Status == RequestStatus.Completed ? "success" : "secondary") ms-2">
                                             @request.Status

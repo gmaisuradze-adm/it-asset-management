@@ -23,7 +23,7 @@ namespace HospitalAssetTracker.Services
         /// <summary>
         /// Analyzes asset performance metrics
         /// </summary>
-        Task<AssetPerformanceAnalysisResult> AnalyzeAssetPerformanceAsync(int assetId, string analystUserId);
+        AssetPerformanceAnalysisResult AnalyzeAssetPerformance(int assetId, string analystUserId);
         
         /// <summary>
         /// Gets asset optimization opportunities
@@ -38,27 +38,27 @@ namespace HospitalAssetTracker.Services
         /// <summary>
         /// Acknowledges an asset alert
         /// </summary>
-        Task<bool> AcknowledgeAlertAsync(int alertId, string userId);
+        bool AcknowledgeAlert(int alertId, string userId);
         
         /// <summary>
         /// Exports dashboard data
         /// </summary>
-        Task<byte[]> ExportDashboardDataAsync(string format, string userId);
+        byte[] ExportDashboardData(string format, string userId);
         
         /// <summary>
         /// Exports analytics data
         /// </summary>
-        Task<byte[]> ExportAnalyticsDataAsync(string format, string userId);
+        byte[] ExportAnalyticsData(string format, string userId);
         
         /// <summary>
         /// Gets asset performance report
         /// </summary>
-        Task<AssetPerformanceReportResult> GetAssetPerformanceReportAsync(string userId);
+        AssetPerformanceReportResult GetAssetPerformanceReport(string userId);
         
         /// <summary>
         /// Exports performance data
         /// </summary>
-        Task<byte[]> ExportPerformanceDataAsync(string format, string userId);
+        byte[] ExportPerformanceData(string format, string userId);
         
         // === INTELLIGENT ASSET LIFECYCLE MANAGEMENT ===
         
@@ -97,77 +97,77 @@ namespace HospitalAssetTracker.Services
         /// <summary>
         /// Handles asset service requests and routing to appropriate modules
         /// </summary>
-        Task<AssetServiceRequestResult> ProcessAssetServiceRequestAsync(int requestId, string processorUserId);
+        AssetServiceRequestResult ProcessAssetServiceRequest(int requestId, string processorUserId);
         
         /// <summary>
         /// Synchronizes asset data across all integrated modules
         /// </summary>
-        Task<AssetDataSynchronizationResult> SynchronizeAssetDataAcrossModulesAsync(int assetId, string synchronizedByUserId);
+        CrossModuleAssetSyncResult SynchronizeAssetDataAcrossModules(int assetId, string synchronizedByUserId);
         
         // === PREDICTIVE ANALYTICS & INSIGHTS ===
         
         /// <summary>
         /// Analyzes asset health using IoT data and usage patterns
         /// </summary>
-        Task<AssetHealthAnalysisResult> AnalyzeAssetHealthAsync(int assetId, string analystUserId);
+        AssetHealthAnalysisResult AnalyzeAssetHealth(int assetId, string analystUserId);
         
         /// <summary>
         /// Provides cost-benefit analysis for asset investments
         /// </summary>
-        Task<AssetCostBenefitAnalysisResult> PerformAssetCostBenefitAnalysisAsync(AssetInvestmentRequest request, string analystUserId);
+        AssetCostBenefitAnalysisResult PerformAssetCostBenefitAnalysis(AssetInvestmentRequest request, string analystUserId);
         
         /// <summary>
         /// Generates asset ROI and performance metrics
         /// </summary>
-        Task<AssetPerformanceMetricsResult> GenerateAssetPerformanceMetricsAsync(DateTime fromDate, DateTime toDate, string reportGeneratorUserId);
+        AssetPerformanceMetricsResult GenerateAssetPerformanceMetrics(DateTime fromDate, DateTime toDate, string reportGeneratorUserId);
         
         /// <summary>
         /// Predicts asset failure risks using advanced algorithms
         /// </summary>
-        Task<AssetFailureRiskAssessmentResult> AssessAssetFailureRisksAsync(List<int> assetIds, string assessorUserId);
+        AssetFailureRiskAssessmentResult AssessAssetFailureRisks(List<int> assetIds, string assessorUserId);
         
         // === STRATEGIC ASSET MANAGEMENT ===
         
         /// <summary>
         /// Provides strategic asset portfolio optimization recommendations
         /// </summary>
-        Task<AssetPortfolioOptimizationResult> OptimizeAssetPortfolioAsync(string optimizerUserId);
+        AssetPortfolioOptimizationResult OptimizeAssetPortfolio(string optimizerUserId);
         
         /// <summary>
         /// Analyzes asset compliance and regulatory requirements
         /// </summary>
-        Task<AssetComplianceAnalysisResult> AnalyzeAssetComplianceAsync(string complianceOfficerUserId);
+        AssetComplianceAnalysisResult AnalyzeAssetCompliance(string complianceOfficerUserId);
         
         /// <summary>
         /// Generates intelligent asset budgeting and planning recommendations
         /// </summary>
-        Task<AssetBudgetPlanningResult> GenerateAssetBudgetPlanningAsync(int fiscalYear, string plannerUserId);
+        AssetBudgetPlanningResult GenerateAssetBudgetPlanning(int fiscalYear, string plannerUserId);
         
         /// <summary>
         /// Provides asset security and risk management analysis
         /// </summary>
-        Task<AssetSecurityRiskResult> AnalyzeAssetSecurityRisksAsync(string securityOfficerUserId);
+        AssetSecurityRiskAnalysisResult AnalyzeAssetSecurityRisks(string securityOfficerUserId);
         
         // === AUTOMATION & WORKFLOW ORCHESTRATION ===
         
         /// <summary>
         /// Automates routine asset management tasks
         /// </summary>
-        Task<AssetAutomationResult> ExecuteAutomatedAssetManagementTasksAsync(string taskExecutorUserId);
+        AutomatedAssetManagementTaskResult ExecuteAutomatedAssetManagementTasks(string taskExecutorUserId);
         
         /// <summary>
         /// Orchestrates complex multi-module asset workflows
         /// </summary>
-        Task<AssetWorkflowOrchestrationResult> OrchestateComplexAssetWorkflowAsync(AssetWorkflowRequest request, string orchestratorUserId);
+        Task<AssetWorkflowOrchestrationResult> OrchestateComplexAssetWorkflow(AssetWorkflowRequest request, string orchestratorUserId);
         
         /// <summary>
         /// Provides intelligent asset alerting and notification system
         /// </summary>
-        Task<AssetAlertingResult> ProcessIntelligentAssetAlertingAsync(string alertProcessorUserId);
+        AssetAlertingResult ProcessIntelligentAssetAlerting(string alertProcessorUserId);
         
         /// <summary>
         /// Generates comprehensive asset lifecycle reports with cross-module data
         /// </summary>
-        Task<AssetLifecycleReportResult> GenerateComprehensiveAssetLifecycleReportAsync(AssetReportingCriteria criteria, string reportGeneratorUserId);
+        AssetLifecycleReportResult GenerateComprehensiveAssetLifecycleReport(AssetReportingCriteria criteria, string reportGeneratorUserId);
     }
 }

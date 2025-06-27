@@ -1,0 +1,718 @@
+@{
+    ViewData["Title"] = "Advanced Reports";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0 text-primary">
+                    <i class="fas fa-file-chart-line me-2"></i>Advanced Reports
+                </h1>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-primary" onclick="generateQuickReport()">
+                        <i class="fas fa-bolt me-1"></i>Quick Report
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="scheduleReport()">
+                        <i class="fas fa-calendar-alt me-1"></i>Schedule Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Generation Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 report-card" onclick="selectReportType('performance')">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-chart-line fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title">Performance Report</h5>
+                    <p class="card-text text-muted">Analyze service quality metrics and performance indicators</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 report-card" onclick="selectReportType('sla')">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-clock fa-3x text-success"></i>
+                    </div>
+                    <h5 class="card-title">SLA Compliance</h5>
+                    <p class="card-text text-muted">Track service level agreement compliance and trends</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 report-card" onclick="selectReportType('forecast')">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-crystal-ball fa-3x text-warning"></i>
+                    </div>
+                    <h5 class="card-title">Demand Forecast</h5>
+                    <p class="card-text text-muted">Predict future request volumes and resource needs</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 report-card" onclick="selectReportType('resource')">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-users fa-3x text-info"></i>
+                    </div>
+                    <h5 class="card-title">Resource Optimization</h5>
+                    <p class="card-text text-muted">Optimize resource allocation and workload distribution</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Configuration Panel -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog me-2"></i>Report Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="reportForm">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="reportType" class="form-label">Report Type</label>
+                                <select class="form-select" id="reportType" name="reportType" required>
+                                    <option value="">Select Report Type</option>
+                                    <option value="performance">Performance Report</option>
+                                    <option value="sla">SLA Compliance Report</option>
+                                    <option value="forecast">Demand Forecast Report</option>
+                                    <option value="resource">Resource Optimization Report</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="timeRange" class="form-label">Time Range</label>
+                                <select class="form-select" id="timeRange" name="timeRange" required>
+                                    <option value="">Select Time Range</option>
+                                    <option value="7">Last 7 Days</option>
+                                    <option value="30">Last 30 Days</option>
+                                    <option value="90">Last 90 Days</option>
+                                    <option value="180">Last 6 Months</option>
+                                    <option value="365">Last Year</option>
+                                    <option value="custom">Custom Range</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="format" class="form-label">Export Format</label>
+                                <select class="form-select" id="format" name="format">
+                                    <option value="json">JSON</option>
+                                    <option value="csv">CSV</option>
+                                    <option value="pdf">PDF</option>
+                                    <option value="excel">Excel</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Custom Date Range (hidden by default) -->
+                        <div class="row g-3 mt-3" id="customDateRange" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="startDate" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="startDate" name="startDate">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="endDate" class="form-label">End Date</label>
+                                <input type="date" class="form-control" id="endDate" name="endDate">
+                            </div>
+                        </div>
+                        
+                        <!-- Advanced Filters -->
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-4">
+                                <label for="departments" class="form-label">Departments</label>
+                                <select class="form-select" id="departments" name="departments" multiple>
+                                    <option value="IT">IT Department</option>
+                                    <option value="HR">Human Resources</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="Operations">Operations</option>
+                                    <option value="Marketing">Marketing</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="priorities" class="form-label">Priorities</label>
+                                <select class="form-select" id="priorities" name="priorities" multiple>
+                                    <option value="Critical">Critical</option>
+                                    <option value="High">High</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="statuses" class="form-label">Statuses</label>
+                                <select class="form-select" id="statuses" name="statuses" multiple>
+                                    <option value="Open">Open</option>
+                                    <option value="InProgress">In Progress</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="resetForm()">
+                                        <i class="fas fa-undo me-1"></i>Reset
+                                    </button>
+                                    <div>
+                                        <button type="button" class="btn btn-outline-primary me-2" onclick="previewReport()">
+                                            <i class="fas fa-eye me-1"></i>Preview
+                                        </button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-download me-1"></i>Generate Report
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Preview Modal -->
+    <div class="modal fade" id="reportPreviewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-eye me-2"></i>Report Preview
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="reportPreviewContent">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading preview...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Generating report preview...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="downloadFromPreview()">
+                        <i class="fas fa-download me-1"></i>Download Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reports -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Report Type</th>
+                                    <th>Generated Date</th>
+                                    <th>Time Range</th>
+                                    <th>Format</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentReportsTable">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">No recent reports available</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentReportData = null;
+        let selectedReportType = null;
+
+        $(document).ready(function() {
+            initializeReports();
+            setupEventHandlers();
+        });
+
+        function initializeReports() {
+            // Set default date range
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+            
+            $('#endDate').val(today.toISOString().split('T')[0]);
+            $('#startDate').val(thirtyDaysAgo.toISOString().split('T')[0]);
+            
+            // Load recent reports
+            loadRecentReports();
+        }
+
+        function setupEventHandlers() {
+            // Time range change handler
+            $('#timeRange').change(function() {
+                if ($(this).val() === 'custom') {
+                    $('#customDateRange').show();
+                } else {
+                    $('#customDateRange').hide();
+                }
+            });
+
+            // Report form submission
+            $('#reportForm').submit(function(e) {
+                e.preventDefault();
+                generateReport();
+            });
+
+            // Report card selection
+            $('.report-card').click(function() {
+                $('.report-card').removeClass('border-primary');
+                $(this).addClass('border-primary');
+            });
+        }
+
+        function selectReportType(reportType) {
+            selectedReportType = reportType;
+            $('#reportType').val(reportType);
+            
+            // Update form based on report type
+            updateFormForReportType(reportType);
+        }
+
+        function updateFormForReportType(reportType) {
+            // Show/hide relevant fields based on report type
+            switch(reportType) {
+                case 'performance':
+                    $('#timeRange').val('90'); // Default to 90 days for performance
+                    break;
+                case 'sla':
+                    $('#timeRange').val('30'); // Default to 30 days for SLA
+                    break;
+                case 'forecast':
+                    $('#timeRange').val('365'); // Default to 1 year for forecasting
+                    break;
+                case 'resource':
+                    $('#timeRange').val('90'); // Default to 90 days for resource analysis
+                    break;
+            }
+        }
+
+        function generateReport() {
+            const formData = new FormData($('#reportForm')[0]);
+            const reportConfig = {
+                reportType: formData.get('reportType'),
+                timeRangeDays: formData.get('timeRange') === 'custom' ? null : parseInt(formData.get('timeRange')),
+                timeRangeMonths: formData.get('timeRange') === 'custom' ? null : Math.ceil(parseInt(formData.get('timeRange')) / 30),
+                forecastDays: formData.get('reportType') === 'forecast' ? parseInt(formData.get('timeRange')) : null,
+                startDate: formData.get('timeRange') === 'custom' ? formData.get('startDate') : null,
+                endDate: formData.get('timeRange') === 'custom' ? formData.get('endDate') : null,
+                departments: $('#departments').val(),
+                statusFilters: $('#statuses').val(),
+                priorityFilters: $('#priorities').val()
+            };
+
+            showLoadingToast('Generating report...');
+
+            $.ajax({
+                url: '@Url.Action("GenerateReport", "Requests")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(reportConfig),
+                success: function(response) {
+                    if (response.success) {
+                        currentReportData = response.data;
+                        downloadReport(currentReportData, reportConfig);
+                        addToRecentReports(reportConfig);
+                        showSuccessToast('Report generated successfully');
+                    } else {
+                        showErrorToast('Failed to generate report: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showErrorToast('Error generating report: ' + error);
+                }
+            });
+        }
+
+        function previewReport() {
+            const formData = new FormData($('#reportForm')[0]);
+            const reportConfig = {
+                reportType: formData.get('reportType'),
+                timeRangeDays: formData.get('timeRange') === 'custom' ? null : parseInt(formData.get('timeRange')),
+                timeRangeMonths: formData.get('timeRange') === 'custom' ? null : Math.ceil(parseInt(formData.get('timeRange')) / 30),
+                forecastDays: formData.get('reportType') === 'forecast' ? parseInt(formData.get('timeRange')) : null,
+                startDate: formData.get('timeRange') === 'custom' ? formData.get('startDate') : null,
+                endDate: formData.get('timeRange') === 'custom' ? formData.get('endDate') : null,
+                departments: $('#departments').val(),
+                statusFilters: $('#statuses').val(),
+                priorityFilters: $('#priorities').val()
+            };
+
+            $('#reportPreviewModal').modal('show');
+            $('#reportPreviewContent').html(`
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading preview...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Generating report preview...</p>
+                </div>
+            `);
+
+            $.ajax({
+                url: '@Url.Action("GenerateReport", "Requests")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(reportConfig),
+                success: function(response) {
+                    if (response.success) {
+                        currentReportData = response.data;
+                        $('#reportPreviewContent').html(renderReportPreview(response.data, reportConfig));
+                    } else {
+                        $('#reportPreviewContent').html(`
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Failed to generate report preview: ${response.message}
+                            </div>
+                        `);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#reportPreviewContent').html(`
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Error generating report preview: ${error}
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        function renderReportPreview(data, config) {
+            let html = `
+                <div class="report-preview">
+                    <div class="report-header mb-4">
+                        <h4>${config.reportType.charAt(0).toUpperCase() + config.reportType.slice(1)} Report</h4>
+                        <p class="text-muted">Generated on ${new Date().toLocaleDateString()}</p>
+                    </div>
+            `;
+
+            // Render based on report type
+            switch(config.reportType) {
+                case 'performance':
+                    html += renderPerformancePreview(data.QualityMetrics || data);
+                    break;
+                case 'sla':
+                    html += renderSlaPreview(data.SlaCompliance || data);
+                    break;
+                case 'forecast':
+                    html += renderForecastPreview(data.DemandForecast || data);
+                    break;
+                case 'resource':
+                    html += renderResourcePreview(data.ResourceOptimization || data);
+                    break;
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function renderPerformancePreview(data) {
+            return `
+                <div class="performance-preview">
+                    <h5>Performance Metrics</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Average Quality Score</h6>
+                                    <h4>${data.AverageQualityScore?.toFixed(1) || 'N/A'}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Total Requests</h6>
+                                    <h4>${data.TotalRequestsAnalyzed || 0}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Analysis Period</h6>
+                                    <h4>${data.AnalysisPeriodMonths || 0} months</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSlaPreview(data) {
+            return `
+                <div class="sla-preview">
+                    <h5>SLA Compliance</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Compliance Rate</h6>
+                                    <h4>${data.OverallComplianceRate?.toFixed(1)}%</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Requests Analyzed</h6>
+                                    <h4>${data.RequestsAnalyzed || 0}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Analysis Days</h6>
+                                    <h4>${data.AnalysisDays || 0}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderForecastPreview(data) {
+            return `
+                <div class="forecast-preview">
+                    <h5>Demand Forecast</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Total Predicted</h6>
+                                    <h4>${data.TotalPredictedRequests || 0}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Forecast Period</h6>
+                                    <h4>${data.ForecastPeriodDays || 0} days</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Confidence</h6>
+                                    <h4>${data.AverageConfidence?.toFixed(1)}%</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderResourcePreview(data) {
+            return `
+                <div class="resource-preview">
+                    <h5>Resource Optimization</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Optimization Score</h6>
+                                    <h4>${data.OptimizationScore || 0}%</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Opportunities</h6>
+                                    <h4>${data.OptimizationOpportunities?.length || 0}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Resources</h6>
+                                    <h4>${data.ResourceRequirements?.length || 0}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function downloadReport(data, config) {
+            const format = $('#format').val();
+            const filename = `${config.reportType}-report-${new Date().toISOString().split('T')[0]}`;
+            
+            switch(format) {
+                case 'json':
+                    downloadJSON(data, filename);
+                    break;
+                case 'csv':
+                    downloadCSV(data, filename);
+                    break;
+                case 'pdf':
+                    downloadPDF(data, filename);
+                    break;
+                case 'excel':
+                    downloadExcel(data, filename);
+                    break;
+                default:
+                    downloadJSON(data, filename);
+            }
+        }
+
+        function downloadJSON(data, filename) {
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            downloadBlob(dataBlob, filename + '.json');
+        }
+
+        function downloadCSV(data, filename) {
+            // Convert data to CSV format
+            let csv = 'Report Data\n';
+            csv += JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([csv], {type: 'text/csv'});
+            downloadBlob(dataBlob, filename + '.csv');
+        }
+
+        function downloadPDF(data, filename) {
+            // For PDF generation, you would typically use a library like jsPDF
+            // For now, we'll download as JSON
+            downloadJSON(data, filename);
+        }
+
+        function downloadExcel(data, filename) {
+            // For Excel generation, you would typically use a library like xlsx
+            // For now, we'll download as JSON
+            downloadJSON(data, filename);
+        }
+
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadFromPreview() {
+            if (currentReportData) {
+                const formData = new FormData($('#reportForm')[0]);
+                const reportConfig = {
+                    reportType: formData.get('reportType')
+                };
+                downloadReport(currentReportData, reportConfig);
+                $('#reportPreviewModal').modal('hide');
+            }
+        }
+
+        function addToRecentReports(config) {
+            // Add to recent reports table
+            const tbody = $('#recentReportsTable');
+            if (tbody.find('td[colspan="6"]').length) {
+                tbody.empty();
+            }
+            
+            const row = `
+                <tr>
+                    <td>${config.reportType.charAt(0).toUpperCase() + config.reportType.slice(1)}</td>
+                    <td>${new Date().toLocaleDateString()}</td>
+                    <td>${config.timeRangeDays ? config.timeRangeDays + ' days' : 'Custom'}</td>
+                    <td>${$('#format').val().toUpperCase()}</td>
+                    <td><span class="badge bg-success">Completed</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="regenerateReport()">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tbody.prepend(row);
+        }
+
+        function loadRecentReports() {
+            // Load recent reports from storage or API
+            // This is a placeholder implementation
+        }
+
+        function resetForm() {
+            $('#reportForm')[0].reset();
+            $('#customDateRange').hide();
+            $('.report-card').removeClass('border-primary');
+            selectedReportType = null;
+        }
+
+        function generateQuickReport() {
+            $('#reportType').val('performance');
+            $('#timeRange').val('30');
+            $('#format').val('json');
+            generateReport();
+        }
+
+        function scheduleReport() {
+            showInfoToast('Report scheduling feature coming soon!');
+        }
+
+        function regenerateReport() {
+            showInfoToast('Regenerating report...');
+        }
+
+        // Toast notification functions
+        function showSuccessToast(message) {
+            toastr.success(message);
+        }
+
+        function showErrorToast(message) {
+            toastr.error(message);
+        }
+
+        function showInfoToast(message) {
+            toastr.info(message);
+        }
+
+        function showLoadingToast(message) {
+            toastr.info(message);
+        }
+    </script>
+}

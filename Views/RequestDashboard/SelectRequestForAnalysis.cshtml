@@ -77,18 +77,12 @@
                                                 @{
                                                     var statusClass = request.Status switch
                                                     {
-                                                        RequestStatus.Pending => "bg-primary",
                                                         RequestStatus.Submitted => "bg-info",
-                                                        RequestStatus.UnderReview => "bg-warning",
-                                                        RequestStatus.PendingApproval => "bg-warning",
-                                                        RequestStatus.Approved => "bg-success",
-                                                        RequestStatus.Rejected => "bg-danger",
                                                         RequestStatus.InProgress => "bg-warning",
-                                                        RequestStatus.ReadyForCompletion => "bg-info",
                                                         RequestStatus.OnHold => "bg-secondary",
                                                         RequestStatus.Completed => "bg-success",
                                                         RequestStatus.Cancelled => "bg-danger",
-                                                        _ => "bg-secondary"
+                                                        _ => "bg-light text-dark" // Default for any other status
                                                     };
                                                 }
                                                 <span class="badge @statusClass">

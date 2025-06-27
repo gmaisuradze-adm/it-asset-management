@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using HospitalAssetTracker.Models;
 using HospitalAssetTracker.Services;
+using HospitalAssetTracker.Data;
+using System.Linq;
 using System.Security.Claims;
 using static HospitalAssetTracker.Models.InventorySearchModels;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Rendering; // Added for SelectList
+using Microsoft.EntityFrameworkCore;     // Added for .Include()
 
 namespace HospitalAssetTracker.Controllers
 {
@@ -18,6 +21,7 @@ namespace HospitalAssetTracker.Controllers
         private readonly IWarehouseBusinessLogicService _warehouseService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<InventoryController> _logger;
+        private readonly ApplicationDbContext _context;
 
         public InventoryController(
             IInventoryService inventoryService,
@@ -25,7 +29,8 @@ namespace HospitalAssetTracker.Controllers
             IAssetService assetService,
             IWarehouseBusinessLogicService warehouseService,
             UserManager<ApplicationUser> userManager,
-            ILogger<InventoryController> logger)
+            ILogger<InventoryController> logger,
+            ApplicationDbContext context)
         {
             _inventoryService = inventoryService;
             _locationService = locationService;
@@ -33,6 +38,7 @@ namespace HospitalAssetTracker.Controllers
             _warehouseService = warehouseService;
             _userManager = userManager;
             _logger = logger;
+            _context = context;
         }
 
         // GET: Inventory
@@ -216,7 +222,18 @@ namespace HospitalAssetTracker.Controllers
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-                var success = await _inventoryService.StockInAsync(id, quantity, unitCost, supplier, reason, userId, purchaseOrderNumber, invoiceNumber);
+                var stockInRequest = new InventorySearchModels.StockInRequest
+                {
+                    ItemId = id,
+                    Quantity = quantity,
+                    UnitCost = unitCost,
+                    Supplier = supplier,
+                    Reason = reason,
+                    PurchaseOrderNumber = purchaseOrderNumber,
+                    InvoiceNumber = invoiceNumber
+                };
+                
+                var success = await _inventoryService.StockInAsync(stockInRequest, userId);
                 
                 if (success)
                 {
@@ -329,19 +346,39 @@ namespace HospitalAssetTracker.Controllers
         {
             try
             {
-                var stockAlerts = await _inventoryService.GetStockLevelAlertsAsync();
-                var expiryAlerts = await _inventoryService.GetExpiryAlertsAsync(30);
+                var stockAlerts = await _inventoryService.GetStockLevelAlertsAsync() ?? new List<StockLevelAlert>();
+                var expiryAlerts = await _inventoryService.GetExpiryAlertsAsync();
                 
                 ViewBag.StockAlerts = stockAlerts;
                 ViewBag.ExpiryAlerts = expiryAlerts;
+
+                // Get all unique InventoryItemIds from both alert lists
+                var itemIdsFromStockAlerts = stockAlerts.Select(sa => sa.InventoryItemId);
+                var itemIdsFromExpiryAlerts = expiryAlerts.Select(ea => ea.InventoryItemId);
                 
-                return View();
+                var allAlertedItemIds = itemIdsFromStockAlerts.Union(itemIdsFromExpiryAlerts).Distinct().ToList();
+
+                IEnumerable<InventoryItem> alertedInventoryItems = new List<InventoryItem>();
+                if (allAlertedItemIds.Any())
+                {
+                    // Fetch the InventoryItem details for these alerted items
+                    // This assumes GetInventoryItemsByIdsAsync exists or we fetch them one by one (less efficient) or use a WhereIn query.
+                    // For simplicity, let's assume we can filter by a list of IDs.
+                    // If _context is ApplicationDbContext and InventoryItems is a DbSet.
+                    alertedInventoryItems = await _context.InventoryItems
+                                                .Include(i => i.Location) // Include any needed navigation properties
+                                                .Where(i => allAlertedItemIds.Contains(i.Id))
+                                                .ToListAsync();
+                }
+                
+                return View(alertedInventoryItems); // Pass the list of alerted InventoryItem objects as the model
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading alerts");
                 TempData["ErrorMessage"] = "Error loading alerts.";
-                return RedirectToAction(nameof(Dashboard));
+                // Pass an empty list to the view in case of an error to prevent view rendering issues
+                return View(new List<InventoryItem>()); 
             }
         }
 
@@ -489,13 +526,182 @@ namespace HospitalAssetTracker.Controllers
             ViewBag.ItemTypes = new SelectList(Enum.GetValues<InventoryItemType>()
                 .Select(t => new { Value = (int)t, Text = t.ToString() }), "Value", "Text");
 
-            ViewBag.Statuses = new SelectList(Enum.GetValues<InventoryStatus>()
-                .Select(s => new { Value = (int)s, Text = s.ToString() }), "Value", "Text");
+            ViewBag.Statuses = new SelectList(new[]
+            {
+                new { Value = 0, Text = "Active" },
+                new { Value = 1, Text = "Reserved" },
+                new { Value = 2, Text = "Allocated" },
+                new { Value = 3, Text = "In Transit" },
+                new { Value = 4, Text = "Deployed" },
+                new { Value = 5, Text = "On Loan" },
+                new { Value = 6, Text = "Under Testing" },
+                new { Value = 7, Text = "Quarantine" },
+                new { Value = 8, Text = "Awaiting Disposal" },
+                new { Value = 9, Text = "Disposed" },
+                new { Value = 10, Text = "Lost" },
+                new { Value = 11, Text = "Stolen" },
+                new { Value = 12, Text = "Damaged" }
+            }, "Value", "Text");
 
             ViewBag.Conditions = new SelectList(Enum.GetValues<InventoryCondition>()
                 .Select(c => new { Value = (int)c, Text = c.ToString() }), "Value", "Text");
         }
 
         #endregion
+
+        // GET: Inventory/IndexAdvanced
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        public async Task<IActionResult> IndexAdvanced()
+        {
+            try
+            {
+                // Initialize search model with default values
+                var searchModel = new InventorySearchModels.AdvancedInventorySearchModel
+                {
+                    PageNumber = 1,
+                    PageSize = 25,
+                    SortBy = "ItemCode",
+                    SortOrder = "asc"
+                };
+
+                // Get initial data
+                var result = await _inventoryService.GetInventoryItemsAdvancedAsync(searchModel);
+                
+                // Get filter data for dropdowns
+                ViewBag.Categories = new SelectList(Enum.GetValues<InventoryCategory>()
+                    .Select(c => new { Value = (int)c, Text = c.ToString() }), "Value", "Text");
+                ViewBag.Statuses = new SelectList(Enum.GetValues<InventoryStatus>()
+                    .Select(s => new { Value = (int)s, Text = s.ToString() }), "Value", "Text");
+                ViewBag.Conditions = new SelectList(Enum.GetValues<InventoryCondition>()
+                    .Select(c => new { Value = (int)c, Text = c.ToString() }), "Value", "Text");
+                
+                ViewBag.Locations = new SelectList(await _context.Locations
+                    .Select(l => new { l.Id, l.Name })
+                    .ToListAsync(), "Id", "Name");
+
+                return View(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading advanced inventory index");
+                TempData["ErrorMessage"] = "Error loading inventory data.";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // POST: Inventory/SearchAdvanced
+        [HttpPost]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        public async Task<IActionResult> SearchAdvanced([FromBody] InventorySearchModels.AdvancedInventorySearchModel searchModel)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return Json(new { success = false, message = "Invalid search parameters" });
+                }
+
+                var result = await _inventoryService.GetInventoryItemsAdvancedAsync(searchModel);
+                
+                return Json(new { 
+                    success = true, 
+                    data = result.Items,
+                    totalCount = result.TotalCount,
+                    pageNumber = result.PageNumber,
+                    pageSize = result.PageSize,
+                    totalPages = result.TotalPages
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error performing advanced search");
+                return Json(new { success = false, message = "Search failed" });
+            }
+        }
+
+        // POST: Inventory/BulkUpdate
+        [HttpPost]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        public async Task<IActionResult> BulkUpdate([FromBody] InventorySearchModels.BulkInventoryUpdateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return Json(new { success = false, message = "Invalid bulk update parameters" });
+                }
+
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+                var result = await _inventoryService.BulkUpdateInventoryAsync(request, userId);
+                
+                return Json(new { 
+                    success = result.Success, 
+                    message = result.Message,
+                    updatedCount = result.AffectedItems
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error performing bulk update");
+                return Json(new { success = false, message = "Bulk update failed" });
+            }
+        }
+
+        // POST: Inventory/BulkExport
+        [HttpPost]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        public async Task<IActionResult> BulkExport([FromBody] InventorySearchModels.InventoryExportRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return Json(new { success = false, message = "Invalid export parameters" });
+                }
+
+                var fileData = await _inventoryService.ExportInventoryAsync(request);
+                
+                if (fileData == null)
+                {
+                    return Json(new { success = false, message = "Export failed - no data" });
+                }
+
+                var fileName = $"inventory_export_{DateTime.UtcNow:yyyyMMdd_HHmmss}.{request.Format.ToLower()}";
+                var contentType = request.Format.ToUpper() == "EXCEL" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf";
+                
+                return File(fileData, contentType, fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error performing bulk export");
+                return Json(new { success = false, message = "Export failed" });
+            }
+        }
+
+        // GET: Inventory/QuickFilters
+        [HttpGet]
+        [Authorize(Roles = "Admin,IT Support,Asset Manager")]
+        public async Task<IActionResult> QuickFilters(string filterType)
+        {
+            try
+            {
+                var result = filterType switch
+                {
+                    "lowStock" => await _inventoryService.GetLowStockItemsAsync(),
+                    "outOfStock" => await _inventoryService.GetOutOfStockItemsAsync(),
+                    "expiringSoon" => await _inventoryService.GetExpiringSoonItemsAsync(),
+                    "highValue" => await _inventoryService.GetHighValueItemsAsync(),
+                    "recentlyAdded" => await _inventoryService.GetRecentlyAddedItemsAsync(),
+                    _ => new List<InventorySearchModels.AdvancedInventorySearchResult>()
+                };
+
+                return Json(new { success = true, data = result });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error applying quick filter: {FilterType}", filterType);
+                return Json(new { success = false, message = "Filter failed" });
+            }
+        }
     }
 }

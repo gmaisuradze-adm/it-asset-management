@@ -163,11 +163,15 @@ namespace HospitalAssetTracker.Controllers
                 
                 foreach (var asset in assetsWithWarranty.Take(10))
                 {
-                    var isExpired = asset.WarrantyExpiry.Value <= DateTime.Now;
-                    Console.WriteLine($"Asset {asset.AssetTag}: Warranty {asset.WarrantyExpiry?.ToString("yyyy-MM-dd")} - Expired: {isExpired}");
+                    if (asset.WarrantyExpiry.HasValue)
+                    {
+                        var isExpired = asset.WarrantyExpiry.Value <= DateTime.Now;
+                        Console.WriteLine($"Asset {asset.AssetTag}: Warranty {asset.WarrantyExpiry.Value.ToString("yyyy-MM-dd")} - Expired: {isExpired}");
+                    }
                 }
                 
-                var expiredAssets = await _assetService.GetExpiredWarrantyAssetsAsync();
+                // var expiredAssets = await _assetService.GetExpiredWarrantyAssetsAsync(); // Old call
+                var expiredAssets = await _reportService.GetExpiredWarrantyAssetsReportAsync(); // New call
                 Console.WriteLine($"ExpiredWarranties: Found {expiredAssets.Count()} assets with expired warranties");
                 
                 return View(expiredAssets);

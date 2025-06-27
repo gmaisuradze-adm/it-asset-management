@@ -1,0 +1,710 @@
+@model PagedResult<AdvancedInventorySearchResult>
+@using static HospitalAssetTracker.Models.InventorySearchModels
+@{
+    ViewData["Title"] = "Advanced Inventory Management";
+    var searchModel = ViewData["SearchModel"] as AdvancedInventorySearchModel ?? new AdvancedInventorySearchModel();
+    var quickFilters = ViewData["QuickFilters"] as IEnumerable<InventoryQuickFilterModel> ?? new List<InventoryQuickFilterModel>();
+}
+
+<!-- Loading overlay -->
+<div id="loadingOverlay" class="loading-overlay d-none">
+    <div class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <div class="mt-2">Processing request...</div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-gradient-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">
+                            <i class="fas fa-warehouse me-2"></i>
+                            Advanced Inventory Management
+                        </h3>
+                        <div class="btn-group">
+                            @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                            {
+                                <a asp-action="Create" class="btn btn-light">
+                                    <i class="fas fa-plus"></i> Add Item
+                                </a>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-light dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="fas fa-download"></i> Export
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="exportInventory('excel')">
+                                            <i class="fas fa-file-excel text-success"></i> Excel Format
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="exportInventory('pdf')">
+                                            <i class="fas fa-file-pdf text-danger"></i> PDF Report
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="exportInventory('csv')">
+                                            <i class="fas fa-file-csv text-info"></i> CSV Data
+                                        </a></li>
+                                    </ul>
+                                </div>
+                                <a asp-action="Dashboard" class="btn btn-light">
+                                    <i class="fas fa-chart-bar"></i> Dashboard
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Filters Row -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body py-2">
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="fw-bold text-muted me-2">Quick Filters:</span>
+                        @foreach (var filter in quickFilters)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-primary quick-filter-btn" 
+                                    data-filter="@filter.Name" 
+                                    title="@filter.Description">
+                                @filter.Name
+                                <span class="badge bg-primary ms-1">@filter.ItemCount</span>
+                            </button>
+                        }
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAllFilters()">
+                            <i class="fas fa-times"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-search text-primary"></i>
+                            Search & Filter Inventory
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                data-bs-toggle="collapse" data-bs-target="#advancedFilters">
+                            <i class="fas fa-filter"></i> Advanced Filters
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form id="searchForm" method="get" asp-action="IndexAdvanced">
+                        <!-- Basic Search Row -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Search Term</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control" name="SearchTerm" 
+                                           value="@searchModel.SearchTerm" 
+                                           placeholder="Name, code, brand, model, description..." 
+                                           id="searchInput">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold">Category</label>
+                                <select class="form-select" name="Category" id="categoryFilter">
+                                    <option value="">All Categories</option>
+                                    @foreach (var category in Enum.GetValues<InventoryCategory>())
+                                    {
+                                        <option value="@((int)category)" 
+                                                selected="@(searchModel.Category == category)">
+                                            @category.ToString()
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold">Status</label>
+                                <select class="form-select" name="Status" id="statusFilter">
+                                    <option value="">All Status</option>
+                                    @foreach (var status in Enum.GetValues<InventoryStatus>())
+                                    {
+                                        <option value="@((int)status)" 
+                                                selected="@(searchModel.Status == status)">
+                                            @status.ToString()
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold">Stock Level</label>
+                                <select class="form-select" name="StockLevelFilter" id="stockLevelFilter">
+                                    <option value="">All Stock Levels</option>
+                                    @foreach (var level in Enum.GetValues<StockLevelFilter>())
+                                    {
+                                        <option value="@((int)level)" 
+                                                selected="@(searchModel.StockLevelFilter == level)">
+                                            @level.ToString()
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Filters (Collapsible) -->
+                        <div class="collapse @(searchModel.AdvancedFiltersExpanded ? "show" : "")" id="advancedFilters">
+                            <div class="border rounded p-3 bg-light">
+                                <h6 class="text-primary mb-3">
+                                    <i class="fas fa-cogs"></i> Advanced Filter Options
+                                </h6>
+                                
+                                <div class="row g-3">
+                                    <!-- Location and Storage -->
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Location</label>
+                                        <select class="form-select" name="LocationId">
+                                            <option value="">All Locations</option>
+                                            @if (ViewBag.Locations != null)
+                                            {
+                                                @foreach (var location in ViewBag.Locations)
+                                                {
+                                                    <option value="@location.Value" 
+                                                            selected="@(searchModel.LocationId?.ToString() == location.Value)">
+                                                        @location.Text
+                                                    </option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Storage Zone</label>
+                                        <input type="text" class="form-control" name="StorageZone" 
+                                               value="@searchModel.StorageZone" placeholder="e.g. A1, B2">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Brand</label>
+                                        <input type="text" class="form-control" name="Brand" 
+                                               value="@searchModel.Brand" placeholder="e.g. Dell, HP">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Supplier</label>
+                                        <input type="text" class="form-control" name="Supplier" 
+                                               value="@searchModel.Supplier" placeholder="Supplier name">
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mt-2">
+                                    <!-- Quantity Range -->
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Quantity Range</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="MinQuantity" 
+                                                   value="@searchModel.MinQuantity" placeholder="Min" min="0">
+                                            <span class="input-group-text">to</span>
+                                            <input type="number" class="form-control" name="MaxQuantity" 
+                                                   value="@searchModel.MaxQuantity" placeholder="Max" min="0">
+                                        </div>
+                                    </div>
+                                    <!-- Value Range -->
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Value Range ($)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="MinTotalValue" 
+                                                   value="@searchModel.MinTotalValue" placeholder="Min" step="0.01" min="0">
+                                            <span class="input-group-text">to</span>
+                                            <input type="number" class="form-control" name="MaxTotalValue" 
+                                                   value="@searchModel.MaxTotalValue" placeholder="Max" step="0.01" min="0">
+                                        </div>
+                                    </div>
+                                    <!-- Date Range -->
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Purchase Date From</label>
+                                        <input type="date" class="form-control" name="PurchaseDateFrom" 
+                                               value="@searchModel.PurchaseDateFrom?.ToString("yyyy-MM-dd")">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Purchase Date To</label>
+                                        <input type="date" class="form-control" name="PurchaseDateTo" 
+                                               value="@searchModel.PurchaseDateTo?.ToString("yyyy-MM-dd")">
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mt-2">
+                                    <!-- Boolean Filters -->
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">Additional Filters</label>
+                                        <div class="d-flex flex-wrap gap-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="IsConsumable" 
+                                                       value="true" @(searchModel.IsConsumable == true ? "checked" : "")>
+                                                <label class="form-check-label">Consumables Only</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="HasSerialNumber" 
+                                                       value="true" @(searchModel.HasSerialNumber == true ? "checked" : "")>
+                                                <label class="form-check-label">Has Serial Number</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="HasWarranty" 
+                                                       value="true" @(searchModel.HasWarranty == true ? "checked" : "")>
+                                                <label class="form-check-label">Has Warranty</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="ShowHighValueOnly" 
+                                                       value="true" @(searchModel.ShowHighValueOnly ? "checked" : "")>
+                                                <label class="form-check-label">High Value Items ($1000+)</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-search"></i> Apply Filters
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="resetAdvancedFilters()">
+                                                <i class="fas fa-undo"></i> Reset Filters
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info" onclick="saveSearch()">
+                                                <i class="fas fa-save"></i> Save Search
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hidden fields for pagination and sorting -->
+                        <input type="hidden" name="PageNumber" value="@searchModel.PageNumber">
+                        <input type="hidden" name="PageSize" value="@searchModel.PageSize">
+                        <input type="hidden" name="SortBy" value="@searchModel.SortBy">
+                        <input type="hidden" name="SortOrder" value="@searchModel.SortOrder">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list text-primary"></i>
+                            Inventory Items
+                            <span class="badge bg-primary ms-2">@Model.TotalCount</span>
+                        </h5>
+                        <div class="d-flex gap-2">
+                            @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        onclick="toggleBulkActions()" id="bulkToggleBtn">
+                                    <i class="fas fa-tasks"></i> Bulk Actions
+                                </button>
+                            }
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                        type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-cog"></i> View Options
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="changePageSize(25)">25 per page</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="changePageSize(50)">50 per page</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="changePageSize(100)">100 per page</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#" onclick="toggleCompactView()">
+                                        <i class="fas fa-compress-alt"></i> Compact View
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bulk Actions Panel (Hidden by default) -->
+                <div id="bulkActionsPanel" class="card-body border-bottom bg-light d-none">
+                    <form id="bulkActionsForm">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Bulk Operation</label>
+                                <select class="form-select" id="bulkOperationType" name="OperationType">
+                                    <option value="">Select Operation</option>
+                                    <option value="1">Update Status</option>
+                                    <option value="2">Update Condition</option>
+                                    <option value="3">Update Location</option>
+                                    <option value="4">Adjust Stock</option>
+                                    <option value="5">Transfer Items</option>
+                                    <option value="6">Export Selected</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3" id="bulkValueColumn" style="display: none;">
+                                <label class="form-label fw-bold" id="bulkValueLabel">New Value</label>
+                                <select class="form-select" id="bulkValue" name="BulkValue">
+                                    <!-- Options populated by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="col-md-3" id="bulkReasonColumn" style="display: none;">
+                                <label class="form-label fw-bold">Reason</label>
+                                <input type="text" class="form-control" id="bulkReason" name="Reason" 
+                                       placeholder="Reason for this operation">
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-primary" onclick="executeBulkOperation()">
+                                        <i class="fas fa-play"></i> Execute
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="clearSelection()">
+                                        <i class="fas fa-times"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <span id="selectedCount">0</span> items selected
+                            </small>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card-body p-0">
+                    @if (Model.Items.Any())
+                    {
+                        <!-- Responsive table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="inventoryTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                                        {
+                                            <th width="40px">
+                                                <input type="checkbox" class="form-check-input" id="selectAll">
+                                            </th>
+                                        }
+                                        <th class="sortable" data-sort="ItemCode">
+                                            Item Code
+                                            <i class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="Name">
+                                            Name
+                                            <i class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="Category">
+                                            Category
+                                            <i class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="Quantity">
+                                            Stock
+                                            <i class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="Status">
+                                            Status
+                                            <i class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="TotalValue">
+                                            Value
+                                            <i class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="Location">
+                                            Location
+                                            <i class="fas fa-sort text-muted"></i>
+                                        </th>
+                                        <th width="120px">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in Model.Items)
+                                    {
+                                        <tr>
+                                            @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                                            {
+                                                <td>
+                                                    <input type="checkbox" class="form-check-input row-select" 
+                                                           value="@item.Id" data-item-name="@item.Name">
+                                                </td>
+                                            }
+                                            <td>
+                                                <strong class="text-primary">@item.ItemCode</strong>
+                                                @if (!string.IsNullOrEmpty(item.SerialNumber))
+                                                {
+                                                    <br><small class="text-muted">SN: @item.SerialNumber</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold">@item.Name</div>
+                                                <div class="text-muted small">@item.Brand @item.Model</div>
+                                                @if (!string.IsNullOrEmpty(item.AbcClassification))
+                                                {
+                                                    <span class="badge bg-info mt-1">ABC: @item.AbcClassification</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@item.Category</span>
+                                                @if (item.ItemType != InventoryItemType.New)
+                                                {
+                                                    <br><small class="text-muted">@item.ItemType</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="fw-bold me-2">@item.Quantity</span>
+                                                    <span class="badge @item.StockLevelClass">@item.StockLevel</span>
+                                                </div>
+                                                @if (item.ReservedQuantity > 0)
+                                                {
+                                                    <small class="text-warning">
+                                                        <i class="fas fa-lock"></i> @item.ReservedQuantity reserved
+                                                    </small>
+                                                }
+                                                <div class="small text-muted">
+                                                    Min: @item.MinimumStock | Max: @item.MaximumStock
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-@(item.Status == InventoryStatus.Available ? "success" : 
+                                                    item.Status == InventoryStatus.Reserved ? "warning" : 
+                                                    item.Status == InventoryStatus.Deployed ? "info" : "secondary")">
+                                                    @item.Status
+                                                </span>
+                                                @if (item.Condition != InventoryCondition.New)
+                                                {
+                                                    <br><small class="text-muted">@item.Condition</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold">@item.ValueDisplayString</div>
+                                                @if (item.UnitCost.HasValue)
+                                                {
+                                                    <small class="text-muted">@item.UnitCostDisplayString each</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div>@item.LocationName</div>
+                                                @if (!string.IsNullOrEmpty(item.StorageLocation))
+                                                {
+                                                    <small class="text-muted">@item.StorageLocation</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a asp-action="Details" asp-route-id="@item.Id" 
+                                                       class="btn btn-outline-primary" title="View Details">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                                                    {
+                                                        <a asp-action="Edit" asp-route-id="@item.Id" 
+                                                           class="btn btn-outline-secondary" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <button type="button" class="btn btn-outline-info" 
+                                                                onclick="showStockAdjustment(@item.Id, '@item.Name')" title="Adjust Stock">
+                                                            <i class="fas fa-plus-minus"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        @if (Model.TotalPages > 1)
+                        {
+                            <div class="card-footer bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="text-muted">
+                                        Showing @((Model.PageNumber - 1) * Model.PageSize + 1) to 
+                                        @Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount) 
+                                        of @Model.TotalCount items
+                                    </div>
+                                    <nav>
+                                        <ul class="pagination pagination-sm mb-0">
+                                            @if (Model.PageNumber > 1)
+                                            {
+                                                <li class="page-item">
+                                                    <a class="page-link" href="#" onclick="changePage(1)">First</a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="#" onclick="changePage(@(Model.PageNumber - 1))">Previous</a>
+                                                </li>
+                                            }
+
+                                            @for (int i = Math.Max(1, Model.PageNumber - 2); i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                                            {
+                                                <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                                    <a class="page-link" href="#" onclick="changePage(@i)">@i</a>
+                                                </li>
+                                            }
+
+                                            @if (Model.PageNumber < Model.TotalPages)
+                                            {
+                                                <li class="page-item">
+                                                    <a class="page-link" href="#" onclick="changePage(@(Model.PageNumber + 1))">Next</a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="#" onclick="changePage(@Model.TotalPages)">Last</a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <!-- No results message -->
+                        <div class="p-5 text-center">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No inventory items found</h5>
+                            <p class="text-muted">Try adjusting your search criteria or filters.</p>
+                            <a asp-action="Create" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add New Item
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Adjustment Modal -->
+<div class="modal fade" id="stockAdjustmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adjust Stock Level</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="stockAdjustmentForm">
+                    <input type="hidden" id="adjustItemId">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Item</label>
+                        <div id="adjustItemName" class="form-control-plaintext fw-bold"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Current Stock</label>
+                        <div id="currentStock" class="form-control-plaintext"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Adjustment Type</label>
+                        <select class="form-select" id="adjustmentType" name="AdjustmentType">
+                            <option value="1">Increase Stock</option>
+                            <option value="2">Decrease Stock</option>
+                            <option value="3">Set Absolute Quantity</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Quantity</label>
+                        <input type="number" class="form-control" id="adjustmentQuantity" 
+                               name="QuantityAdjustment" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Reason</label>
+                        <textarea class="form-control" id="adjustmentReason" name="Reason" 
+                                  rows="3" placeholder="Reason for stock adjustment" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitStockAdjustment()">
+                    <i class="fas fa-save"></i> Apply Adjustment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/inventory-advanced.js"></script>
+    <script>
+        // Initialize page functionality
+        $(document).ready(function() {
+            initializeAdvancedInventory();
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-spinner {
+            text-align: center;
+        }
+
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sortable:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
+        .badge-danger { background-color: #dc3545 !important; }
+        .badge-warning { background-color: #ffc107 !important; color: #000; }
+        .badge-success { background-color: #28a745 !important; }
+        .badge-info { background-color: #17a2b8 !important; }
+
+        .quick-filter-btn.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+
+        .bg-gradient-primary {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+        }
+
+        @@media (max-width: 768px) {
+            .btn-group-sm .btn {
+                padding: 0.25rem 0.4rem;
+                font-size: 0.75rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+}

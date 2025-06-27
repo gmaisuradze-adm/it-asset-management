@@ -373,7 +373,7 @@ namespace HospitalAssetTracker.Services
                 }
 
                 // Update asset status
-                request.RelatedAsset.Status = AssetStatus.Active;
+                request.RelatedAsset.Status = AssetStatus.InUse;
                 
                 // Move asset to final location
                 if (finalLocationId.HasValue)
@@ -412,7 +412,7 @@ namespace HospitalAssetTracker.Services
                     Success = true,
                     Message = "Asset repair completed successfully",
                     AssetId = request.RelatedAsset.Id,
-                    NewAssetStatus = AssetStatus.Active,
+                    NewAssetStatus = AssetStatus.InUse,
                     FinalLocationId = finalLocationId,
                     CompletionNotes = completionNotes
                 };
@@ -597,14 +597,11 @@ namespace HospitalAssetTracker.Services
             {
                 switch (request.Status)
                 {
-                    case RequestStatus.Open:
+                    case RequestStatus.Submitted: // Changed from Open
                         pendingActions.Add("Assign to technician");
                         break;
                     case RequestStatus.InProgress:
                         pendingActions.Add("Complete repair work");
-                        break;
-                    case RequestStatus.PendingApproval:
-                        pendingActions.Add("Approve request");
                         break;
                 }
 

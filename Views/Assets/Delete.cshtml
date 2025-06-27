@@ -64,8 +64,8 @@
                                 <dd class="col-sm-8">
                                     <span class="badge bg-@(Model.Status == AssetStatus.Available ? "success" : 
                                                          Model.Status == AssetStatus.InUse ? "primary" : 
-                                                         Model.Status == AssetStatus.Maintenance ? "warning" : 
-                                                         Model.Status == AssetStatus.Decommissioned ? "secondary" : "dark")">
+                                                         Model.Status == AssetStatus.UnderMaintenance ? "warning" : 
+                                                         Model.Status == AssetStatus.Decommissioned ? "secondary" : "dark")">>
                                         @Model.Status.ToString()
                                     </span>
                                 </dd>

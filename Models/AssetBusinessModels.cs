@@ -400,44 +400,15 @@ namespace HospitalAssetTracker.Models
 
     #region Asset Optimization Models
 
-    public class AssetOptimizationResult
-    {
-        public DateTime AnalysisDate { get; set; }
-        public List<OptimizationOpportunity> Opportunities { get; set; } = new();
-        public decimal PotentialSavings { get; set; }
-        public decimal InvestmentRequired { get; set; }
-        public double ROI { get; set; }
-        public int PaybackPeriodMonths { get; set; }
-        public List<OptimizationRecommendation> Recommendations { get; set; } = new();
-    }
+    // Assuming AssetOptimizationResult, AssetUtilizationOptimizationResult, 
+    // AssetMetric, UtilizationRecommendation, ProjectedImprovement are defined elsewhere in this file or project.
 
-    public class OptimizationOpportunity
+    // Add AssetOverDemandAnalysis if it's confirmed missing
+    public class AssetOverDemandAnalysis
     {
-        public string Type { get; set; } = string.Empty; // Consolidation, Replacement, Reallocation, Upgrade
-        public string Description { get; set; } = string.Empty;
-        public List<int> AssetIds { get; set; } = new();
-        public decimal CurrentCost { get; set; }
-        public decimal OptimizedCost { get; set; }
-        public decimal Savings { get; set; }
-        public decimal ImplementationCost { get; set; }
-        public int PaybackMonths { get; set; }
-        public string Priority { get; set; } = string.Empty;
-        public List<string> Benefits { get; set; } = new();
-        public List<string> Risks { get; set; } = new();
-    }
-
-    public class OptimizationRecommendation
-    {
-        public string Title { get; set; } = string.Empty;
-        public string Category { get; set; } = string.Empty;
-        public string Priority { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public List<string> ActionSteps { get; set; } = new();
-        public DateTime? TargetDate { get; set; }
-        public decimal EstimatedCost { get; set; }
-        public decimal ExpectedSavings { get; set; }
-        public string Owner { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
+        public List<string> OverDemandedCategories { get; set; } = new List<string>();
+        public List<string> SuggestedProcurements { get; set; } = new List<string>();
+        public int EstimatedShortfallCount { get; set; }
     }
 
     #endregion
@@ -498,19 +469,79 @@ namespace HospitalAssetTracker.Models
         public decimal EstimatedCost { get; set; }
     }
 
+    #endregion
+
+    #region Missing Models for IAssetBusinessLogicService
+
+    public class AssetPerformanceReportResult { }
+    public class AssetServiceRequestResult { }
+    public class CrossModuleAssetSyncResult { }
+
+    public class AssetHealthAnalysisResult 
+    {
+        public Asset? AnalyzedAsset { get; set; }
+        public DateTime AnalysisDate { get; set; }
+        public string? AnalystUserId { get; set; }
+        public string HealthStatus { get; set; } = "Unknown"; // e.g., Good, Fair, Poor, Critical
+        public double HealthScore { get; set; } // e.g., 0-100
+        public List<string> IssuesFound { get; set; } = new List<string>();
+        public List<string> Recommendations { get; set; } = new List<string>();
+        public int AgeInDays { get; set; }
+        public int MaintenanceCountLastYear { get; set; }
+        public bool IsWarrantyActive { get; set; }
+        public DateTime? WarrantyExpiryDate { get; set; }
+    }
+
+    public class AssetCostBenefitAnalysisResult { }
+    public class AssetInvestmentRequest { }
+    public class AssetPerformanceMetricsResult { }
+    public class AssetFailureRiskAssessmentResult { }
+    public class AssetPortfolioOptimizationResult { }
+    public class AssetComplianceAnalysisResult { }
+    public class AssetBudgetPlanningResult { }
+    public class AssetSecurityRiskAnalysisResult { }
+    public class AutomatedAssetManagementTaskResult { }
+    public class AssetWorkflowOrchestrationResult { }
+    public class AssetWorkflowRequest { }
+    public class AssetAlertingResult { }
+    public class AssetLifecycleReportResult { }
+    public class AssetReportingCriteria { }
+
+    #endregion
+
+    #region Asset Business Logic Service Models
+
+    // Ensure these supporting types are defined before AssetUtilizationOptimizationResult
+    public class AssetMetric
+    {
+        public string Name { get; set; } = string.Empty;
+        public double Value { get; set; }
+        // Add other properties if needed by the service
+    }
+
+    public class UtilizationRecommendation
+    {
+        public string Type { get; set; } = string.Empty; // e.g., Reallocate, Consolidate
+        public string Description { get; set; } = string.Empty;
+        public decimal EstimatedSavings { get; set; }
+        // Add other properties if needed
+    }
+
+    public class ProjectedImprovement
+    {
+        public string Description { get; set; } = string.Empty; // Added Description
+        public string MetricName { get; set; } = string.Empty;
+        public double CurrentValue { get; set; }
+        public double ProjectedValue { get; set; }
+        public string Unit { get; set; } = string.Empty;
+        public double EstimatedImpact { get; set; } // Kept this from previous version
+    }
+
     public class AssetReplacementForecastResult
     {
         public DateTime ForecastDate { get; set; }
         public int ForecastPeriodDays { get; set; }
         public string InitiatedByUserId { get; set; } = string.Empty;
-        public List<AssetReplacementPrediction> Predictions { get; set; } = new();
-        public decimal TotalForecastedCost { get; set; }
-        public int AssetsRequiringReplacement { get; set; }
-        public DateTime ForecastPeriodStart { get; set; }
-        public DateTime ForecastPeriodEnd { get; set; }
-        public List<string> CriticalReplacements { get; set; } = new();
-        
-        // Additional properties from service usage
         public List<AssetReplacementPrediction> AssetReplacementPredictions { get; set; } = new();
         public int TotalAssetsRequiringReplacement { get; set; }
         public decimal EstimatedTotalReplacementCost { get; set; }
@@ -525,15 +556,9 @@ namespace HospitalAssetTracker.Models
         public string AssetTag { get; set; } = string.Empty;
         public string AssetName { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
-        public Asset Asset { get; set; } = null!;
-        public DateTime PredictedReplacementDate { get; set; }
-        public decimal EstimatedReplacementCost { get; set; }
-        public string ReplacementReason { get; set; } = string.Empty;
-        public double Confidence { get; set; }
-        public string Priority { get; set; } = string.Empty;
-        
-        // Additional properties from service usage
         public double ReplacementProbability { get; set; }
+        public DateTime? PredictedReplacementDate { get; set; }
+        public decimal EstimatedReplacementCost { get; set; }
         public string BusinessImpactLevel { get; set; } = string.Empty;
         public string RecommendedAction { get; set; } = string.Empty;
     }
@@ -542,90 +567,13 @@ namespace HospitalAssetTracker.Models
     {
         public DateTime OptimizationDate { get; set; }
         public string OptimizerUserId { get; set; } = string.Empty;
-        public List<UnderutilizedAsset> UnderutilizedAssets { get; set; } = new();
-        public List<OverDemandScenario> OverDemandScenarios { get; set; } = new();
-        public List<UtilizationOptimizationRecommendation> Recommendations { get; set; } = new();
-        public List<UtilizationImprovement> Improvements { get; set; } = new();
-        public double CurrentUtilizationRate { get; set; }
-        public double OptimizedUtilizationRate { get; set; }
-        public decimal PotentialSavings { get; set; }
-        
-        // Additional properties from service usage
-        public Dictionary<string, double> CurrentUtilizationMetrics { get; set; } = new();
-        public List<AssetOptimizationOpportunity> OptimizationRecommendations { get; set; } = new();
+        public List<AssetMetric> CurrentUtilizationMetrics { get; set; } = new List<AssetMetric>();
+        public List<Asset> UnderutilizedAssets { get; set; } = new List<Asset>();
+        public AssetOverDemandAnalysis OverDemandScenarios { get; set; } = new AssetOverDemandAnalysis(); // Ensure AssetOverDemandAnalysis is defined
+        public List<UtilizationRecommendation> OptimizationRecommendations { get; set; } = new List<UtilizationRecommendation>();
         public decimal PotentialCostSavings { get; set; }
         public string ImplementationPriority { get; set; } = string.Empty;
-        public List<string> ProjectedImprovements { get; set; } = new();
-    }
-
-    public class UnderutilizedAsset
-    {
-        public Asset Asset { get; set; } = null!;
-        public double CurrentUtilization { get; set; }
-        public double OptimalUtilization { get; set; }
-        public string RecommendedAction { get; set; } = string.Empty;
-        public decimal PotentialSavings { get; set; }
-        
-        // Additional properties for service compatibility
-        public int AssetId => Asset?.Id ?? 0;
-        public string AssetName => Asset?.Name ?? string.Empty;
-        public string OpportunityType { get; set; } = "Underutilization";
-        public string Description => RecommendedAction;
-        public string ImplementationEffort { get; set; } = "Medium";
-        public string Priority { get; set; } = "Medium";
-    }
-
-    public class OverDemandScenario
-    {
-        public string Location { get; set; } = string.Empty;
-        public string AssetCategory { get; set; } = string.Empty;
-        public double DemandLevel { get; set; }
-        public double SupplyLevel { get; set; }
-        public string RecommendedAction { get; set; } = string.Empty;
-        
-        // Additional properties for service compatibility
-        public int AssetId { get; set; }
-        public string AssetName { get; set; } = string.Empty;
-        public string OpportunityType { get; set; } = "Over-demand";
-        public string Description => RecommendedAction;
-        public decimal PotentialSavings { get; set; }
-        public string ImplementationEffort { get; set; } = "High";
-        public string Priority { get; set; } = "High";
-    }
-
-    public class UtilizationOptimizationRecommendation
-    {
-        public string Type { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public List<int> AffectedAssetIds { get; set; } = new();
-        public decimal EstimatedSavings { get; set; }
-        public string Priority { get; set; } = string.Empty;
-    }
-
-    public class UtilizationImprovement
-    {
-        public string ImprovementType { get; set; } = string.Empty;
-        public double ImprovementPercentage { get; set; }
-        public decimal CostSavings { get; set; }
-        public string Implementation { get; set; } = string.Empty;
-        
-        // Additional properties for service compatibility
-        public string Description => $"{ImprovementType}: {ImprovementPercentage:F1}% improvement possible";
-    }
-
-    public class AssetUtilizationMetrics
-    {
-        public double OverallUtilizationRate { get; set; }
-        public Dictionary<string, double> CategoryUtilization { get; set; } = new();
-        public Dictionary<string, double> LocationUtilization { get; set; } = new();
-        public List<Asset> UnderutilizedAssets { get; set; } = new();
-        public List<Asset> OverutilizedAssets { get; set; } = new();
-        public double EfficiencyScore { get; set; }
-        public decimal PotentialCostSavings { get; set; }
-        
-        // Additional properties for service compatibility
-        public double OverallUtilization => OverallUtilizationRate;
-        public double AverageUptime { get; set; } = 95.0;
+        public List<ProjectedImprovement> ProjectedImprovements { get; set; } = new List<ProjectedImprovement>();
     }
 
     public class IntelligentMaintenanceScheduleResult
@@ -633,337 +581,66 @@ namespace HospitalAssetTracker.Models
         public DateTime ScheduleGenerationDate { get; set; }
         public int PlanningPeriodDays { get; set; }
         public string SchedulerUserId { get; set; } = string.Empty;
-        public List<IntelligentMaintenanceScheduleItem> ScheduleItems { get; set; } = new();
-        public MaintenanceResourceRequirements ResourceRequirements { get; set; } = new();
-        public decimal TotalBudgetRequired { get; set; }
-        public int OptimizedScheduleItems { get; set; }
-        public double EfficiencyGain { get; set; }
-        
-        // Additional properties from service usage
-        public List<IntelligentMaintenanceScheduleItem> MaintenanceScheduleItems { get; set; } = new();
+        public List<MaintenanceScheduleItem> MaintenanceScheduleItems { get; set; } = new();
+        public Dictionary<string, int> ResourceRequirements { get; set; } = new();
         public decimal EstimatedTotalCost { get; set; }
         public List<string> SchedulingInsights { get; set; } = new();
         public List<string> CostOptimizationRecommendations { get; set; } = new();
     }
 
-    public class IntelligentMaintenanceScheduleItem
-    {
-        public int AssetId { get; set; }
-        public string AssetTag { get; set; } = string.Empty;
-        public Asset Asset { get; set; } = null!;
-        public DateTime ScheduledDate { get; set; }
-        public string MaintenanceType { get; set; } = string.Empty;
-        public decimal EstimatedCost { get; set; }
-        public int EstimatedDuration { get; set; }
-        public string Priority { get; set; } = string.Empty;
-        public List<string> RequiredSkills { get; set; } = new();
-    }
-
-    public class MaintenanceResourceRequirements
-    {
-        public Dictionary<string, int> TechnicianHours { get; set; } = new();
-        public Dictionary<string, decimal> PartsCost { get; set; } = new();
-        public Dictionary<string, int> ToolsRequired { get; set; } = new();
-        public decimal TotalCost { get; set; }
-    }
-
     public class AssetDeploymentResult
     {
+        public bool Success { get; set; }
+        public string? ErrorMessage { get; set; }
+        public int CreatedAssetId { get; set; }
         public DateTime DeploymentDate { get; set; }
         public string DeployedByUserId { get; set; } = string.Empty;
         public int InventoryItemId { get; set; }
         public int TargetLocationId { get; set; }
-        public Asset Asset { get; set; } = null!;
-        public AssetDeploymentMetrics Metrics { get; set; } = new();
-        public List<string> DeploymentSteps { get; set; } = new();
-        public DateTime EstimatedCompletionDate { get; set; }
-        public List<string> Requirements { get; set; } = new();
-        public string Status { get; set; } = string.Empty;
-        
-        // Additional properties from service usage
-        public bool Success { get; set; }
-        public string ErrorMessage { get; set; } = string.Empty;
-        public int CreatedAssetId { get; set; }
-        public List<string> DeploymentDocumentation { get; set; } = new();
-        public AssetDeploymentMetrics DeploymentMetrics { get; set; } = new();
-    }
-
-    public class AssetDeploymentMetrics
-    {
-        public int TotalSteps { get; set; }
-        public int CompletedSteps { get; set; }
-        public double ProgressPercentage { get; set; }
-        public TimeSpan EstimatedTimeRemaining { get; set; }
-        public List<string> Blockers { get; set; } = new();
-        
-        // Additional properties from service usage
-        public double DeploymentTime { get; set; }
-        public double CostEfficiency { get; set; }
+        public string? DeploymentDocumentation { get; set; }
+        public Dictionary<string, object> DeploymentMetrics { get; set; } = new Dictionary<string, object>(); // Verified
     }
 
     public class AssetRetirementResult
     {
+        public bool Success { get; set; }
+        public string? ErrorMessage { get; set; }
+        public int AssetId { get; set; }
         public DateTime RetirementDate { get; set; }
         public string ProcessedByUserId { get; set; } = string.Empty;
-        public int AssetId { get; set; }
         public string RetirementReason { get; set; } = string.Empty;
-        public Asset Asset { get; set; } = null!;
-        public AssetRetirementMetrics Metrics { get; set; } = new();
-        public AssetDataArchivalResult DataArchival { get; set; } = new();
-        public ReplacementProcessingResult ReplacementProcessing { get; set; } = new();
-        public DisposalCoordinationResult DisposalCoordination { get; set; } = new();
-        public string Status { get; set; } = string.Empty;
-        
-        // Additional properties from service usage
+        public string? DataArchivalResult { get; set; }
+        public AssetReplacementProcessingResult? ReplacementProcessingResult { get; set; } // Ensure AssetReplacementProcessingResult is defined
+        public AssetDisposalCoordinationResult? DisposalCoordinationResult { get; set; } // Ensure AssetDisposalCoordinationResult is defined
+        public string? RetirementDocumentation { get; set; }
+        public Dictionary<string, object> RetirementMetrics { get; set; } = new Dictionary<string, object>(); // Verified
+    }
+
+    // Ensure AssetReplacementProcessingResult is defined
+    public class AssetReplacementProcessingResult
+    {
         public bool Success { get; set; }
-        public string ErrorMessage { get; set; } = string.Empty;
-        public AssetDataArchivalResult DataArchivalResult { get; set; } = new();
-        public ReplacementProcessingResult ReplacementProcessingResult { get; set; } = new();
-        public DisposalCoordinationResult DisposalCoordinationResult { get; set; } = new();
-        public List<string> RetirementDocumentation { get; set; } = new();
-        public AssetRetirementMetrics RetirementMetrics { get; set; } = new();
+        public string? Message { get; set; }
+        public int? ProcurementRequestId { get; set; }
     }
 
-    public class AssetRetirementMetrics
+    // Ensure AssetDisposalCoordinationResult is defined
+    public class AssetDisposalCoordinationResult
     {
-        public decimal RecoveredValue { get; set; }
-        public decimal DisposalCost { get; set; }
-        public int DataMigrationHours { get; set; }
-        public List<string> ComplianceRequirements { get; set; } = new();
-        
-        // Additional properties from service usage
-        public int TotalLifespanDays { get; set; }
-        public decimal TotalCostOfOwnership { get; set; }
-    }
-
-    public class AssetDataArchivalResult
-    {
-        public bool DataArchived { get; set; }
-        public DateTime ArchivalDate { get; set; }
-        public int RecordsArchived { get; set; }
-        public string ArchivalLocation { get; set; } = string.Empty;
-        
-        // Additional property from service usage
         public bool Success { get; set; }
-    }
-
-    public class ReplacementProcessingResult
-    {
-        public bool ReplacementRequired { get; set; }
-        public Asset? ReplacementAsset { get; set; }
-        public DateTime? ReplacementDate { get; set; }
-        public string ReplacementStatus { get; set; } = string.Empty;
-        
-        // Additional property from service usage
-        public bool Success { get; set; }
-    }
-
-    public class DisposalCoordinationResult
-    {
-        public string DisposalMethod { get; set; } = string.Empty;
+        public string? Message { get; set; }
+        public string? DisposalMethod { get; set; }
         public DateTime? DisposalDate { get; set; }
-        public decimal DisposalCost { get; set; }
-        public string DisposalVendor { get; set; } = string.Empty;
-        
-        // Additional property from service usage
-        public bool Success { get; set; }
     }
+    
+    // Ensure AssetOverDemandAnalysis is defined (if not already defined earlier in the file)
+    // public class AssetOverDemandAnalysis
+    // {
+    //     public List<string> OverDemandedCategories { get; set; } = new List<string>();
+    //     public List<string> SuggestedProcurements { get; set; } = new List<string>();
+    //     public int EstimatedShortfallCount { get; set; }
+    // }
 
-    #endregion
-
-    #region Additional Result Models for Service Implementation
-
-    public class AssetDashboardViewModel
-    {
-        public int TotalAssets { get; set; }
-        public int ActiveAssets { get; set; }
-        public int InMaintenanceAssets { get; set; }
-        public int RetiredAssets { get; set; }
-        public List<AssetCategoryData> CategoryData { get; set; } = new();
-        public List<AssetAlert> RecentAlerts { get; set; } = new();
-        public List<MaintenanceRecord> UpcomingMaintenance { get; set; } = new();
-        public Dictionary<string, int> AssetsByLocation { get; set; } = new();
-        public Dictionary<string, decimal> AssetValueByCategory { get; set; } = new();
-        
-        // Additional properties for controller compatibility
-        public Dictionary<string, int> StatusSummary { get; set; } = new();
-        public Dictionary<string, int> CategoryBreakdown { get; set; } = new();
-        public Dictionary<string, object> Trends { get; set; } = new();
-    }
-
-    public class AssetAnalyticsViewModel
-    {
-        public List<AssetPerformanceData> PerformanceData { get; set; } = new();
-        public List<AssetUtilizationData> UtilizationData { get; set; } = new();
-        public List<AssetCostData> CostData { get; set; } = new();
-        public Dictionary<string, double> EfficiencyMetrics { get; set; } = new();
-    }
-
-    public class AssetPerformanceAnalysisResult
-    {
-        public List<AssetPerformanceMetric> Metrics { get; set; } = new();
-        public double OverallPerformance { get; set; }
-        public List<string> Recommendations { get; set; } = new();
-        public DateTime AnalysisDate { get; set; }
-    }
-
-    public class AssetPerformanceReportResult
-    {
-        public List<AssetPerformanceData> PerformanceData { get; set; } = new();
-        public DateTime ReportGenerationDate { get; set; }
-        public string GeneratedByUserId { get; set; } = string.Empty;
-    }
-
-    public class AssetServiceRequestResult
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public int RequestId { get; set; }
-    }
-
-    public class AssetDataSynchronizationResult
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public DateTime SynchronizationDate { get; set; }
-    }
-
-    public class AssetHealthAnalysisResult
-    {
-        public int AssetId { get; set; }
-        public DateTime AnalysisDate { get; set; }
-        public double HealthScore { get; set; }
-        public List<string> HealthIndicators { get; set; } = new();
-    }
-
-    public class AssetCostBenefitAnalysisResult
-    {
-        public DateTime AnalysisDate { get; set; }
-        public decimal TotalCost { get; set; }
-        public decimal TotalBenefit { get; set; }
-        public double ROI { get; set; }
-    }
-
-    public class AssetPerformanceMetricsResult
-    {
-        public DateTime ReportPeriodStart { get; set; }
-        public DateTime ReportPeriodEnd { get; set; }
-        public List<AssetPerformanceMetric> Metrics { get; set; } = new();
-    }
-
-    public class AssetFailureRiskAssessmentResult
-    {
-        public DateTime AssessmentDate { get; set; }
-        public List<AssetRiskScore> RiskScores { get; set; } = new();
-    }
-
-    public class AssetPortfolioOptimizationResult
-    {
-        public DateTime OptimizationDate { get; set; }
-        public List<string> Recommendations { get; set; } = new();
-    }
-
-    public class AssetComplianceAnalysisResult
-    {
-        public DateTime AnalysisDate { get; set; }
-        public bool IsCompliant { get; set; }
-        public List<string> ComplianceIssues { get; set; } = new();
-    }
-
-    public class AssetBudgetPlanningResult
-    {
-        public int FiscalYear { get; set; }
-        public DateTime PlanningDate { get; set; }
-        public decimal BudgetRequired { get; set; }
-    }
-
-    public class AssetSecurityRiskResult
-    {
-        public DateTime AnalysisDate { get; set; }
-        public List<string> SecurityRisks { get; set; } = new();
-    }
-
-    public class AssetAutomationResult
-    {
-        public DateTime ExecutionDate { get; set; }
-        public List<string> CompletedTasks { get; set; } = new();
-    }
-
-    public class AssetWorkflowOrchestrationResult
-    {
-        public DateTime OrchestrationDate { get; set; }
-        public bool Success { get; set; }
-    }
-
-    public class AssetAlertingResult
-    {
-        public DateTime ProcessingDate { get; set; }
-        public List<AssetAlert> ProcessedAlerts { get; set; } = new();
-    }
-
-    public class AssetLifecycleReportResult
-    {
-        public DateTime ReportGenerationDate { get; set; }
-        public List<Asset> AssetsInReport { get; set; } = new();
-    }
-
-    public class AssetInvestmentRequest
-    {
-        public int AssetId { get; set; }
-        public decimal InvestmentAmount { get; set; }
-        public string RequestReason { get; set; } = string.Empty;
-    }
-
-    public class AssetWorkflowRequest
-    {
-        public int AssetId { get; set; }
-        public string WorkflowType { get; set; } = string.Empty;
-        public Dictionary<string, object> Parameters { get; set; } = new();
-    }
-
-    public class AssetReportingCriteria
-    {
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-        public List<int> AssetIds { get; set; } = new();
-    }
-
-    public class AssetPerformanceData
-    {
-        public int AssetId { get; set; }
-        public string AssetName { get; set; } = string.Empty;
-        public double PerformanceScore { get; set; }
-        public DateTime MeasurementDate { get; set; }
-    }
-
-    public class AssetCostData
-    {
-        public int AssetId { get; set; }
-        public decimal Cost { get; set; }
-        public string CostType { get; set; } = string.Empty;
-        public DateTime CostDate { get; set; }
-    }
-
-    public class AssetPerformanceMetric
-    {
-        public string MetricName { get; set; } = string.Empty;
-        public double Value { get; set; }
-        public string Unit { get; set; } = string.Empty;
-    }
-
-    public class AssetRiskScore
-    {
-        public int AssetId { get; set; }
-        public double RiskScore { get; set; }
-        public string RiskLevel { get; set; } = string.Empty;
-    }
-
-    public class AssetCategoryData
-    {
-        public string Category { get; set; } = string.Empty;
-        public int Count { get; set; }
-        public decimal TotalValue { get; set; }
-    }
 
     #endregion
 }

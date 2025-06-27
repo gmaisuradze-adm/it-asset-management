@@ -1,0 +1,36 @@
+@model HospitalAssetTracker.Models.ITRequest
+@using Microsoft.AspNetCore.Identity
+@using HospitalAssetTracker.Models
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+
+@{
+    var user = await UserManager.GetUserAsync(User);
+    var userRoles = new List<string>();
+    if (user != null && SignInManager.IsSignedIn(User))
+    {
+        userRoles = (await UserManager.GetRolesAsync(user)).ToList();
+    }
+    var userId = user?.Id;
+
+    var canAssign = userRoles.Contains("Admin") || userRoles.Contains("IT Support") || userRoles.Contains("Asset Manager");
+    var canComplete = userRoles.Contains("Admin") || userRoles.Contains("IT Support");
+    var isAssignedToCurrentUser = Model.AssignedToUserId == userId;
+}
+
+<div class="d-flex flex-wrap gap-2">
+    @if (Model.Status == RequestStatus.Submitted && canAssign && Model.AssignedToUserId == null)
+    {
+        <button id="take-ownership-btn" class="btn btn-sm btn-success"><i class="bi bi-person-check-fill"></i> Take Ownership</button>
+    }
+
+    @if ((Model.Status == RequestStatus.Submitted || Model.Status == RequestStatus.InProgress) && canAssign)
+    {
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#assignModal"><i class="bi bi-person-plus-fill"></i> @(Model.AssignedToUserId == null ? "Assign" : "Re-assign")</button>
+    }
+
+    @if (Model.Status == RequestStatus.InProgress && canComplete && isAssignedToCurrentUser)
+    {
+        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#completeModal"><i class="bi bi-check-circle-fill"></i> Mark as Complete</button>
+    }
+</div>

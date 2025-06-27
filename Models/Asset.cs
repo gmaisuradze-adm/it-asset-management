@@ -22,23 +22,16 @@ namespace HospitalAssetTracker.Models
 
     public enum AssetStatus
     {
-        Active,
-        InUse,
-        Available,
-        InRepair,
-        UnderRepair,
-        UnderMaintenance,
-        Maintenance,
-        MaintenancePending,
-        Reserved,
-        Upgraded,
-        Decommissioned,
-        Retired,
-        WriteOff,
-        Lost,
-        Stolen,
-        PendingApproval,
-        InTransit
+        Available,          // In inventory, ready for assignment
+        InUse,              // Assigned to a user or location (canonical status)
+        UnderMaintenance,   // In repair or scheduled maintenance (canonical status)
+        MaintenancePending, // Maintenance scheduled but not started
+        InTransit,          // Being moved between locations
+        Reserved,           // Reserved for a future deployment
+        Lost,               // Asset is lost
+        Stolen,             // Asset has been stolen
+        Decommissioned,     // Retired from service (canonical status for write-offs)
+        PendingApproval     // Awaiting approval for a status change or new asset
     }
 
     public class Asset
@@ -88,9 +81,6 @@ namespace HospitalAssetTracker.Models
 
         // Compatibility properties for legacy code
         [NotMapped]
-        public DateTime? PurchaseDate { get; set; }
-
-        [NotMapped]
         public DateTime? WarrantyEndDate
         {
             get => WarrantyExpiry;
@@ -105,6 +95,10 @@ namespace HospitalAssetTracker.Models
 
         [Required]
         public AssetStatus Status { get; set; }
+
+        // Add AssetCategoryId to be compatible with ProcurementService
+        [NotMapped]
+        public int AssetCategoryId { get => (int)Category; set => Category = (AssetCategory)value; }
 
         // Location Information
         public int? LocationId { get; set; }
@@ -144,6 +138,10 @@ namespace HospitalAssetTracker.Models
         public bool IsCritical => Category == AssetCategory.Server || 
                                   Category == AssetCategory.NetworkDevice || 
                                   Category == AssetCategory.MedicalDevice;
+
+        // Concurrency Control
+        [Timestamp]
+        public byte[]? RowVersion { get; set; }
 
         // Navigation Properties
         public virtual ICollection<AssetMovement> Movements { get; set; } = new List<AssetMovement>();

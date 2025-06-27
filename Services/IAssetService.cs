@@ -1,4 +1,5 @@
 using HospitalAssetTracker.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HospitalAssetTracker.Services
 {
@@ -19,19 +20,20 @@ namespace HospitalAssetTracker.Services
         Task<bool> DeleteAssetAsync(int id, string userId);
         Task<bool> MoveAssetAsync(int assetId, int? newLocationId, string? newUserId, string reason, string performedByUserId);
         Task<bool> ChangeAssetStatusAsync(int assetId, AssetStatus newStatus, string reason, string userId);
+        Task<bool> UpdateAssetStatusAsync(int assetId, AssetStatus status, string userId);
         Task<bool> AssignAssetAsync(int assetId, string userId, string assignedByUserId);
         Task<bool> UnassignAssetAsync(int assetId, string userId);
         Task<IEnumerable<AssetMovement>> GetAssetMovementHistoryAsync(int assetId);
         Task<bool> IsAssetTagUniqueAsync(string assetTag, int? excludeId = null);
         Task<IEnumerable<Asset>> GetAssetsForMaintenanceAsync();
-        Task<IEnumerable<Asset>> GetExpiredWarrantyAssetsAsync();
         
         // Pagination methods
         Task<PagedResult<Asset>> GetAssetsPagedAsync(int pageNumber, int pageSize, string? searchTerm = null, AssetCategory? category = null, AssetStatus? status = null, int? locationId = null);
         Task<PagedResult<Asset>> GetActiveAssetsPagedAsync(int pageNumber, int pageSize);
         
         // Advanced Search
-        Task<PagedResult<Asset>> AdvancedSearchAsync(AssetSearchCriteria criteria, int pageNumber, int pageSize);
+        Task<AssetSearchResult> AdvancedSearchAsync(AdvancedAssetSearchModel searchModel);
+        Task<List<object>> GetSearchSuggestionsAsync(string term, string type = "all");
         
         // Asset Health & Statistics
         Task<AssetHealthDashboard> GetAssetHealthDashboardAsync();
@@ -39,31 +41,39 @@ namespace HospitalAssetTracker.Services
         
         // New extended functionality
         Task<Asset> CloneAssetAsync(int sourceAssetId, string userId);
-        Task<bool> BulkUpdateStatusAsync(List<int> assetIds, AssetStatus newStatus, string reason, string userId);
-        Task<bool> BulkUpdateLocationAsync(List<int> assetIds, int? newLocationId, string reason, string userId);
-        Task<bool> BulkAssignAsync(List<int> assetIds, string assignedToUserId, string assignedByUserId);
         Task<bool> DecommissionAssetAsync(int assetId, string reason, string userId);
         Task<bool> WriteOffAssetAsync(int assetId, string reason, string userId);
         Task<bool> AttachDocumentAsync(int assetId, string documentPath, string userId);
         Task<bool> AttachImageAsync(int assetId, string imagePath, string userId);
         Task<bool> RemoveDocumentAsync(int assetId, string documentPath, string userId);
         Task<bool> RemoveImageAsync(int assetId, string imagePath, string userId);
-        Task<List<string>> GetAssetDocumentsAsync(int assetId);
-        Task<List<string>> GetAssetImagesAsync(int assetId);
-        Task<bool> GenerateAssetQRCodeAsync(int assetId);
-        Task<byte[]> GetAssetQRCodeAsync(int assetId);
+
+        // Maintenance
+        Task ScheduleMaintenanceAsync(MaintenanceRecord record, string userId);
+
+        // Methods called by AssetsController but missing from interface
         Task<IEnumerable<Location>> GetActiveLocationsAsync();
+        Task<PagedResult<Asset>> GetAssetsAsync(AssetSearchModel searchModel); // Overload for AssetSearchModel
+        Task<byte[]> GetAssetQRCodeAsync(int assetId);
+        Task<bool> GenerateAssetQRCodeAsync(int assetId);
+        Task<IEnumerable<ApplicationUser>> GetActiveUsersAsync(); // Added based on AssetService implementation
+
+        Task<string> GenerateAssetTagAsync(); // Added for generating unique asset tags
+
+        // Asset tag management
+        Task<Asset?> GetLatestAssetByPrefixAsync(string prefix);
+        Task<bool> AssetTagExistsAsync(string assetTag);
+        
+        // Location management
         Task<Location> CreateLocationAsync(Location location, string userId);
-        Task<IEnumerable<ApplicationUser>> GetActiveUsersAsync();
+        Task<Location> CreateLocationAsync(string name, string? description = null, 
+            string? building = null, string? floor = null, string? room = null);
         
-        // Bulk Export
-        Task<byte[]> ExportAssetsToExcelAsync(List<int>? assetIds = null);
-        Task<byte[]> ExportAssetsToCsvAsync(List<int>? assetIds = null);
-        Task<byte[]> ExportAssetsWithFiltersAsync(AssetSearchCriteria criteria, string format = "excel");
-        
-        // Additional methods for Request Service integration
-        Task<PagedResult<Asset>> GetAssetsAsync(AssetSearchModel searchModel);
-        Task<bool> UpdateAssetStatusAsync(int assetId, AssetStatus status, string userId);
-        Task<string> GenerateAssetTagAsync();
+        // Advanced Search and Management
+        Task<HospitalAssetTracker.Models.BulkOperationResult> ProcessBulkOperationAsync(BulkOperationModel operationModel);
+        Task<FileResult?> ExportAssetsAsync(AssetExportModel exportModel);
+        Task<AssetComparisonModel> CompareAssetsAsync(List<int> assetIds);
+        Task<List<string>> GetDepartmentsAsync();
+        Task<List<string>> GetSuppliersAsync();
     }
 }

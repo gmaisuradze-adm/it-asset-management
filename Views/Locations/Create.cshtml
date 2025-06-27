@@ -16,8 +16,8 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label asp-for="Building" class="form-label">Building</label>
-                            <input asp-for="Building" class="form-control" placeholder="e.g., Main Hospital" />
+                            <label asp-for="Building" class="form-label">Building <span class="text-danger">*</span></label>
+                            <input asp-for="Building" class="form-control" placeholder="e.g., Main Hospital" required />
                             <span asp-validation-for="Building" class="text-danger"></span>
                         </div>
                         <div class="col-md-6 mb-3">
@@ -28,8 +28,8 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label asp-for="Room" class="form-label">Room</label>
-                        <input asp-for="Room" class="form-control" placeholder="e.g., Room 101, ICU, Emergency" />
+                        <label asp-for="Room" class="form-label">Room <span class="text-danger">*</span></label>
+                        <input asp-for="Room" class="form-control" placeholder="e.g., Room 101, ICU, Emergency" required />
                         <span asp-validation-for="Room" class="text-danger"></span>
                     </div>
                     

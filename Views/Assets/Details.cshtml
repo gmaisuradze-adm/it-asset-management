@@ -20,7 +20,7 @@
                     <i class="bi bi-files"></i> Clone
                 </button>
             </form>
-            @if (Model.Status != HospitalAssetTracker.Models.AssetStatus.WriteOff && Model.Status != HospitalAssetTracker.Models.AssetStatus.Decommissioned)
+            @if (Model.Status != HospitalAssetTracker.Models.AssetStatus.Decommissioned)
             {
                 <a asp-controller="WriteOff" asp-action="Create" asp-route-assetId="@Model.Id" class="btn btn-outline-danger">
                     <i class="bi bi-trash"></i> Request Write-Off
@@ -36,14 +36,11 @@
 <!-- Status Alert -->
 @switch (Model.Status)
 {
-    case HospitalAssetTracker.Models.AssetStatus.UnderRepair:
-        <div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> This asset is currently under repair.</div>
+    case HospitalAssetTracker.Models.AssetStatus.UnderMaintenance:
+        <div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> This asset is currently under maintenance.</div>
         break;
     case HospitalAssetTracker.Models.AssetStatus.Decommissioned:
         <div class="alert alert-danger"><i class="bi bi-x-circle"></i> This asset has been decommissioned.</div>
-        break;
-    case HospitalAssetTracker.Models.AssetStatus.WriteOff:
-        <div class="alert alert-danger"><i class="bi bi-x-circle"></i> This asset has been written off.</div>
         break;
 }
 
@@ -81,8 +78,8 @@
                             case HospitalAssetTracker.Models.AssetStatus.Available:
                                 <span class="badge bg-primary fs-6">Available</span>
                                 break;
-                            case HospitalAssetTracker.Models.AssetStatus.UnderRepair:
-                                <span class="badge bg-warning fs-6">Under Repair</span>
+                            case HospitalAssetTracker.Models.AssetStatus.UnderMaintenance:
+                                <span class="badge bg-warning fs-6">Under Maintenance</span>
                                 break;
                             case HospitalAssetTracker.Models.AssetStatus.Decommissioned:
                                 <span class="badge bg-danger fs-6">Decommissioned</span>
@@ -375,6 +372,109 @@
     </div>
 </div>
 
+<!-- Asset Management Actions -->
+@if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+{
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5><i class="bi bi-tools"></i> Asset Management Actions</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Assignment Actions -->
+                <div class="col-md-6">
+                    <h6 class="text-primary"><i class="bi bi-person-check"></i> Assignment</h6>
+                    @if (string.IsNullOrEmpty(Model.AssignedToUserId))
+                    {
+                        <button type="button" class="btn btn-outline-success btn-sm me-2" onclick="showAssignModal(@Model.Id)">
+                            <i class="bi bi-person-plus"></i> Assign User
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-outline-warning btn-sm me-2" onclick="showUnassignModal(@Model.Id)">
+                            <i class="bi bi-person-dash"></i> Unassign User
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-sm" onclick="showReassignModal(@Model.Id)">
+                            <i class="bi bi-arrow-left-right"></i> Reassign
+                        </button>
+                    }
+                </div>
+
+                <!-- Status Actions -->
+                <div class="col-md-6">
+                    <h6 class="text-primary"><i class="bi bi-flag"></i> Status Management</h6>
+                    @switch (Model.Status)
+                    {
+                        case HospitalAssetTracker.Models.AssetStatus.Available:
+                            <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="changeAssetStatus(@Model.Id, '@((int)AssetStatus.InUse)', 'Put into active use')">
+                                <i class="bi bi-play"></i> Deploy
+                            </button>
+                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="changeAssetStatus(@Model.Id, '@((int)AssetStatus.UnderMaintenance)', 'Scheduled for maintenance')">
+                                <i class="bi bi-tools"></i> Maintenance
+                            </button>
+                            break;
+                        case HospitalAssetTracker.Models.AssetStatus.InUse:
+                            <button type="button" class="btn btn-outline-secondary btn-sm me-2" onclick="changeAssetStatus(@Model.Id, '@((int)AssetStatus.Available)', 'Return to inventory')">
+                                <i class="bi bi-arrow-return-left"></i> Return
+                            </button>
+                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="changeAssetStatus(@Model.Id, '@((int)AssetStatus.UnderMaintenance)', 'Requires maintenance')">
+                                <i class="bi bi-tools"></i> Maintenance
+                            </button>
+                            break;
+                        case HospitalAssetTracker.Models.AssetStatus.UnderMaintenance:
+                            <button type="button" class="btn btn-outline-success btn-sm me-2" onclick="changeAssetStatus(@Model.Id, '@((int)AssetStatus.Available)', 'Maintenance completed')">
+                                <i class="bi bi-check-circle"></i> Complete
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="changeAssetStatus(@Model.Id, '@((int)AssetStatus.InUse)', 'Maintenance completed, return to use')">
+                                <i class="bi bi-play"></i> Return to Use
+                            </button>
+                            break;
+                        case HospitalAssetTracker.Models.AssetStatus.Lost:
+                        case HospitalAssetTracker.Models.AssetStatus.Stolen:
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="changeAssetStatus(@Model.Id, '@((int)AssetStatus.Available)', 'Asset recovered')">
+                                <i class="bi bi-arrow-clockwise"></i> Mark Recovered
+                            </button>
+                            break;
+                        default:
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="showStatusChangeModal(@Model.Id)">
+                                <i class="bi bi-gear"></i> Change Status
+                            </button>
+                            break;
+                    }
+                </div>
+            </div>
+
+            <!-- Quick Actions Row -->
+            <hr class="my-3">
+            <div class="row g-2">
+                <div class="col-auto">
+                    <button type="button" class="btn btn-outline-info btn-sm" onclick="showMoveModal(@Model.Id)">
+                        <i class="bi bi-geo-alt"></i> Move Asset
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="showMaintenanceModal(@Model.Id)">
+                        <i class="bi bi-wrench"></i> Schedule Maintenance
+                    </button>
+                </div>
+                @if (Model.Status != AssetStatus.Decommissioned)
+                {
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="reportIssue(@Model.Id)">
+                            <i class="bi bi-exclamation-triangle"></i> Report Issue
+                        </button>
+                    </div>
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="showDecommissionModal(@Model.Id)">
+                            <i class="bi bi-x-circle"></i> Decommission
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
 <!-- Modals -->
 <!-- Move Modal -->
 <div class="modal fade" id="moveModal" tabindex="-1">
@@ -507,3 +607,305 @@
         <i class="bi bi-clock-history"></i> Full History
     </a>
 </div>
+
+@section Scripts {
+    <script>
+        // Asset Management Action Functions
+        function showAssignModal(assetId) {
+            Swal.fire({
+                title: 'Assign Asset',
+                html: `
+                    <div class="mb-3">
+                        <label class="form-label">Select User:</label>
+                        <select id="assignUserId" class="form-select">
+                            <option value="">Select a user...</option>
+                            @if (ViewBag.Users != null)
+                            {
+                                foreach (var user in (SelectList)ViewBag.Users)
+                                {
+                                    <option value="@user.Value">@user.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes (optional):</label>
+                        <textarea id="assignNotes" class="form-control" rows="3" placeholder="Assignment notes..."></textarea>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Assign',
+                confirmButtonColor: '#28a745',
+                cancelButtonText: 'Cancel',
+                preConfirm: () => {
+                    const userId = document.getElementById('assignUserId').value;
+                    const notes = document.getElementById('assignNotes').value;
+                    
+                    if (!userId) {
+                        Swal.showValidationMessage('Please select a user');
+                        return false;
+                    }
+                    
+                    return { userId, notes };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const { userId, notes } = result.value;
+                    
+                    fetch('@Url.Action("AssignAsset", "Assets")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new URLSearchParams({
+                            assetId: assetId,
+                            userId: userId,
+                            notes: notes,
+                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Success!', data.message, 'success')
+                                .then(() => location.reload());
+                        } else {
+                            Swal.fire('Error!', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+                    });
+                }
+            });
+        }
+
+        function showUnassignModal(assetId) {
+            Swal.fire({
+                title: 'Unassign Asset',
+                text: 'Are you sure you want to unassign this asset?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Unassign',
+                confirmButtonColor: '#ffc107',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('@Url.Action("UnassignAsset", "Assets")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new URLSearchParams({
+                            assetId: assetId,
+                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Success!', data.message, 'success')
+                                .then(() => location.reload());
+                        } else {
+                            Swal.fire('Error!', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+                    });
+                }
+            });
+        }
+
+        function showReassignModal(assetId) {
+            // First unassign, then assign to new user
+            showUnassignModal(assetId);
+        }
+
+        function changeAssetStatus(assetId, newStatus, defaultReason) {
+            Swal.fire({
+                title: 'Change Asset Status',
+                input: 'textarea',
+                inputLabel: 'Reason for status change',
+                inputValue: defaultReason,
+                inputPlaceholder: 'Please provide a reason for this status change...',
+                showCancelButton: true,
+                confirmButtonText: 'Change Status',
+                confirmButtonColor: '#007bff',
+                cancelButtonText: 'Cancel',
+                inputValidator: (value) => {
+                    if (!value || value.trim().length === 0) {
+                        return 'Reason is required!';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const reason = result.value;
+                    
+                    fetch('@Url.Action("ChangeAssetStatus", "Assets")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new URLSearchParams({
+                            assetId: assetId,
+                            newStatus: newStatus,
+                            reason: reason,
+                            __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Success!', data.message, 'success')
+                                .then(() => location.reload());
+                        } else {
+                            Swal.fire('Error!', data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+                    });
+                }
+            });
+        }
+
+        function showMoveModal(assetId) {
+            // Use the existing move modal functionality
+            const moveModal = new bootstrap.Modal(document.getElementById('moveModal'));
+            moveModal.show();
+        }
+
+        function showMaintenanceModal(assetId) {
+            Swal.fire({
+                title: 'Schedule Maintenance',
+                html: `
+                    <div class="mb-3">
+                        <label class="form-label">Maintenance Type:</label>
+                        <select id="maintenanceType" class="form-select">
+                            <option value="Preventive">Preventive</option>
+                            <option value="Corrective">Corrective</option>
+                            <option value="Emergency">Emergency</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description:</label>
+                        <textarea id="maintenanceDescription" class="form-control" rows="3" placeholder="Describe the maintenance required..."></textarea>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Schedule',
+                confirmButtonColor: '#ffc107',
+                cancelButtonText: 'Cancel',
+                preConfirm: () => {
+                    const type = document.getElementById('maintenanceType').value;
+                    const description = document.getElementById('maintenanceDescription').value;
+                    
+                    if (!description.trim()) {
+                        Swal.showValidationMessage('Please provide a description');
+                        return false;
+                    }
+                    
+                    return { type, description };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Create IT Request for maintenance
+                    window.location.href = '@Url.Action("Create", "Requests")?assetId=' + assetId + '&type=AssetMaintenance';
+                }
+            });
+        }
+
+        function reportIssue(assetId) {
+            // Create IT Request for asset issue
+            window.location.href = '@Url.Action("Create", "Requests")?assetId=' + assetId + '&type=AssetRepair';
+        }
+
+        function showDecommissionModal(assetId) {
+            Swal.fire({
+                title: 'Decommission Asset',
+                html: `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This action will permanently decommission the asset.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason for decommissioning:</label>
+                        <textarea id="decommissionReason" class="form-control" rows="3" placeholder="Please provide a detailed reason..."></textarea>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Decommission',
+                confirmButtonColor: '#dc3545',
+                cancelButtonText: 'Cancel',
+                preConfirm: () => {
+                    const reason = document.getElementById('decommissionReason').value;
+                    
+                    if (!reason.trim()) {
+                        Swal.showValidationMessage('Please provide a reason for decommissioning');
+                        return false;
+                    }
+                    
+                    return reason;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const reason = result.value;
+                    
+                    changeAssetStatus(assetId, '@((int)AssetStatus.Decommissioned)', reason);
+                }
+            });
+        }
+
+        function showStatusChangeModal(assetId) {
+            Swal.fire({
+                title: 'Change Asset Status',
+                html: `
+                    <div class="mb-3">
+                        <label class="form-label">New Status:</label>
+                        <select id="newStatusSelect" class="form-select">
+                            <option value="@((int)AssetStatus.Available)">Available</option>
+                            <option value="@((int)AssetStatus.InUse)">In Use</option>
+                            <option value="@((int)AssetStatus.UnderMaintenance)">Under Maintenance</option>
+                            <option value="@((int)AssetStatus.InTransit)">In Transit</option>
+                            <option value="@((int)AssetStatus.Reserved)">Reserved</option>
+                            <option value="@((int)AssetStatus.Lost)">Lost</option>
+                            <option value="@((int)AssetStatus.Stolen)">Stolen</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason:</label>
+                        <textarea id="statusChangeReason" class="form-control" rows="3" placeholder="Please provide a reason for this status change..."></textarea>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Change Status',
+                confirmButtonColor: '#007bff',
+                cancelButtonText: 'Cancel',
+                preConfirm: () => {
+                    const newStatus = document.getElementById('newStatusSelect').value;
+                    const reason = document.getElementById('statusChangeReason').value;
+                    
+                    if (!reason.trim()) {
+                        Swal.showValidationMessage('Please provide a reason');
+                        return false;
+                    }
+                    
+                    return { newStatus, reason };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const { newStatus, reason } = result.value;
+                    changeAssetStatus(assetId, newStatus, reason);
+                }
+            });
+        }
+    </script>
+}

@@ -160,7 +160,7 @@ namespace HospitalAssetTracker.Services
                 foreach (var item in itemsToAnalyze)
                 {
                     var demandForecast = await GenerateDemandForecastAsync(item.Id, 30);
-                    var replenishmentDecision = await MakeReplenishmentDecisionAsync(item, demandForecast);
+                    var replenishmentDecision = MakeReplenishmentDecision(item, demandForecast);
 
                     if (replenishmentDecision.ShouldReplenish)
                     {
@@ -694,7 +694,6 @@ namespace HospitalAssetTracker.Services
             var avgDemand = dailyUsage.Average();
             var demandStdDev = CalculateStandardDeviation(dailyUsage);
             var leadTime = 7; // Assume 7 days lead time
-            var serviceLevel = 0.95; // 95% service level
             var zScore = 1.645; // Z-score for 95% service level
             
             var safetyStock = zScore * demandStdDev * Math.Sqrt(leadTime);
@@ -772,16 +771,16 @@ namespace HospitalAssetTracker.Services
             return Math.Sqrt(variance);
         }
 
-        private async Task<ReplenishmentDecision> MakeReplenishmentDecisionAsync(InventoryItem item, DemandForecast forecast)
+        private ReplenishmentDecision MakeReplenishmentDecision(InventoryItem item, DemandForecast forecast)
         {
             var decision = new ReplenishmentDecision();
-            
+
             // Check if item is below reorder level
             if (item.Quantity <= item.ReorderLevel)
             {
                 decision.ShouldReplenish = true;
                 decision.OrderQuantity = Math.Max(forecast.RecommendedOrderQuantity, item.ReorderLevel);
-                
+
                 if (item.Quantity == 0)
                 {
                     decision.Priority = ReplenishmentPriority.Critical;
@@ -797,11 +796,16 @@ namespace HospitalAssetTracker.Services
                     decision.Priority = ReplenishmentPriority.Medium;
                     decision.Reasoning = "Item has reached reorder point";
                 }
-                
+
                 decision.EstimatedDeliveryDays = 7; // Default lead time
-                decision.EstimatedCost = decision.OrderQuantity * (item.UnitCost ?? 0);
+                decision.RecommendedSupplier = new SupplierInfo { Name = "Default Supplier" }; // Placeholder
             }
-            
+            else
+            {
+                decision.ShouldReplenish = false;
+                decision.Reasoning = "Stock level is sufficient";
+            }
+
             return decision;
         }
 

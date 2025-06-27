@@ -1,7 +1,69 @@
 using HospitalAssetTracker.Models;
 
-namespace HospitalAssetTracker.Controllers
+namespace HospitalAssetTracker.Models
 {
+    // === ASSET DASHBOARD VIEW MODELS ===
+
+    public class AssetDashboardViewModel
+    {
+        public int TotalAssets { get; set; }
+        public int ActiveAssets { get; set; }
+        public int InMaintenanceAssets { get; set; }
+        public int RetiredAssets { get; set; }
+        public List<AssetCategoryData> CategoryData { get; set; } = new();
+        public List<AssetAlert> RecentAlerts { get; set; } = new();
+        public List<MaintenanceRecord> UpcomingMaintenance { get; set; } = new();
+        public Dictionary<string, int> AssetsByLocation { get; set; } = new();
+        public Dictionary<string, decimal> AssetValueByCategory { get; set; } = new();
+    }
+
+    public class AssetAnalyticsViewModel
+    {
+        public List<AssetPerformanceData> PerformanceData { get; set; } = new();
+        public List<AssetUtilizationData> UtilizationData { get; set; } = new();
+        public List<AssetCostData> CostData { get; set; } = new();
+        public Dictionary<string, double> EfficiencyMetrics { get; set; } = new();
+    }
+
+    public class AssetPerformanceAnalysisResult
+    {
+        public List<AssetPerformanceMetric> Metrics { get; set; } = new();
+        public double OverallPerformance { get; set; }
+        public List<string> Recommendations { get; set; } = new();
+        public DateTime AnalysisDate { get; set; }
+    }
+
+    public class AssetCategoryData
+    {
+        public string Category { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public decimal TotalValue { get; set; }
+    }
+
+    public class AssetPerformanceData
+    {
+        public int AssetId { get; set; }
+        public string AssetName { get; set; } = string.Empty;
+        public double PerformanceScore { get; set; }
+        public DateTime MeasurementDate { get; set; }
+    }
+
+    public class AssetCostData
+    {
+        public int AssetId { get; set; }
+        public decimal Cost { get; set; }
+        public string CostType { get; set; } = string.Empty;
+        public DateTime CostDate { get; set; }
+    }
+
+    public class AssetPerformanceMetric
+    {
+        public string MetricName { get; set; } = string.Empty;
+        public double Value { get; set; }
+        public string Unit { get; set; } = string.Empty;
+    }
+
+
     // === PROCUREMENT DASHBOARD VIEW MODELS ===
 
     public class ProcurementDashboardViewModel
@@ -93,5 +155,14 @@ namespace HospitalAssetTracker.Controllers
         public List<InventoryItem> ItemsToReorder { get; set; } = new List<InventoryItem>();
         public decimal EstimatedReplenishmentCost { get; set; }
         public List<string> RecommendedActions { get; set; } = new List<string>();
+    }
+
+    public class CostOptimizationOpportunity
+    {
+        public string OpportunityType { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal PotentialSavings { get; set; }
+        public string ImplementationDifficulty { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty; // Added Priority property
     }
 }

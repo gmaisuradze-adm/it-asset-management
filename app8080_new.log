@@ -1,0 +1,108 @@
+Using launch settings from /home/gadmin/it_system_new_gen/Properties/launchSettings.json...
+Building...
+/home/gadmin/it_system_new_gen/Controllers/WorkflowOrchestrationController.cs(104,50): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/IEnhancedLoggingService.cs(54,27): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Controllers/WorkflowOrchestrationController.cs(140,50): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/IEnhancedLoggingService.cs(117,39): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/IEnhancedLoggingService.cs(110,27): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/IEnhancedLoggingService.cs(163,39): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/IEnhancedLoggingService.cs(156,27): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/IEnhancedLoggingService.cs(172,27): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/SimpleWorkflowOrchestrationService.cs(161,43): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/IEnhancedLoggingService.cs(210,36): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/IEnhancedLoggingService.cs(199,27): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/IEnhancedLoggingService.cs(221,27): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/SimpleWorkflowOrchestrationService.cs(255,43): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/WorkflowOrchestrationService.cs(135,70): warning CS8604: Possible null reference argument for parameter 'errorMessage' in 'Task WorkflowOrchestrationService.HandleWorkflowFailureAsync(Guid workflowId, string errorMessage, string userId)'. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/AutomationRulesEngine.cs(407,30): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/AutomationRulesEngine.cs(422,46): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/AutomationRulesEngine.cs(423,51): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/AutomationRulesEngine.cs(430,55): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/WorkflowOrchestrationService.cs(264,35): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/AutomationRulesEngine.cs(468,30): warning CS8601: Possible null reference assignment. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/ProcurementService.cs(360,32): warning CS8629: Nullable value type may be null. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/WorkflowOrchestrationService.cs(522,33): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/UnifiedBusinessLogicService.cs(794,47): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/UnifiedBusinessLogicService.cs(836,49): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/UnifiedBusinessLogicService.cs(892,41): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/UnifiedBusinessLogicService.cs(938,41): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/AutomationRulesEngine.cs(783,36): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/UnifiedBusinessLogicService.cs(994,49): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/UnifiedBusinessLogicService.cs(1033,49): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+/home/gadmin/it_system_new_gen/Services/UnifiedBusinessLogicService.cs(1058,49): warning CS1998: This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread. [/home/gadmin/it_system_new_gen/HospitalAssetTracker.csproj]
+{
+  "Timestamp": "2025-06-27 10:22:02",
+  "EventId": 0,
+  "LogLevel": "Error",
+  "Category": "Program",
+  "Message": "An error occurred creating the DB.",
+  "Exception": "System.InvalidOperationException: An error was generated for warning \u0027Microsoft.EntityFrameworkCore.Migrations.PendingModelChangesWarning\u0027: The model for context \u0027ApplicationDbContext\u0027 has pending changes. Add a new migration before updating the database. This exception can be suppressed or logged by passing event ID \u0027RelationalEventId.PendingModelChangesWarning\u0027 to the \u0027ConfigureWarnings\u0027 method in \u0027DbContext.OnConfiguring\u0027 or \u0027AddDbContext\u0027.\n   at Microsoft.EntityFrameworkCore.Diagnostics.EventDefinition\u00601.Log[TLoggerCategory](IDiagnosticsLogger\u00601 logger, TParam arg)\n   at Microsoft.EntityFrameworkCore.Diagnostics.RelationalLoggerExtensions.PendingModelChangesWarning(IDiagnosticsLogger\u00601 diagnostics, Type contextType)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)\n   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlMigrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)\n   at Program.\u003CMain\u003E$(String[] args) in /home/gadmin/it_system_new_gen/Program.cs:line 136",
+  "State": {
+    "Message": "An error occurred creating the DB.",
+    "{OriginalFormat}": "An error occurred creating the DB."
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:22:02",
+  "EventId": 14,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Now listening on: http://localhost:5000",
+  "State": {
+    "Message": "Now listening on: http://localhost:5000",
+    "address": "http://localhost:5000",
+    "{OriginalFormat}": "Now listening on: {address}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:22:02",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Application started. Press Ctrl\u002BC to shut down.",
+  "State": {
+    "Message": "Application started. Press Ctrl\u002BC to shut down.",
+    "{OriginalFormat}": "Application started. Press Ctrl\u002BC to shut down."
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:22:02",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Hosting environment: Development",
+  "State": {
+    "Message": "Hosting environment: Development",
+    "EnvName": "Development",
+    "{OriginalFormat}": "Hosting environment: {EnvName}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:22:02",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Content root path: /home/gadmin/it_system_new_gen",
+  "State": {
+    "Message": "Content root path: /home/gadmin/it_system_new_gen",
+    "ContentRoot": "/home/gadmin/it_system_new_gen",
+    "{OriginalFormat}": "Content root path: {ContentRoot}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:24:08",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Application is shutting down...",
+  "State": {
+    "Message": "Application is shutting down...",
+    "{OriginalFormat}": "Application is shutting down..."
+  },
+  "Scopes": []
+}

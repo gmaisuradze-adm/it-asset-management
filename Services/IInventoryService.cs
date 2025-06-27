@@ -15,6 +15,22 @@ namespace HospitalAssetTracker.Services
         Task<bool> DeleteInventoryItemAsync(int id, string userId);
         Task<bool> IsItemCodeUniqueAsync(string itemCode, int? excludeId = null);
 
+        // Enhanced Advanced Search Operations
+        Task<PagedResult<AdvancedInventorySearchResult>> GetInventoryItemsAdvancedAsync(AdvancedInventorySearchModel searchModel);
+        Task<IEnumerable<AdvancedInventorySearchResult>> SearchInventoryItemsAsync(string searchTerm, int maxResults = 50);
+        Task<IEnumerable<InventoryQuickFilterModel>> GetQuickFiltersAsync();
+        Task<int> GetInventoryCountAsync(AdvancedInventorySearchModel searchModel);
+
+        // Bulk Operations
+        Task<BulkOperationResult> ExecuteBulkOperationAsync(BulkInventoryOperationModel operationModel, string userId);
+        Task<IEnumerable<AdvancedInventorySearchResult>> GetItemsForBulkOperationAsync(List<int> itemIds);
+        Task<bool> ValidateBulkOperationAsync(BulkInventoryOperationModel operationModel);
+
+        // Export Operations
+        Task<byte[]> ExportInventoryToExcelAsync(AdvancedInventorySearchModel searchModel, bool includeDetails = true);
+        Task<byte[]> ExportInventoryToPdfAsync(AdvancedInventorySearchModel searchModel, bool includeDetails = true);
+        Task<byte[]> ExportInventoryToCsvAsync(AdvancedInventorySearchModel searchModel);
+
         // Stock Management
         Task<bool> AdjustStockAsync(int itemId, int adjustmentQuantity, string reason, string userId);
         Task<bool> ReserveStockAsync(int itemId, int quantity, string reason, string userId);
@@ -23,11 +39,8 @@ namespace HospitalAssetTracker.Services
         Task<bool> SetStockLevelsAsync(int itemId, int minStock, int maxStock, int reorderLevel, string userId);
 
         // Movement Operations
-        Task<bool> TransferInventoryAsync(int itemId, int quantity, int fromLocationId, int toLocationId, 
-            string reason, string userId, string? fromZone = null, string? toZone = null,
-            string? fromShelf = null, string? toShelf = null, string? fromBin = null, string? toBin = null);
-        Task<bool> StockInAsync(int itemId, int quantity, decimal? unitCost, string supplier, 
-            string reason, string userId, string? purchaseOrderNumber = null, string? invoiceNumber = null);
+        Task<bool> TransferInventoryAsync(InventoryTransferRequest transferRequest, string userId);
+        Task<bool> StockInAsync(StockInRequest stockInRequest, string userId);
         Task<bool> StockOutAsync(int itemId, int quantity, string reason, string userId);
         Task<IEnumerable<InventoryMovement>> GetInventoryMovementHistoryAsync(int itemId);
         Task<IEnumerable<InventoryMovement>> GetRecentMovementsAsync(int days = 30);
@@ -45,94 +58,88 @@ namespace HospitalAssetTracker.Services
         Task<IEnumerable<InventoryTransaction>> GetTransactionsByDateRangeAsync(DateTime fromDate, DateTime toDate);
         Task<IEnumerable<InventoryTransaction>> GetPurchaseTransactionsAsync(DateTime? fromDate = null, DateTime? toDate = null);
 
-        // Bulk Operations
-        Task<bool> BulkUpdateStatusAsync(List<int> itemIds, InventoryStatus newStatus, string reason, string userId);
-        Task<bool> BulkUpdateLocationAsync(List<int> itemIds, int newLocationId, string reason, string userId);
-        Task<bool> BulkUpdateConditionAsync(List<int> itemIds, InventoryCondition newCondition, string reason, string userId);
-        Task<bool> BulkAdjustStockAsync(List<(int ItemId, int AdjustmentQuantity)> adjustments, string reason, string userId);
+        // Procurement Integration
+        Task<bool> UpdateInventoryFromProcurementAsync(ProcurementItemReceived receivedItem, string userId);
 
-        // Reporting and Analytics
-        Task<InventoryStockReport> GetStockReportAsync();
-        Task<InventoryMovementReport> GetMovementReportAsync(DateTime fromDate, DateTime toDate);
-        Task<InventoryValuationReport> GetValuationReportAsync();
+        // Dashboard and Alerts
+        Task<InventoryDashboardData> GetInventoryDashboardDataAsync();
         Task<IEnumerable<StockLevelAlert>> GetStockLevelAlertsAsync();
-        Task<IEnumerable<ExpiryAlert>> GetExpiryAlertsAsync(int daysAhead = 30);
-        Task<IEnumerable<InventoryItem>> GetLowStockItemsAsync();
-        Task<IEnumerable<InventoryItem>> GetCriticalStockItemsAsync();
-        Task<IEnumerable<InventoryItem>> GetOverstockedItemsAsync();
-        Task<IEnumerable<InventoryItem>> GetExpiredItemsAsync();
-        Task<IEnumerable<InventoryItem>> GetItemsNearingExpiryAsync(int daysAhead = 30);
+        Task<IEnumerable<InventoryExpiryAlert>> GetExpiryAlertsAsync();
 
-        // Search and Filtering
-        Task<IEnumerable<InventoryItem>> SearchInventoryAsync(string searchTerm);
-        Task<IEnumerable<InventoryItem>> GetInventoryByLocationAsync(int locationId);
-        Task<IEnumerable<InventoryItem>> GetInventoryByCategoryAsync(InventoryCategory category);
-        Task<IEnumerable<InventoryItem>> GetInventoryByStatusAsync(InventoryStatus status);
-        Task<IEnumerable<InventoryItem>> GetInventoryBySupplierAsync(string supplier);
-        Task<IEnumerable<InventoryItem>> GetConsumableItemsAsync();
-        Task<IEnumerable<InventoryItem>> GetItemsRequiringCalibrationAsync();
+        // Advanced Stock Operations
+        Task<bool> CheckAvailabilityAsync(int itemId, int quantity);
+        Task<InventoryReservationResult> CheckAvailabilityAndReserveAsync(int itemId, int quantity, string reason, string userId);
+        Task<bool> UpdateInventoryQuantityAsync(int itemId, int newQuantity, string reason, string userId);
+        Task<bool> ReceiveStockFromProcurementAsync(int inventoryItemId, int quantity, decimal unitCost, string supplier, string purchaseOrderNumber, string userId);
 
-        // Stock Level Management
-        Task<bool> UpdateStockLevelsAsync(int itemId, int quantity, string userId);
-        Task<bool> ValidateStockAvailabilityAsync(int itemId, int requiredQuantity);
-        Task<int> GetAvailableStockAsync(int itemId);
-        Task<int> GetReservedStockAsync(int itemId);
-        Task<int> GetAllocatedStockAsync(int itemId);
+        // Analytics and Reporting
+        Task<InventoryAnalyticsSummary> GetInventoryAnalyticsSummaryAsync();
+        Task<IEnumerable<InventoryTrendData>> GetInventoryTrendsAsync(int months = 12);
+        Task<IEnumerable<InventoryAlertSummary>> GetInventoryAlertSummaryAsync();
 
-        // Quality Control
-        Task<bool> MarkQualityCheckedAsync(int transactionId, bool passed, string notes, string userId);
-        Task<IEnumerable<InventoryTransaction>> GetPendingQualityChecksAsync();
-
-        // Calibration Management
-        Task<bool> ScheduleCalibrationAsync(int itemId, DateTime calibrationDate, string userId);
-        Task<bool> CompleteCalibrationAsync(int itemId, DateTime calibrationDate, string certificateNumber, string userId);
-        Task<IEnumerable<InventoryItem>> GetItemsDueForCalibrationAsync(int daysAhead = 30);
-
-        // Location and Storage
-        Task<bool> UpdateStorageLocationAsync(int itemId, string? zone, string? shelf, string? bin, string userId);
-        Task<IEnumerable<InventoryItem>> GetItemsByStorageLocationAsync(int locationId, string? zone = null, 
-            string? shelf = null, string? bin = null);
-        Task<IEnumerable<Location>> GetAllInventoryLocationsAsync(); // New method
-
-        // Data Export and Import
-        Task<byte[]> ExportInventoryToExcelAsync(InventorySearchCriteria? criteria = null);
-        Task<byte[]> ExportMovementHistoryToExcelAsync(int itemId);
-        Task<byte[]> ExportStockReportToExcelAsync();
-        Task<bool> ImportInventoryFromExcelAsync(byte[] fileData, string userId);
-
-        // Maintenance and Cleanup
-        Task<int> CleanupOldMovementsAsync(int daysToKeep = 365);
-        Task<int> CleanupOldTransactionsAsync(int daysToKeep = 365);
-        Task<bool> RecalculateInventoryValuesAsync();
-        // Task<bool> UpdateAllTotalValuesAsync(); // This might be redundant with RecalculateInventoryValuesAsync or part of it.
-
-        // Dashboard and Statistics
-        Task<InventoryDashboardData> GetInventoryDashboardDataAsync(); // Return type already updated in a previous step if DashboardModels.cs was processed first.
-        // The following can be part of GetInventoryDashboardDataAsync or separate if needed for other specific use cases.
-        // Task<Dictionary<InventoryCategory, int>> GetInventoryCountByCategoryAsync();
-        // Task<Dictionary<InventoryStatus, int>> GetInventoryCountByStatusAsync();
-        // Task<decimal> GetTotalInventoryValueAsync();
-        // Task<int> GetTotalInventoryItemsAsync();
-        // Task<int> GetUniqueInventoryItemsAsync();
+        // Advanced bulk operations
+        Task<InventorySearchModels.BulkOperationResult> BulkUpdateInventoryAsync(InventorySearchModels.BulkInventoryUpdateRequest request, string userId);
         
-        // Additional methods for Request Service integration
-        Task<bool> CheckAvailabilityAndReserveAsync(string itemCode, int quantity, int requestId, string userId); // Modified for reservation
-        Task<bool> ReleaseReservedStockForRequestAsync(int requestId, string userId); // New method
-        Task<InventoryItem?> GetItemBySKUAsync(string sku); // New method for SKU lookup
+        // Export functionality
+        Task<byte[]?> ExportInventoryAsync(InventorySearchModels.InventoryExportRequest request);
+        
+        // Quick filter methods
+        Task<IEnumerable<InventorySearchModels.AdvancedInventorySearchResult>> GetLowStockItemsAsync();
+        Task<IEnumerable<InventorySearchModels.AdvancedInventorySearchResult>> GetOutOfStockItemsAsync();
+        Task<IEnumerable<InventorySearchModels.AdvancedInventorySearchResult>> GetExpiringSoonItemsAsync();
+        Task<IEnumerable<InventorySearchModels.AdvancedInventorySearchResult>> GetHighValueItemsAsync();
+        Task<IEnumerable<InventorySearchModels.AdvancedInventorySearchResult>> GetRecentlyAddedItemsAsync();
+    }
 
-        // Methods for Procurement Integration
-        Task<bool> ReceiveStockFromProcurementAsync(int inventoryItemId, int procurementActivityId, int quantityReceived, decimal unitCost, DateTime receivedDate, string userId, string? batchNumber = null, DateTime? expiryDate = null);
+    // Supporting models for enhanced operations
+    public class BulkOperationResult
+    {
+        public bool Success { get; set; }
+        public int TotalItems { get; set; }
+        public int SuccessfulItems { get; set; }
+        public int FailedItems { get; set; }
+        public List<string> ErrorMessages { get; set; } = new();
+        public List<string> WarningMessages { get; set; } = new();
+        public string? Summary { get; set; }
+        public DateTime ExecutedAt { get; set; } = DateTime.UtcNow;
+        public string ExecutedBy { get; set; } = string.Empty;
+    }
 
-        // Methods for Asset Module Integration (some might be duplicates or need refinement from existing ones)
-        Task<bool> AssignComponentToAssetAsync(int assetId, int inventoryItemId, int quantity, string? serialNumber, DateTime installationDate, string userId);
-        Task<bool> RemoveComponentFromAssetAsync(int assetId, int inventoryItemId, int quantity, DateTime removalDate, string reason, string userId);
-        Task<IEnumerable<InventoryItem>> GetCompatibleComponentsAsync(int assetId); // Or based on asset type/model
+    public class InventoryAnalyticsSummary
+    {
+        public int TotalItems { get; set; }
+        public int TotalQuantity { get; set; }
+        public decimal TotalValue { get; set; }
+        public int LowStockItems { get; set; }
+        public int CriticalStockItems { get; set; }
+        public int OverstockedItems { get; set; }
+        public int ExpiringWarrantyItems { get; set; }
+        public decimal AverageStockTurnover { get; set; }
+        public Dictionary<string, int> ItemsByCategory { get; set; } = new();
+        public Dictionary<string, decimal> ValueByCategory { get; set; } = new();
+        public Dictionary<string, int> ItemsByStatus { get; set; } = new();
+        public Dictionary<string, int> ItemsByLocation { get; set; } = new();
+    }
 
-        // Stock availability checking
-        Task<bool> CheckAvailabilityAsync(int inventoryItemId, int requiredQuantity);
-        Task<bool> CheckAvailabilityAsync(string itemName, int requiredQuantity);
+    public class InventoryTrendData
+    {
+        public DateTime Date { get; set; }
+        public int TotalItems { get; set; }
+        public decimal TotalValue { get; set; }
+        public int StockInQuantity { get; set; }
+        public int StockOutQuantity { get; set; }
+        public decimal StockInValue { get; set; }
+        public decimal StockOutValue { get; set; }
+        public int LowStockCount { get; set; }
+        public int CriticalStockCount { get; set; }
+    }
 
-        // Additional stock operations
-        Task<bool> UpdateInventoryQuantityAsync(int itemId, int newQuantity, string userId);
+    public class InventoryAlertSummary
+    {
+        public string AlertType { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public string Priority { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public DateTime LastUpdated { get; set; }
     }
 }

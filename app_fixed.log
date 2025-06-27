@@ -1,0 +1,110 @@
+nohup: ignoring input
+Using launch settings from /home/gadmin/it_system_new_gen/Properties/launchSettings.json...
+Building...
+{
+  "Timestamp": "2025-06-27 10:51:17",
+  "EventId": 20402,
+  "LogLevel": "Information",
+  "Category": "Microsoft.EntityFrameworkCore.Migrations",
+  "Message": "Applying migration \u002720250627100756_UnifiedBusinessLogicSupport\u0027.",
+  "State": {
+    "Message": "Applying migration \u002720250627100756_UnifiedBusinessLogicSupport\u0027.",
+    "migration": "20250627100756_UnifiedBusinessLogicSupport",
+    "{OriginalFormat}": "Applying migration \u0027{migration}\u0027."
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:51:17",
+  "EventId": 20102,
+  "LogLevel": "Error",
+  "Category": "Microsoft.EntityFrameworkCore.Database.Command",
+  "Message": "Failed executing DbCommand (3ms) [Parameters=[], CommandType=\u0027Text\u0027, CommandTimeout=\u002730\u0027]\nALTER TABLE \u0022AutomationRules\u0022 RENAME COLUMN \u0022Conditions\u0022 TO \u0022TriggerType\u0022;",
+  "State": {
+    "Message": "Failed executing DbCommand (3ms) [Parameters=[], CommandType=\u0027Text\u0027, CommandTimeout=\u002730\u0027]\nALTER TABLE \u0022AutomationRules\u0022 RENAME COLUMN \u0022Conditions\u0022 TO \u0022TriggerType\u0022;",
+    "elapsed": "3",
+    "parameters": "",
+    "commandType": "Text",
+    "commandTimeout": 30,
+    "newLine": "\n",
+    "commandText": "ALTER TABLE \u0022AutomationRules\u0022 RENAME COLUMN \u0022Conditions\u0022 TO \u0022TriggerType\u0022;",
+    "{OriginalFormat}": "Failed executing DbCommand ({elapsed}ms) [Parameters=[{parameters}], CommandType=\u0027{commandType}\u0027, CommandTimeout=\u0027{commandTimeout}\u0027]{newLine}{commandText}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:51:17",
+  "EventId": 0,
+  "LogLevel": "Error",
+  "Category": "Program",
+  "Message": "An error occurred creating the DB.",
+  "Exception": "Npgsql.PostgresException (0x80004005): 42703: column \u0022Conditions\u0022 does not exist\n   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)\n   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder\u00601.StateMachineBox\u00601.System.Threading.Tasks.Sources.IValueTaskSource\u003CTResult\u003E.GetResult(Int16 token)\n   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)\n   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)\n   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)\n   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)\n   at Npgsql.NpgsqlCommand.ExecuteNonQuery(Boolean async, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteNonQueryAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList\u00601 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable\u00601 isolationLevel, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteAsync(IReadOnlyList\u00601 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean beginTransaction, Boolean commitTransaction, Nullable\u00601 isolationLevel, CancellationToken cancellationToken)\n   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func\u00604 operation, Func\u00604 verifySucceeded, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.MigrationCommandExecutor.ExecuteNonQueryAsync(IReadOnlyList\u00601 migrationCommands, IRelationalConnection connection, MigrationExecutionState executionState, Boolean commitTransaction, Nullable\u00601 isolationLevel, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateImplementationAsync(DbContext context, String targetMigration, MigrationExecutionState state, Boolean useTransaction, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.\u003C\u003Ec.\u003C\u003CMigrateAsync\u003Eb__22_1\u003Ed.MoveNext()\n--- End of stack trace from previous location ---\n   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func\u00604 operation, Func\u00604 verifySucceeded, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)\n   at Microsoft.EntityFrameworkCore.Migrations.Internal.Migrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)\n   at Npgsql.EntityFrameworkCore.PostgreSQL.Migrations.Internal.NpgsqlMigrator.MigrateAsync(String targetMigration, CancellationToken cancellationToken)\n   at Program.\u003CMain\u003E$(String[] args) in /home/gadmin/it_system_new_gen/Program.cs:line 136\n  Exception data:\n    Severity: ERROR\n    SqlState: 42703\n    MessageText: column \u0022Conditions\u0022 does not exist\n    File: tablecmds.c\n    Line: 3653\n    Routine: renameatt_internal",
+  "State": {
+    "Message": "An error occurred creating the DB.",
+    "{OriginalFormat}": "An error occurred creating the DB."
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:51:17",
+  "EventId": 14,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Now listening on: http://localhost:8080",
+  "State": {
+    "Message": "Now listening on: http://localhost:8080",
+    "address": "http://localhost:8080",
+    "{OriginalFormat}": "Now listening on: {address}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:51:17",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Application started. Press Ctrl\u002BC to shut down.",
+  "State": {
+    "Message": "Application started. Press Ctrl\u002BC to shut down.",
+    "{OriginalFormat}": "Application started. Press Ctrl\u002BC to shut down."
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:51:17",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Hosting environment: Development",
+  "State": {
+    "Message": "Hosting environment: Development",
+    "EnvName": "Development",
+    "{OriginalFormat}": "Hosting environment: {EnvName}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 10:51:17",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Content root path: /home/gadmin/it_system_new_gen",
+  "State": {
+    "Message": "Content root path: /home/gadmin/it_system_new_gen",
+    "ContentRoot": "/home/gadmin/it_system_new_gen",
+    "{OriginalFormat}": "Content root path: {ContentRoot}"
+  },
+  "Scopes": []
+}
+{
+  "Timestamp": "2025-06-27 11:12:58",
+  "EventId": 0,
+  "LogLevel": "Information",
+  "Category": "Microsoft.Hosting.Lifetime",
+  "Message": "Application is shutting down...",
+  "State": {
+    "Message": "Application is shutting down...",
+    "{OriginalFormat}": "Application is shutting down..."
+  },
+  "Scopes": []
+}

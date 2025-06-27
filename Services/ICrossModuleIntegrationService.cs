@@ -94,45 +94,4 @@ namespace HospitalAssetTracker.Services
         public DateTime CompletionDate { get; set; } = DateTime.UtcNow;
         public string CompletionNotes { get; set; } = string.Empty;
     }
-
-    /// <summary>
-    /// Workflow status result
-    /// </summary>
-    public class WorkflowStatusResult
-    {
-        public int RequestId { get; set; }
-        public RequestStatus RequestStatus { get; set; }
-        public List<WorkflowStep> WorkflowSteps { get; set; } = new();
-        public List<string> PendingActions { get; set; } = new();
-        public List<int> RelatedProcurementIds { get; set; } = new();
-        public int? TemporaryAssetId { get; set; }
-        public Dictionary<string, object> AdditionalData { get; set; } = new();
-    }
-
-    /// <summary>
-    /// Workflow step
-    /// </summary>
-    public class WorkflowStep
-    {
-        public string StepName { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public DateTime? CompletedAt { get; set; }
-        public string CompletedBy { get; set; } = string.Empty;
-        public string Status { get; set; } = "Pending";
-        public string Notes { get; set; } = string.Empty;
-    }
-
-    /// <summary>
-    /// Repair part request
-    /// </summary>
-    public class RepairPartRequest
-    {
-        public string PartName { get; set; } = string.Empty;
-        public string PartNumber { get; set; } = string.Empty;
-        public int Quantity { get; set; }
-        public decimal EstimatedPrice { get; set; }
-        public string Vendor { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public RequestPriority Priority { get; set; } = RequestPriority.Medium;
-    }
 }

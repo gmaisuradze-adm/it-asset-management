@@ -132,11 +132,11 @@ else
     {
         return priority switch
         {
-            RequestPriority.Critical => "bg-danger",
+            RequestPriority.Critical => "bg-danger text-white",
             RequestPriority.High => "bg-warning text-dark",
-            RequestPriority.Medium => "bg-info",
-            RequestPriority.Low => "bg-success",
-            _ => "bg-secondary"
+            RequestPriority.Medium => "bg-info text-white",
+            RequestPriority.Low => "bg-success text-white",
+            _ => "bg-secondary text-white"
         };
     }
 
@@ -144,15 +144,12 @@ else
     {
         return status switch
         {
-            RequestStatus.Submitted => "bg-primary",
+            RequestStatus.Submitted => "bg-info text-white",
             RequestStatus.InProgress => "bg-warning text-dark",
-            RequestStatus.PendingApproval => "bg-info",
-            RequestStatus.Approved => "bg-success",
-            RequestStatus.Completed => "bg-success",
-            RequestStatus.Cancelled => "bg-secondary",
-            RequestStatus.OnHold => "bg-warning text-dark",
-            RequestStatus.ReadyForCompletion => "bg-info",
-            _ => "bg-secondary"
+            RequestStatus.OnHold => "bg-secondary text-white",
+            RequestStatus.Completed => "bg-success text-white",
+            RequestStatus.Cancelled => "bg-danger text-white",
+            _ => "bg-light text-dark"
         };
     }
 }
