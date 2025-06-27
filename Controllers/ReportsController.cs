@@ -154,32 +154,12 @@ namespace HospitalAssetTracker.Controllers
         {
             try
             {
-                // Debug: Check what we have in the database
-                var allAssets = await _assetService.GetAllAssetsAsync();
-                Console.WriteLine($"Total assets in database: {allAssets.Count()}");
-                
-                var assetsWithWarranty = allAssets.Where(a => a.WarrantyExpiry.HasValue);
-                Console.WriteLine($"Assets with warranty dates: {assetsWithWarranty.Count()}");
-                
-                foreach (var asset in assetsWithWarranty.Take(10))
-                {
-                    if (asset.WarrantyExpiry.HasValue)
-                    {
-                        var isExpired = asset.WarrantyExpiry.Value <= DateTime.UtcNow;
-                        Console.WriteLine($"Asset {asset.AssetTag}: Warranty {asset.WarrantyExpiry.Value.ToString("yyyy-MM-dd")} - Expired: {isExpired}");
-                    }
-                }
-                
-                // var expiredAssets = await _assetService.GetExpiredWarrantyAssetsAsync(); // Old call
-                var expiredAssets = await _reportService.GetExpiredWarrantyAssetsReportAsync(); // New call
-                Console.WriteLine($"ExpiredWarranties: Found {expiredAssets.Count()} assets with expired warranties");
-                
+                var expiredAssets = await _reportService.GetExpiredWarrantyAssetsReportAsync();
+
                 return View(expiredAssets);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in ExpiredWarranties: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 TempData["ErrorMessage"] = "An error occurred while retrieving expired warranty assets.";
                 return View(new List<Asset>());
             }
