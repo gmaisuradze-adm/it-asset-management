@@ -29,6 +29,14 @@
                                 <i class="bi bi-speedometer2"></i> Dashboard
                             </a>
                         </li>
+                        @if (User.IsInRole("Admin") || User.IsInRole("IT Support") || User.IsInRole("Asset Manager"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="UnifiedBusinessLogic" asp-action="Dashboard">
+                                    <i class="bi bi-diagram-3"></i> Unified Dashboard
+                                </a>
+                            </li>
+                        }
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-laptop"></i> Assets

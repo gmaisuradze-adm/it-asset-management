@@ -1,0 +1,487 @@
+@model HospitalAssetTracker.Models.UnifiedActionViewModel
+@using HospitalAssetTracker.Models
+@{
+    ViewData["Title"] = "Action Items";
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">Action Items</h1>
+                    <p class="text-muted">Tasks and items requiring your attention</p>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary me-2" onclick="refreshActions()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <span class="text-muted small">Last updated: <span id="lastUpdated">@DateTime.Now.ToString("HH:mm")</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pending Approvals</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.PendingApprovals.Count</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Scheduled Tasks</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ScheduledTasks.Count</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Overdue Items</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.OverdueItems.Count</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Assignments</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.PendingAssignments.Count</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Items Tabs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="actionTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="approvals-tab" data-bs-toggle="tab" data-bs-target="#approvals" type="button" role="tab">
+                                <i class="fas fa-clock me-2"></i>Pending Approvals (@Model.PendingApprovals.Count)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab">
+                                <i class="fas fa-tasks me-2"></i>Scheduled Tasks (@Model.ScheduledTasks.Count)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="overdue-tab" data-bs-toggle="tab" data-bs-target="#overdue" type="button" role="tab">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Overdue Items (@Model.OverdueItems.Count)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments" type="button" role="tab">
+                                <i class="fas fa-user-check me-2"></i>Assignments (@Model.PendingAssignments.Count)
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="actionTabsContent">
+                        <!-- Pending Approvals Tab -->
+                        <div class="tab-pane fade show active" id="approvals" role="tabpanel">
+                            @if (Model.PendingApprovals.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Title</th>
+                                                <th>Requestor</th>
+                                                <th>Submitted</th>
+                                                <th>Priority</th>
+                                                <th>Amount</th>
+                                                <th>Waiting</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var approval in Model.PendingApprovals)
+                                            {
+                                                <tr class="@(approval.IsOverdue ? "table-warning" : "")">
+                                                    <td>
+                                                        <span class="badge bg-secondary">@approval.Type</span>
+                                                    </td>
+                                                    <td>
+                                                        <strong>@approval.Title</strong>
+                                                    </td>
+                                                    <td>@approval.Requestor</td>
+                                                    <td>@approval.SubmittedDate.ToString("MMM dd, yyyy")</td>
+                                                    <td>
+                                                        <span class="badge bg-@GetPriorityColor(approval.Priority)">@approval.Priority</span>
+                                                    </td>
+                                                    <td>
+                                                        @if (approval.Amount.HasValue)
+                                                        {
+                                                            <text>$@approval.Amount.Value.ToString("N0")</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        <span class="@(approval.DaysWaiting > 7 ? "text-danger" : approval.DaysWaiting > 3 ? "text-warning" : "text-muted")">
+                                                            @approval.DaysWaiting days
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <a href="@approval.ActionUrl" class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-eye"></i> Review
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-check-circle fa-3x mb-3 opacity-25"></i>
+                                    <h5>No pending approvals</h5>
+                                    <p>All items have been reviewed and processed.</p>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Scheduled Tasks Tab -->
+                        <div class="tab-pane fade" id="tasks" role="tabpanel">
+                            @if (Model.ScheduledTasks.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Title</th>
+                                                <th>Description</th>
+                                                <th>Scheduled Date</th>
+                                                <th>Assigned To</th>
+                                                <th>Priority</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var task in Model.ScheduledTasks)
+                                            {
+                                                <tr class="@(task.IsOverdue ? "table-danger" : "")">
+                                                    <td>
+                                                        <span class="badge bg-info">@task.Type</span>
+                                                    </td>
+                                                    <td>
+                                                        <strong>@task.Title</strong>
+                                                    </td>
+                                                    <td>@task.Description</td>
+                                                    <td>@task.ScheduledDate.ToString("MMM dd, yyyy")</td>
+                                                    <td>@task.AssignedTo</td>
+                                                    <td>
+                                                        <span class="badge bg-@GetPriorityColor(task.Priority)">@task.Priority</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-@GetTaskStatusColor(task.Status)">@task.Status</span>
+                                                    </td>
+                                                    <td>
+                                                        <a href="@task.ActionUrl" class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-calendar-check fa-3x mb-3 opacity-25"></i>
+                                    <h5>No scheduled tasks</h5>
+                                    <p>All tasks are up to date.</p>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Overdue Items Tab -->
+                        <div class="tab-pane fade" id="overdue" role="tabpanel">
+                            @if (Model.OverdueItems.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Title</th>
+                                                <th>Due Date</th>
+                                                <th>Days Overdue</th>
+                                                <th>Assigned To</th>
+                                                <th>Priority</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in Model.OverdueItems)
+                                            {
+                                                <tr class="table-danger">
+                                                    <td>
+                                                        <span class="badge bg-danger">@item.Type</span>
+                                                    </td>
+                                                    <td>
+                                                        <strong>@item.Title</strong>
+                                                    </td>
+                                                    <td>@item.DueDate.ToString("MMM dd, yyyy")</td>
+                                                    <td>
+                                                        <span class="badge bg-danger">@item.DaysOverdue days</span>
+                                                    </td>
+                                                    <td>@item.AssignedTo</td>
+                                                    <td>
+                                                        <span class="badge bg-@GetPriorityColor(item.Priority)">@item.Priority</span>
+                                                    </td>
+                                                    <td>
+                                                        <a href="@item.ActionUrl" class="btn btn-sm btn-danger">
+                                                            <i class="fas fa-exclamation-triangle"></i> Urgent
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-thumbs-up fa-3x mb-3 opacity-25"></i>
+                                    <h5>No overdue items</h5>
+                                    <p>Everything is on track!</p>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Assignments Tab -->
+                        <div class="tab-pane fade" id="assignments" role="tabpanel">
+                            @if (Model.PendingAssignments.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Title</th>
+                                                <th>Assigned To</th>
+                                                <th>Assigned By</th>
+                                                <th>Assigned Date</th>
+                                                <th>Due Date</th>
+                                                <th>Priority</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var assignment in Model.PendingAssignments)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <span class="badge bg-success">@assignment.Type</span>
+                                                    </td>
+                                                    <td>
+                                                        <strong>@assignment.Title</strong>
+                                                    </td>
+                                                    <td>@assignment.AssignedTo</td>
+                                                    <td>@assignment.AssignedBy</td>
+                                                    <td>@assignment.AssignedDate.ToString("MMM dd, yyyy")</td>
+                                                    <td>
+                                                        @if (assignment.DueDate.HasValue)
+                                                        {
+                                                            <text>@assignment.DueDate.Value.ToString("MMM dd, yyyy")</text>
+                                                        }
+                                                        else
+                                                        {
+                                                            <text>-</text>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-@GetPriorityColor(assignment.Priority)">@assignment.Priority</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-warning">@assignment.Status</span>
+                                                    </td>
+                                                    <td>
+                                                        <a href="@assignment.ActionUrl" class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-user-check fa-3x mb-3 opacity-25"></i>
+                                    <h5>No pending assignments</h5>
+                                    <p>All assignments have been completed.</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Statistics -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">Workflow Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="stat-card text-center">
+                                <div class="h4 mb-1 text-primary">@Model.WorkflowStats.TotalWorkflows</div>
+                                <div class="small text-muted">Total Workflows</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="stat-card text-center">
+                                <div class="h4 mb-1 text-info">@Model.WorkflowStats.ActiveWorkflows</div>
+                                <div class="small text-muted">Active Workflows</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="stat-card text-center">
+                                <div class="h4 mb-1 text-success">@Model.WorkflowStats.CompletedThisWeek</div>
+                                <div class="small text-muted">Completed This Week</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <div class="stat-card text-center">
+                                <div class="h4 mb-1 text-warning">@Math.Round(Model.WorkflowStats.AverageCompletionTime, 1)h</div>
+                                <div class="small text-muted">Avg Completion Time</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom CSS -->
+<style>
+    .card.border-left-warning {
+        border-left: 0.25rem solid #f6c23e !important;
+    }
+    .card.border-left-info {
+        border-left: 0.25rem solid #36b9cc !important;
+    }
+    .card.border-left-danger {
+        border-left: 0.25rem solid #e74a3b !important;
+    }
+    .card.border-left-success {
+        border-left: 0.25rem solid #1cc88a !important;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+        border-left: 3px solid #dee2e6;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,.03);
+    }
+    
+    .opacity-25 {
+        opacity: 0.25;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function refreshActions() {
+            location.reload();
+        }
+        
+        // Auto-refresh every 30 seconds
+        setInterval(function() {
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }, 30000);
+    </script>
+}
+
+@functions {
+    string GetPriorityColor(RequestPriority priority)
+    {
+        return priority switch
+        {
+            RequestPriority.Critical => "danger",
+            RequestPriority.High => "warning",
+            RequestPriority.Medium => "info",
+            RequestPriority.Low => "secondary",
+            _ => "secondary"
+        };
+    }
+    
+    string GetTaskStatusColor(HospitalAssetTracker.Models.TaskStatus status)
+    {
+        return status switch
+        {
+            HospitalAssetTracker.Models.TaskStatus.Pending => "warning",
+            HospitalAssetTracker.Models.TaskStatus.InProgress => "info",
+            HospitalAssetTracker.Models.TaskStatus.Completed => "success",
+            HospitalAssetTracker.Models.TaskStatus.Cancelled => "secondary",
+            HospitalAssetTracker.Models.TaskStatus.Overdue => "danger",
+            _ => "secondary"
+        };
+    }
+}

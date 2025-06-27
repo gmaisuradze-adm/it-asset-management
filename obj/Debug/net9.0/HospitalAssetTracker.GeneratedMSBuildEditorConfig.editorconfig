@@ -252,6 +252,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[/home/gadmin/it_system_new_gen/Views/UnifiedBusinessLogic/Actions.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVW5pZmllZEJ1c2luZXNzTG9naWMvQWN0aW9ucy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/home/gadmin/it_system_new_gen/Views/UnifiedBusinessLogic/Dashboard.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVW5pZmllZEJ1c2luZXNzTG9naWMvRGFzaGJvYXJkLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [/home/gadmin/it_system_new_gen/Views/Users/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVXNlcnMvRGV0YWlscy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

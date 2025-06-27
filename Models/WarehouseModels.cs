@@ -499,9 +499,9 @@ namespace HospitalAssetTracker.Models
     }
 
     /// <summary>
-    /// Quick action for dashboard
+    /// Quick action for warehouse dashboard
     /// </summary>
-    public class QuickAction
+    public class WarehouseQuickAction
     {
         public string Title { get; set; } = string.Empty;
         public string Action { get; set; } = string.Empty;

@@ -50,6 +50,9 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
+// Add memory cache
+builder.Services.AddMemoryCache();
+
 // Add HttpContextAccessor for audit service
 builder.Services.AddHttpContextAccessor();
 
@@ -69,6 +72,10 @@ builder.Services.AddScoped<IRequestBusinessLogicService, RequestBusinessLogicSer
 builder.Services.AddScoped<IAssetBusinessLogicService, AssetBusinessLogicService>();
 builder.Services.AddScoped<IIntegratedBusinessLogicService, IntegratedBusinessLogicService>();
 builder.Services.AddScoped<ICrossModuleIntegrationService, CrossModuleIntegrationService>();
+
+// Add Phase 2 services
+builder.Services.AddScoped<IUnifiedBusinessLogicService, UnifiedBusinessLogicService>();
+builder.Services.AddScoped<ICacheService, CacheService>();
 
 var app = builder.Build();
 
